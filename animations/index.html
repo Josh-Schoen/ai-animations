@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Games — The Accidental Engineer Lab</title>
+<meta name="description" content="Games and tools built in conversation with an AI agent, from The Accidental Engineer." />
+<link rel="icon" href="../assets/avatar.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/site.css" />
+<script src="../assets/theme.js"></script>
+<style>
+  .hero { border-bottom: 1px solid var(--color-border); }
+  .hero .container { padding-block: 64px 48px; }
+  .hero h1 { margin: 0; font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -.025em; }
+  .hero .lede { margin: 8px 0 0; max-width: 40rem; color: var(--color-text-secondary); line-height: 1.65; }
+  .hero .lede a { color: var(--color-accent); text-underline-offset: 2px; }
+  .list .container { padding-block: 40px 64px; }
+  .list-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .list-head h2 { margin: 0; }
+  #count { font: 12px var(--font-mono); color: var(--color-text-tertiary); font-variant-numeric: tabular-nums; }
+  .toolbar { margin-top: 20px; }
+  .empty { color: var(--color-text-tertiary); font: 13px var(--font-mono); padding: 24px 0; }
+</style>
+</head>
+<body>
+<header class="site-header"><div class="container">
+  <a class="brand" href="../"><img src="../assets/avatar.png" alt="" width="32" height="32" /><span>the accidental engineer<span class="sub"> / lab</span></span></a>
+  <nav class="site-nav" aria-label="Site">
+    <a href="./" aria-current="page">Games</a>
+    <a href="../article/">Story</a>
+    <a class="opt" href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a>
+    <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+  </nav>
+</div></header>
+
+<main>
+  <section class="hero"><div class="container">
+    <h1>Games &amp; tools</h1>
+    <p class="lede">Everything built so far, newest first. Each one is a single page that runs in your browser; the <a href="../article/">story</a> explains how they were made.</p>
+  </div></section>
+
+  <section class="list"><div class="container">
+    <div class="list-head"><h2 class="eyebrow">All animations</h2><span id="count"></span></div>
+    <div class="toolbar badges" role="toolbar" aria-label="Filter by tag"></div>
+    <div class="grid" id="grid"></div>
+    <p class="empty" id="empty" hidden>No animations match this tag.</p>
+  </div></section>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <div class="top">
+    <div>
+      <p class="name">the accidental engineer</p>
+      <p class="blurb">Notes from the intersection of design, engineering, and accidentally becoming the person who fixes the build.</p>
+    </div>
+    <nav aria-label="Footer">
+      <div><span>Navigate</span><a href="../">Home</a><a href="./">Games</a><a href="../article/">Story</a></div>
+      <div><span>Meta</span><a href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a></div>
+    </nav>
+  </div>
+  <div class="bottom"><span>&copy; 2026 Josh Schoen</span><span>Built in conversation with Claude Code. No build step.</span></div>
+</div></footer>
+
+<script src="registry.js"></script>
+<script>
+  const list = (window.ANIMATIONS || []).slice().sort((a, b) => (b.added || '').localeCompare(a.added || ''));
+  const grid = document.getElementById('grid');
+  const toolbar = document.querySelector('.toolbar');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let active = 'all';
+  const fmt = d => { if (!d) return ''; const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); };
+
+  const tags = ['all', ...new Set(list.flatMap(a => a.tags || []))];
+  if (tags.length > 2) {
+    tags.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'badge-tag'; b.type = 'button'; b.textContent = t; b.setAttribute('aria-pressed', t === active);
+      b.onclick = () => { active = t; toolbar.querySelectorAll('.badge-tag').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); };
+      toolbar.appendChild(b);
+    });
+  }
+
+  function render() {
+    const shown = list.filter(a => active === 'all' || (a.tags || []).includes(active));
+    document.getElementById('count').textContent = `${shown.length} of ${list.length} animation${list.length === 1 ? '' : 's'}`;
+    document.getElementById('empty').hidden = shown.length > 0;
+    grid.innerHTML = shown.map(a => `
+      <a class="card" href="${esc(a.slug)}/">
+        <div class="thumb">
+          <div class="ph">${esc(a.slug)}</div>
+          <img src="${esc(a.slug)}/thumb.jpg" alt="" loading="lazy" onerror="this.remove()" />
+        </div>
+        <div class="body">
+          <div class="meta-line"><time datetime="${esc(a.added || '')}">${esc(fmt(a.added))}</time></div>
+          <h3>${esc(a.title)}</h3>
+          <p>${esc(a.description)}</p>
+          <div class="badges">${(a.tags || []).map(t => `<span class="badge-tag">${esc(t)}</span>`).join('')}</div>
+        </div>
+      </a>`).join('');
+  }
+  render();
+</script>
+</body>
+</html>

@@ -28,7 +28,7 @@ Seven projects shipped from one chat thread, each started with a request of a se
 
 The repo went from one animation to a small gallery along the way. I asked it to "support multiple animations" and it restructured the project, added a registry and a checker script, and moved on.
 
-**Play them yourself:** [the full gallery](../), or tap any project name in the table. The code is on [GitHub](https://github.com/Josh-Schoen/ai-animations).
+**Play them yourself:** [the full gallery](../animations/), or tap any project name in the table. The code is on [GitHub](https://github.com/Josh-Schoen/ai-animations).
 
 ## See them in action
 
