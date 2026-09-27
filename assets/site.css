@@ -91,6 +91,7 @@ main { flex: 1; }
 .theme-toggle .sun, .dark .theme-toggle .moon { display: none; }
 .dark .theme-toggle .sun { display: block; }
 @media (max-width: 560px) { .brand .sub, .site-nav .opt { display: none; } .site-nav a { padding: 6px 8px; } }
+@media (max-width: 420px) { .brand > span { display: none; } }
 
 /* Shared type */
 .eyebrow { margin: 0; font: 400 12px var(--font-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--color-text-tertiary); }
