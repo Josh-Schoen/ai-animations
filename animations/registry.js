@@ -44,4 +44,11 @@ window.ANIMATIONS = [
     tags: ['three.js', 'game', 'fighting'],
     added: '2026-09-27',
   },
+  {
+    slug: 'patch-and-pint',
+    title: 'Patch & Pint',
+    description: 'A gastropub operator switchboard: patch cords between people and data sources, let an agent sample the data and pour out insights, then pin them to dashboards and export them.',
+    tags: ['agents', 'data', 'dashboard'],
+    added: '2026-09-27',
+  },
 ];

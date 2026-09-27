@@ -17,6 +17,7 @@ npm run serve        # python3 -m http.server 8000
 | [`animations/vector-ko`](animations/vector-ko/) | A green wireframe boxing game with the controls across the top: read the tells, dodge, counter for stars, and land the star uppercut. |
 | [`animations/micro-rally`](animations/micro-rally/) | An RC-style toy truck racer with four tracks, item boxes (missiles, nitro, oil), AI rivals and a championship. |
 | [`animations/kinetic-fury`](animations/kinetic-fury/) | A 2.5D arcade fighter: four fierce original fighters with elemental specials and supers, best-of-three against a CPU. |
+| [`animations/patch-and-pint`](animations/patch-and-pint/) | A gastropub operator switchboard: patch people to people and to data; an agent samples mock data, pours insights, and you pin, edit and export them across dashboards. |
 
 ## Layout
 

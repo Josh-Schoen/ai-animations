@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Patch &amp; Pint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Source+Sans+3:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  /* A deliberate single look: dark oak, brass and cream menu cards, gastropub style. */
+  :root {
+    color-scheme: dark;
+    --wood-0: #1a100a;
+    --wood-1: #2a1a10;
+    --wood-2: #3d2616;
+    --wood-3: #5a3820;
+    --brass: #c9a24a;
+    --brass-hi: #e8c878;
+    --brass-lo: #7d5f22;
+    --cream: #f7f0e1;
+    --cream-2: #efe4cc;
+    --paper-ink: #2b2118;
+    --paper-muted: #6a5a47;
+    --paper-line: #d9cbb0;
+    --chalk: #efe9dc;
+    --chalk-dim: #b9b3a3;
+    --board: #1f2a24;
+    --green: #1f4d3a;
+    --oxblood: #7a2222;
+    --amber: #ffb347;
+    /* validated chart palette on the cream surface */
+    --s1: #1d6a9e; --s2: #c2511c; --s3: #1a8a5a; --s4: #a8760e; --s5: #8a4fa8;
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --chalkf: "Caveat", "Segoe Print", "Comic Sans MS", cursive;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; color: var(--chalk); font: 16px/1.5 var(--sans);
+    background:
+      repeating-linear-gradient(92deg, rgba(0,0,0,.08) 0 2px, transparent 2px 9px),
+      repeating-linear-gradient(88deg, rgba(255,220,170,.03) 0 1px, transparent 1px 23px),
+      linear-gradient(180deg, var(--wood-1), var(--wood-0));
+    min-height: 100vh; padding-inline: 16px;
+  }
+  button, select, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding-block: 16px 48px; display: grid; gap: 16px; }
+
+  /* ---------- header: chalkboard sign ---------- */
+  header.sign {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 14px 18px;
+    background: radial-gradient(ellipse at 30% 20%, #2a3830, var(--board) 70%); border: 10px solid var(--wood-3);
+    border-image: linear-gradient(135deg, #6b4428, #3d2616 40%, #6b4428) 1; box-shadow: 0 10px 30px rgba(0,0,0,.45), inset 0 0 40px rgba(0,0,0,.4);
+  }
+  .brand { flex: 1 1 320px; min-width: 0; }
+  .brand h1 { margin: 0; font: 900 clamp(30px, 5vw, 46px)/1 var(--display); letter-spacing: .01em; color: var(--cream); text-wrap: balance; }
+  .brand h1 span { color: var(--brass-hi); font-style: italic; font-weight: 500; }
+  .brand p { margin: 4px 0 0; font: 700 clamp(19px, 2.4vw, 24px)/1.15 var(--chalkf); color: var(--chalk-dim); }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab { border: 2px solid rgba(239,233,220,.25); background: transparent; color: var(--chalk); padding: 6px 14px; border-radius: 999px; font: 600 15px var(--sans); letter-spacing: .02em; }
+  .tab[aria-selected="true"] { background: var(--cream); color: var(--paper-ink); border-color: var(--cream); }
+  .tab b { font-weight: 700; color: var(--brass-hi); margin-left: 4px; }
+  .tab[aria-selected="true"] b { color: var(--oxblood); }
+  .agentPick { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--chalk-dim); }
+  .agentPick select { background: var(--board); border: 1px solid rgba(239,233,220,.3); border-radius: 6px; padding: 4px 6px; color: var(--chalk); }
+  .mockTag { font: 700 13px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--board); background: var(--brass); padding: 3px 9px; border-radius: 4px; }
+
+  /* ---------- switchboard cabinet ---------- */
+  .grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: 16px; align-items: start; }
+  .cabinet {
+    background: linear-gradient(180deg, #4a2d19, #2e1b0f); border-radius: 14px; padding: 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,220,170,.15), inset 0 0 0 2px #1a0e07;
+  }
+  .cabinet .top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 2px 6px 10px; flex-wrap: wrap; }
+  .cabinet h2 { margin: 0; font: 700 20px var(--display); color: var(--brass-hi); }
+  .cabinet .hint { font: 600 20px/1.1 var(--chalkf); color: var(--chalk-dim); }
+  #board { width: 100%; height: auto; display: block; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: 8px; }
+  #board .jack { cursor: grab; }
+  #board .jack:focus { outline: none; }
+  #board .jack:focus-visible .ring { stroke: var(--amber); stroke-width: 5; }
+  #board .jack.armed .ring { stroke: var(--amber); stroke-width: 5; }
+  #board .cord { cursor: pointer; }
+  .log { margin-top: 12px; background: var(--cream); color: var(--paper-ink); border-radius: 8px; padding: 10px 12px; box-shadow: inset 0 0 0 1px var(--paper-line); }
+  .log h3 { margin: 0 0 6px; font: 700 16px var(--display); display: flex; justify-content: space-between; align-items: baseline; }
+  .log h3 small { font: 500 13px var(--sans); color: var(--paper-muted); }
+  .log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .log li button { width: 100%; display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: center; text-align: left; border: 1px solid transparent; background: none; padding: 5px 6px; border-radius: 6px; }
+  .log li button:hover { background: var(--cream-2); }
+  .log li button[aria-current="true"] { border-color: var(--brass); background: #fff7e3; }
+  .lamp { width: 12px; height: 12px; border-radius: 50%; background: #5c4a2e; box-shadow: inset 0 -2px 3px rgba(0,0,0,.4); }
+  .lamp.on { background: var(--amber); box-shadow: 0 0 8px var(--amber), inset 0 -2px 3px rgba(0,0,0,.2); }
+  .lamp.busy { animation: blink .5s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .35; } }
+  .log .lk { font-weight: 600; }
+  .log .lk em { font-style: normal; color: var(--paper-muted); font-weight: 500; }
+  .log .ct { font-size: 13px; color: var(--paper-muted); white-space: nowrap; }
+  .log .empty { color: var(--paper-muted); font-style: italic; }
+
+  /* ---------- order pad (line detail) ---------- */
+  .pad {
+    background: var(--cream); color: var(--paper-ink); border-radius: 6px; padding: 16px 18px 18px; position: relative;
+    box-shadow: 0 14px 34px rgba(0,0,0,.45), inset 0 0 0 1px var(--paper-line);
+    background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(160,130,90,.14) 27px 28px);
+  }
+  .pad::before { content: ""; position: absolute; top: -9px; left: 50%; width: 90px; height: 18px; margin-left: -45px; background: linear-gradient(180deg, #d9c089, var(--brass-lo)); border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,.4); }
+  .pad h2 { margin: 4px 0 2px; font: 700 clamp(20px, 2.6vw, 26px)/1.15 var(--display); text-wrap: balance; }
+  .pad .kind { font: 700 12px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--oxblood); }
+  .pad .who { color: var(--paper-muted); font-size: 14.5px; margin: 2px 0 10px; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin: 8px 0 10px; }
+  .controls label { display: grid; gap: 2px; font: 600 12px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--paper-muted); }
+  .controls select { background: #fffaf0; border: 1px solid var(--paper-line); border-radius: 6px; padding: 5px 6px; color: var(--paper-ink); font-size: 15px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btn { border: 1px solid var(--paper-ink); background: transparent; color: var(--paper-ink); border-radius: 6px; padding: 5px 11px; font: 600 14px var(--sans); }
+  .btn:hover { background: var(--cream-2); }
+  .btn.primary { background: var(--green); border-color: var(--green); color: var(--cream); }
+  .btn.primary:hover { background: #276048; }
+  .btn.warn { border-color: var(--oxblood); color: var(--oxblood); }
+  .btn.small { padding: 2px 8px; font-size: 13px; }
+  .pour { display: flex; align-items: center; gap: 12px; padding: 10px 0; font: 700 22px var(--chalkf); color: var(--paper-muted); }
+  .pour svg { width: 34px; height: 46px; flex: none; }
+  .summary { margin: 6px 0 12px; padding: 8px 12px; border-left: 4px solid var(--brass); background: #fff7e3; font-size: 15px; }
+  .insights { display: grid; gap: 10px; }
+  .ins { background: #fffdf7; border: 1px solid var(--paper-line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+  .ins .ih { display: flex; gap: 8px; align-items: flex-start; }
+  .ins h4 { margin: 0; flex: 1; font: 700 16.5px/1.25 var(--display); outline: none; }
+  .ins p { margin: 0; font-size: 15px; color: #3d3024; outline: none; }
+  .ins [contenteditable="true"] { background: #fff4d6; border-radius: 3px; box-shadow: 0 0 0 2px #f0d58a; }
+  .ins .fig { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .ins .fig b { font: 700 24px var(--display); color: var(--paper-ink); font-variant-numeric: tabular-nums; }
+  .ins .fig span { font-size: 13.5px; color: var(--paper-muted); }
+  .chip { font: 700 11px var(--sans); letter-spacing: .08em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .chip.hi { color: #1a6b43; } .chip.md { color: #8a5d0a; } .chip.lo { color: #8a2d2d; } .chip.ai { color: var(--s5); }
+  .ins .acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ins .acts select { background: #fffaf0; border: 1px solid var(--paper-line); border-radius: 6px; padding: 2px 4px; font-size: 13px; color: var(--paper-ink); }
+  .ins .why { font-size: 13.5px; color: var(--paper-muted); font-style: italic; }
+  .chart svg { display: block; width: 100%; overflow: visible; }
+  .chart .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--paper-muted); margin-bottom: 2px; }
+  .chart .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .tablewrap { overflow: auto; max-height: 260px; border: 1px solid var(--paper-line); border-radius: 6px; background: #fffdf7; }
+  table.t { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  table.t th { position: sticky; top: 0; background: var(--cream-2); text-align: left; padding: 5px 8px; font-weight: 700; white-space: nowrap; }
+  table.t td { padding: 4px 8px; border-top: 1px solid #eee2c8; white-space: nowrap; }
+  table.t td.n, table.t th.n { text-align: right; }
+  details.sample { margin-top: 12px; }
+  details.sample summary { cursor: pointer; font: 700 16px var(--display); padding: 4px 0; }
+  details.sample summary span { font: 500 13.5px var(--sans); color: var(--paper-muted); }
+  .people { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .card-person { border: 1px solid var(--paper-line); border-radius: 8px; padding: 8px 10px; background: #fffdf7; }
+  .card-person b { display: block; font: 700 16px var(--display); }
+  .card-person span { font-size: 13.5px; color: var(--paper-muted); display: block; }
+  .card-person code { font-size: 12.5px; color: var(--paper-ink); user-select: all; }
+  .agenda { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 15px; }
+  .emptyPad { text-align: center; padding: 30px 10px; }
+  .emptyPad p { font: 700 26px/1.2 var(--chalkf); color: var(--paper-muted); margin: 0 0 8px; }
+
+  /* ---------- dashboards ---------- */
+  .dashbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--board); border: 6px solid var(--wood-3); padding: 10px 12px; border-radius: 4px; }
+  .dashbar .dt { border: 2px solid rgba(239,233,220,.25); background: transparent; color: var(--chalk); padding: 4px 12px; border-radius: 6px; font: 700 22px/1.1 var(--chalkf); }
+  .dashbar .dt[aria-selected="true"] { background: var(--cream); color: var(--paper-ink); border-color: var(--cream); }
+  .dashbar .sp { flex: 1; }
+  .dashbar .btn { border-color: rgba(239,233,220,.5); color: var(--chalk); }
+  .dashbar .btn:hover { background: rgba(255,255,255,.08); }
+  .dhead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .dhead h2 { margin: 0; font: 900 clamp(26px, 4vw, 38px)/1.1 var(--display); color: var(--cream); outline: none; }
+  .dhead h2[contenteditable="true"] { background: rgba(255,255,255,.08); border-radius: 4px; padding: 0 6px; }
+  .dhead p { margin: 0; color: var(--chalk-dim); font-size: 15px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .tile { background: var(--cream); color: var(--paper-ink); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; box-shadow: 0 10px 24px rgba(0,0,0,.35), inset 0 0 0 1px var(--paper-line); }
+  .tile .src { font: 600 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--paper-muted); }
+  .tile h4 { margin: 0; font: 700 17px/1.25 var(--display); outline: none; }
+  .tile p { margin: 0; font-size: 14.5px; outline: none; }
+  .tile [contenteditable="true"] { background: #fff4d6; box-shadow: 0 0 0 2px #f0d58a; border-radius: 3px; }
+  .tile .fig b { font: 700 26px var(--display); font-variant-numeric: tabular-nums; }
+  .tile .fig span { font-size: 13.5px; color: var(--paper-muted); margin-left: 6px; }
+  .tile .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .tile .acts select { background: #fffaf0; border: 1px solid var(--paper-line); border-radius: 6px; padding: 2px 4px; font-size: 13px; color: var(--paper-ink); }
+  .dempty { border: 2px dashed rgba(239,233,220,.3); border-radius: 10px; padding: 30px; text-align: center; color: var(--chalk-dim); font: 700 24px/1.3 var(--chalkf); }
+
+  #tip { position: fixed; z-index: 60; pointer-events: none; background: var(--paper-ink); color: var(--cream); border-radius: 6px; padding: 5px 9px; font-size: 13px; display: none; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+  #toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70; background: var(--board); color: var(--chalk); border: 2px solid var(--brass); border-radius: 8px; padding: 8px 16px; font: 700 22px/1.2 var(--chalkf); opacity: 0; transition: opacity .25s; pointer-events: none; max-width: calc(100vw - 32px); }
+  #toast.on { opacity: 1; }
+  footer { color: var(--chalk-dim); font-size: 14px; text-align: center; }
+  footer code { color: var(--brass-hi); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 1060px) { .grid { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .people { grid-template-columns: 1fr; } .tiles { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="sign">
+    <div class="brand">
+      <h1>Patch <span>&amp;</span> Pint</h1>
+      <p>The operator's exchange: patch people to people, people to data, and pour out insight.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button class="tab" role="tab" id="tabBoard" aria-selected="true">Switchboard</button>
+      <button class="tab" role="tab" id="tabDash" aria-selected="false">Dashboards<b id="pinCount">0</b></button>
+    </div>
+    <label class="agentPick" id="agentPick" hidden>Agent
+      <select id="agentSel"><option value="builtin">House analyst (built-in)</option><option value="claude">Claude (uses your Claude usage)</option></select>
+    </label>
+    <span class="mockTag" title="All figures are generated mock data for three sample pubs">Mock data</span>
+  </header>
+
+  <!-- ================= SWITCHBOARD ================= -->
+  <section id="viewBoard" class="grid" role="tabpanel" aria-labelledby="tabBoard">
+    <div>
+      <div class="cabinet">
+        <div class="top"><h2>The Exchange</h2><span class="hint">drag a cord from one jack to another</span></div>
+        <svg id="board" viewBox="0 0 1000 600" role="group" aria-label="Switchboard. Each jack is a person or a data source. Select a jack, then another, to connect them."></svg>
+      </div>
+      <div class="log">
+        <h3>Operator's log <small id="logCount"></small></h3>
+        <ol id="logList"></ol>
+      </div>
+    </div>
+    <aside class="pad" id="pad" aria-live="polite"></aside>
+  </section>
+
+  <!-- ================= DASHBOARDS ================= -->
+  <section id="viewDash" role="tabpanel" aria-labelledby="tabDash" hidden style="display:grid;gap:14px">
+    <div class="dashbar" id="dashbar"></div>
+    <div class="dhead"><h2 id="dName" title="Rename">Dashboard</h2><p id="dMeta"></p></div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <footer>Mock data for three sample pubs (The Crown, The Anchor, The Stag), generated in the page. Swap in real sources with <code>Switchboard.useAdapter(yourAdapter)</code>; see the README.</footer>
+</div>
+<div id="tip" role="tooltip"></div>
+<div id="toast" role="status"></div>
+
+<script type="module">
+/* =====================================================================
+   0. Utilities
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const uid = () => Math.random().toString(36).slice(2, 9);
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const money = v => '£' + Math.round(v).toLocaleString('en-GB');
+const pct = (v, d = 0) => `${(v * 100).toFixed(d)}%`;
+const num = (v, d = 0) => (+v).toLocaleString('en-GB', { maximumFractionDigits: d, minimumFractionDigits: d });
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const dowOf = d => new Date(d + 'T12:00:00Z').getUTCDay();
+const groupBy = (rows, key) => { const m = new Map(); for (const r of rows) { const k = typeof key === 'function' ? key(r) : r[key]; if (!m.has(k)) m.set(k, []); m.get(k).push(r); } return m; };
+const sum = (rows, f) => rows.reduce((a, r) => a + ((typeof f === 'function' ? f(r) : r[f]) || 0), 0);
+const avg = (rows, f) => rows.length ? sum(rows, f) / rows.length : 0;
+function pearson(xs, ys) { const n = xs.length; if (n < 3) return 0; const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n; let a = 0, b = 0, c = 0; for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; a += dx * dy; b += dx * dx; c += dy * dy; } return b && c ? a / Math.sqrt(b * c) : 0; }
+
+/* =====================================================================
+   1. MOCK DATA: three sample pubs, 90 days, six sources.
+      Patterns are baked in so the agent has something real to find.
+   ===================================================================== */
+const SITES = ['The Crown', 'The Anchor', 'The Stag'];
+const TODAY = '2026-09-26';
+const DAYS = 90;
+const dates = Array.from({ length: DAYS }, (_, i) => { const d = new Date(TODAY + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (DAYS - 1 - i)); return d.toISOString().slice(0, 10); });
+const MOCK = (() => {
+  const r = mulberry32(1926);
+  const pick = (arr, w) => { let x = r() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < arr.length; i++) { x -= w[i]; if (x <= 0) return arr[i]; } return arr[arr.length - 1]; };
+  const siteMult = { 'The Crown': 1.0, 'The Anchor': 0.82, 'The Stag': 0.7 };
+  const trend = { 'The Crown': 0.13, 'The Anchor': 0.0, 'The Stag': -0.07 };
+  const dowF = [1.05, 0.7, 0.78, 0.85, 1.0, 1.45, 1.6];
+  const out = { sales: [], cellar: [], tickets: [], bookings: [], rota: [], reviews: [] };
+  const CATS = { Draught: 38, Wine: 20, Spirits: 16, Mains: 26, 'Small plates': 11, Desserts: 7, Soft: 5 };
+  const PRODUCTS = ['House IPA', 'Oat Stout', 'Pilsner', 'Dry Cider', 'Pale Ale', 'Guest Cask'];
+  const DISHES = [['Sunday roast', 'Grill'], ['Fish & chips', 'Fry'], ['Pie of the day', 'Oven'], ['Steak frites', 'Grill'], ['Mushroom Wellington', 'Oven'], ['Scotch egg', 'Fry'], ['Sticky toffee pudding', 'Pastry'], ['Burger', 'Grill']];
+  const SNIPS = {
+    Food: [['Roast was superb, proper gravy.', 5], ['Chips were soggy tonight.', 2], ['Wellington is the best veggie dish around.', 5], ['Pie was lukewarm.', 2]],
+    Service: [['Waited 40 minutes for mains.', 1], ['Staff were lovely and quick.', 5], ['Bar was slammed, hard to get served.', 2], ['Friendly, attentive team.', 5]],
+    Ale: [['Stout tasted a bit off.', 2], ['Great cask selection, well kept.', 5], ['IPA had run out again.', 2], ['Perfect pint of pilsner.', 5]],
+    Ambience: [['Cosy fire and good music.', 5], ['Too loud on a Friday.', 3], ['Lovely snug for a quiet pint.', 5]],
+    Price: [['Bit pricey for the portion.', 2], ['Fair prices for London.', 4], ['Happy hour is great value.', 5]],
+  };
+  dates.forEach((date, di) => {
+    const dow = dowOf(date), prog = di / (DAYS - 1);
+    for (const site of SITES) {
+      const base = siteMult[site] * dowF[dow] * (1 + trend[site] * prog);
+      // sales: per daypart x category
+      for (const [dp, dpw] of [['Lunch', 0.32], ['Dinner', 0.5], ['Late', 0.18]]) {
+        for (const [cat, w] of Object.entries(CATS)) {
+          let f = base * dpw;
+          if (cat === 'Mains' && dow === 0 && dp === 'Lunch') f *= 2.3;              // Sunday roast
+          if (cat === 'Desserts' && site === 'The Stag') f *= 0.45;                 // weak dessert attach
+          if (['Mains', 'Small plates', 'Desserts'].includes(cat) && dp === 'Late') f *= 0.25;
+          const rev = w * 42 * f * (0.85 + r() * 0.3);
+          out.sales.push({ date, site, daypart: dp, category: cat, qty: Math.max(1, Math.round(rev / (cat === 'Draught' ? 5.6 : cat === 'Mains' ? 17 : 8))), revenue: Math.round(rev * 100) / 100 });
+        }
+      }
+      // cellar: per product
+      for (const p of PRODUCTS) {
+        const poured = (p === 'House IPA' ? 60 : p === 'Pilsner' ? 55 : 32) * base * (0.8 + r() * 0.4);
+        let waste = poured * (0.03 + r() * 0.02);
+        if (p === 'Oat Stout' && site === 'The Stag') waste *= 3.2;                    // stout going stale
+        if (p === 'Guest Cask') waste *= 1.6;
+        const level = p === 'House IPA' && site === 'The Stag' ? 8 + r() * 22 : 25 + r() * 70; // Stag IPA runs low
+        out.cellar.push({ date, site, product: p, level_pct: Math.round(level), delivered_l: di % 4 === 0 ? Math.round(poured * 4) : 0, poured_l: Math.round(poured * 10) / 10, waste_l: Math.round(waste * 10) / 10 });
+      }
+      // kitchen tickets: a sample of tickets per service
+      const nT = Math.round(18 * base);
+      let tSum = 0;
+      for (let k = 0; k < nT; k++) {
+        const [dish, station] = dow === 0 && r() < 0.45 ? DISHES[0] : DISHES[Math.floor(r() * DISHES.length)];
+        const dp = r() < 0.38 ? 'Lunch' : 'Dinner';
+        let t = 11 + r() * 8 + (station === 'Grill' ? 3 : 0) + (dish === 'Mushroom Wellington' ? 4 : 0);
+        if (site === 'The Anchor' && dow === 6 && dp === 'Dinner') t += 9 + r() * 6;  // Saturday dinner crunch
+        if (dow === 5 || dow === 6) t += 2;
+        out.tickets.push({ date, site, daypart: dp, dish, station: r() < 0.02 ? null : station, ticket_min: Math.round(t * 10) / 10, comped: r() < (t > 28 ? 0.14 : 0.02) });
+        tSum += t;
+      }
+      const tAvg = tSum / Math.max(1, nT);
+      // bookings
+      const nB = Math.round(14 * base);
+      for (let k = 0; k < nB; k++) {
+        const ch = pick(['Web', 'Phone', 'App', 'Walk-in'], [42, 22, 18, 18]);
+        const party = pick([2, 3, 4, 5, 6, 8], [40, 12, 26, 7, 10, 5]);
+        const noShow = ch !== 'Walk-in' && r() < ({ Web: 0.15, Phone: 0.05, App: 0.08 }[ch] || 0);
+        out.bookings.push({ date, site, channel: ch, party, covers: noShow ? 0 : party, lead_days: ch === 'Walk-in' ? 0 : Math.round(r() * (ch === 'Web' ? 16 : 6)), no_show: noShow, daypart: r() < 0.35 ? 'Lunch' : 'Dinner' });
+      }
+      // rota (lags two days: a freshness issue for the data steward)
+      if (di < DAYS - 2) for (const [role, h] of [['Bar', 26], ['Floor', 30], ['Kitchen', 34]]) {
+        let hours = h * siteMult[site] * (dow === 5 || dow === 6 ? 1.35 : 1) * (0.9 + r() * 0.2);
+        if (site === 'The Stag' && dow === 1) hours *= 1.45;                            // overstaffed Mondays
+        out.rota.push({ date, site, role, hours: Math.round(hours * 10) / 10, labour_cost: Math.round(hours * (role === 'Kitchen' ? 14.2 : 12.4) * 100) / 100 });
+      }
+      // reviews
+      const nR = Math.round(3 * base + r());
+      for (let k = 0; k < nR; k++) {
+        let theme = pick(Object.keys(SNIPS), [30, 28, 20, 12, 10]);
+        if (site === 'The Anchor' && dow === 6 && r() < 0.5) theme = 'Service';
+        if (site === 'The Stag' && r() < 0.2) theme = 'Ale';
+        const options = SNIPS[theme];
+        let [snip, rating] = options[Math.floor(r() * options.length)];
+        if (site === 'The Anchor' && dow === 6 && theme === 'Service') [snip, rating] = SNIPS.Service[r() < 0.7 ? 0 : 2];
+        if (site === 'The Stag' && theme === 'Ale' && r() < 0.6) [snip, rating] = SNIPS.Ale[r() < 0.5 ? 0 : 2];
+        // slow kitchen days leak into service and food reviews
+        if ((theme === 'Service' || theme === 'Food') && tAvg > 18 && r() < Math.min(0.85, (tAvg - 18) / 8)) [snip, rating] = theme === 'Service' ? SNIPS.Service[r() < 0.6 ? 0 : 2] : SNIPS.Food[r() < 0.5 ? 1 : 3];
+        out.reviews.push({ date, site, platform: r() < 0.03 ? null : pick(['Google', 'TripAdvisor', 'OpenTable'], [55, 25, 20]), theme, rating, snippet: snip });
+      }
+    }
+  });
+  return out;
+})();
+
+/* =====================================================================
+   2. DATA ADAPTER: the seam where real databases plug in later.
+      An adapter answers three calls; swap MockAdapter for your own.
+   ===================================================================== */
+const SOURCE_META = {
+  sales:    { name: 'Sales Ledger', short: 'Sales', desc: 'POS takings by day, daypart and category', cols: ['date', 'site', 'daypart', 'category', 'qty', 'revenue'] },
+  cellar:   { name: 'Cellar Book', short: 'Cellar', desc: 'Keg levels, pours and waste by product', cols: ['date', 'site', 'product', 'level_pct', 'delivered_l', 'poured_l', 'waste_l'] },
+  tickets:  { name: 'Kitchen Tickets', short: 'Kitchen', desc: 'Ticket times, dishes, stations and comps', cols: ['date', 'site', 'daypart', 'dish', 'station', 'ticket_min', 'comped'] },
+  bookings: { name: 'Bookings Diary', short: 'Bookings', desc: 'Reservations, covers, channels and no-shows', cols: ['date', 'site', 'channel', 'party', 'covers', 'lead_days', 'no_show', 'daypart'] },
+  rota:     { name: 'Staff Rota', short: 'Rota', desc: 'Hours and labour cost by role', cols: ['date', 'site', 'role', 'hours', 'labour_cost'] },
+  reviews:  { name: 'Guest Reviews', short: 'Reviews', desc: 'Ratings, themes and comments', cols: ['date', 'site', 'platform', 'theme', 'rating', 'snippet'] },
+};
+const MockAdapter = {
+  name: 'Mock data (in page)',
+  async listSources() { return Object.entries(SOURCE_META).map(([id, m]) => ({ id, ...m, rows: MOCK[id].length })); },
+  async schema(id) { return SOURCE_META[id].cols; },
+  /** Filter to the last `days` and one site (or all), then take a random sample of `n` rows. */
+  async sample(id, { n = 500, days = 30, site = 'All', seed = 1 } = {}) {
+    const from = dates[Math.max(0, DAYS - days)];
+    const pool = MOCK[id].filter(r => r.date >= from && (site === 'All' || r.site === site));
+    const rnd = mulberry32(seed * 7919 + n + days);
+    const idx = pool.map((_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    const rows = idx.slice(0, Math.min(n, pool.length)).map(i => pool[i]).sort((a, b) => a.date < b.date ? -1 : 1);
+    return { rows, population: pool.length, total: MOCK[id].length, from, to: dates[DAYS - 1] };
+  },
+};
+let adapter = MockAdapter;
+
+/* =====================================================================
+   3. People on the exchange (mock directory)
+   ===================================================================== */
+const PEOPLE = {
+  mara:  { name: 'Mara Quinn', role: 'General Manager', email: 'mara@patchandpint.example', loves: ['sales', 'bookings', 'rota'], lens: ['sales.days', 'sales.trend', 'rota.labour', 'bookings.covers', 'sales.sites'] },
+  theo:  { name: 'Theo Achebe', role: 'Head Chef', email: 'theo@patchandpint.example', loves: ['tickets', 'cellar', 'reviews'], lens: ['tickets.slot', 'tickets.dish', 'tickets.comp', 'reviews.theme', 'sales.mix'] },
+  priya: { name: 'Priya Raman', role: 'Finance Lead', email: 'priya@patchandpint.example', loves: ['sales', 'rota', 'cellar'], lens: ['sales.trend', 'rota.labour', 'cellar.cost', 'sales.sites', 'tickets.comp'] },
+  owen:  { name: 'Owen Hart', role: 'Marketing', email: 'owen@patchandpint.example', loves: ['bookings', 'reviews', 'sales'], lens: ['bookings.noshow', 'reviews.theme', 'reviews.quotes', 'bookings.lead', 'sales.days'] },
+  lena:  { name: 'Lena Brooks', role: 'Cellar Master', email: 'lena@patchandpint.example', loves: ['cellar', 'sales'], lens: ['cellar.waste', 'cellar.stock', 'cellar.cost', 'sales.mix'] },
+  sam:   { name: 'Sam Okoye', role: 'Data Steward', email: 'sam@patchandpint.example', loves: ['reviews', 'rota', 'tickets'], lens: ['quality', 'quality.fresh'] },
+};
+
+/* =====================================================================
+   4. The built-in analyst: deterministic insight recipes per source.
+      Each returns {id, title, text, value, unit, chart, confidence, why}.
+   ===================================================================== */
+const conf = (n) => n >= 800 ? 'high' : n >= 250 ? 'medium' : 'low';
+const bars = (labels, values, fmt) => ({ type: 'bar', labels, series: [{ name: 'value', values }], fmt });
+const RECIPES = {
+  sales(rows) {
+    const out = [];
+    const byDate = groupBy(rows, 'date');
+    const dayRev = [...byDate].map(([d, rs]) => ({ d, dow: dowOf(d), rev: sum(rs, 'revenue') }));
+    const byDow = DOW.map((_, i) => avg(dayRev.filter(x => x.dow === i), 'rev'));
+    const typical = byDow.reduce((a, b) => a + b, 0) / 7, top = byDow.indexOf(Math.max(...byDow)), low = byDow.indexOf(Math.min(...byDow.filter(Boolean)));
+    out.push({ id: 'sales.days', title: `${DOW[top]} is the big night`, text: `In the sample, ${DOW[top]} takes ${pct(byDow[top] / typical - 1)} more than a typical day, while ${DOW[low]} runs ${pct(1 - byDow[low] / typical)} below it.`, value: money(byDow[top]), unit: `avg ${DOW[top]} takings (sample)`, chart: bars(DOW, byDow, 'money') });
+    const weeks = groupBy(dayRev, x => Math.floor((DAYS - 1 - dates.indexOf(x.d)) / 7));
+    const wk = [...weeks].filter(([, xs]) => xs.length >= 6).sort((a, b) => b[0] - a[0]).map(([w, xs]) => ({ w, rev: sum(xs, 'rev') / xs.length * 7 }));
+    if (wk.length >= 4) {
+      const first = avg(wk.slice(0, 2), 'rev'), last = avg(wk.slice(-2), 'rev'), g = last / first - 1;
+      out.push({ id: 'sales.trend', title: g >= 0 ? `Takings up ${pct(g)} across the period` : `Takings down ${pct(-g)} across the period`, text: `Comparing the first two weeks with the last two in the sampled window, weekly takings moved ${g >= 0 ? 'up' : 'down'} ${pct(Math.abs(g), 1)}.`, value: pct(g, 1), unit: 'change, first vs last fortnight', chart: { type: 'line', labels: wk.map((_, i) => `W${i + 1}`), series: [{ name: 'Weekly takings', values: wk.map(x => x.rev) }], fmt: 'money' } });
+    }
+    const byCat = [...groupBy(rows, 'category')].map(([c, rs]) => [c, sum(rs, 'revenue')]).sort((a, b) => b[1] - a[1]);
+    const tot = byCat.reduce((a, b) => a + b[1], 0);
+    out.push({ id: 'sales.mix', title: `${byCat[0][0]} carries ${pct(byCat[0][1] / tot)} of takings`, text: `${byCat[0][0]} and ${byCat[1][0]} together are ${pct((byCat[0][1] + byCat[1][1]) / tot)} of sampled revenue. ${byCat.find(c => c[0] === 'Desserts') ? `Desserts are just ${pct(byCat.find(c => c[0] === 'Desserts')[1] / tot, 1)}.` : ''}`, value: pct(byCat[0][1] / tot), unit: `${byCat[0][0].toLowerCase()} share`, chart: bars(byCat.map(c => c[0]), byCat.map(c => c[1] / tot * 100), 'pct') });
+    const bySite = [...groupBy(rows, 'site')].map(([s, rs]) => [s, sum(rs, 'revenue') / new Set(rs.map(r => r.date)).size]);
+    if (bySite.length > 1) { bySite.sort((a, b) => b[1] - a[1]); out.push({ id: 'sales.sites', title: `${bySite[0][0]} out-earns ${bySite[bySite.length - 1][0]} by ${pct(bySite[0][1] / bySite[bySite.length - 1][1] - 1)}`, text: `Average daily takings in the sample: ${bySite.map(s => `${s[0]} ${money(s[1])}`).join(', ')}.`, value: money(bySite[0][1]), unit: `${bySite[0][0]} per day`, chart: bars(bySite.map(s => s[0]), bySite.map(s => s[1]), 'money') }); }
+    const sunLunchMains = rows.filter(r => r.category === 'Mains' && r.daypart === 'Lunch');
+    const sun = avg(sunLunchMains.filter(r => dowOf(r.date) === 0), 'revenue'), other = avg(sunLunchMains.filter(r => dowOf(r.date) !== 0), 'revenue');
+    if (sun && other) out.push({ id: 'sales.roast', title: `Sunday lunch mains sell ${num(sun / other, 1)}× a normal lunch`, text: 'The Sunday roast drives lunch. Plan prep and front-of-house cover around it.', value: `${num(sun / other, 1)}×`, unit: 'Sunday vs other lunch mains', chart: bars(['Other lunches', 'Sunday lunch'], [other, sun], 'money') });
+    return out;
+  },
+  cellar(rows) {
+    const out = [];
+    const byProd = [...groupBy(rows, 'product')].map(([p, rs]) => ({ p, waste: sum(rs, 'waste_l'), poured: sum(rs, 'poured_l') })).map(x => ({ ...x, rate: x.waste / Math.max(1, x.poured) })).sort((a, b) => b.rate - a.rate);
+    out.push({ id: 'cellar.waste', title: `${byProd[0].p} wastes ${pct(byProd[0].rate, 1)} of what's poured`, text: `Waste as a share of pours is highest for ${byProd[0].p}, against a ${pct(avg(byProd, 'rate'), 1)} average. Check line cleaning, keg rotation or keg size.`, value: pct(byProd[0].rate, 1), unit: 'waste rate', chart: bars(byProd.map(x => x.p), byProd.map(x => x.rate * 100), 'pct') });
+    const bySiteProd = [...groupBy(rows, r => r.site + '|' + r.product)].map(([k, rs]) => ({ k, lvl: avg(rs, 'level_pct') })).sort((a, b) => a.lvl - b.lvl);
+    const low = bySiteProd.filter(x => x.lvl < 30).slice(0, 5);
+    if (low.length) out.push({ id: 'cellar.stock', title: `${low[0].k.split('|')[1]} at ${low[0].k.split('|')[0]} keeps running low`, text: `Average keg level ${Math.round(low[0].lvl)}%. Guests notice when it runs out. Raise the par or add a delivery.`, value: `${Math.round(low[0].lvl)}%`, unit: 'average keg level', chart: bars(low.map(x => x.k.replace('|', ' · ')), low.map(x => x.lvl), 'pct') });
+    const cost = sum(rows, 'waste_l') * 4.2;
+    const bySite = [...groupBy(rows, 'site')].map(([s, rs]) => [s, sum(rs, 'waste_l') * 4.2]).sort((a, b) => b[1] - a[1]);
+    out.push({ id: 'cellar.cost', title: `${money(cost)} of beer poured away in the sample`, text: `Waste valued at £4.20/litre. ${bySite[0][0]} accounts for ${pct(bySite[0][1] / cost)}.`, value: money(cost), unit: 'waste at cost (sample)', chart: bars(bySite.map(s => s[0]), bySite.map(s => s[1]), 'money') });
+    return out;
+  },
+  tickets(rows) {
+    const out = [];
+    const slots = [...groupBy(rows, r => `${DOW[dowOf(r.date)]} ${r.daypart}`)].map(([k, rs]) => ({ k, t: avg(rs, 'ticket_min'), n: rs.length })).filter(x => x.n >= 3).sort((a, b) => b.t - a.t);
+    const overall = avg(rows, 'ticket_min');
+    if (slots.length) out.push({ id: 'tickets.slot', title: `${slots[0].k} tickets take ${num(slots[0].t, 1)} min`, text: `That's ${num(slots[0].t - overall, 1)} minutes over the ${num(overall, 1)}-minute average. Look at staffing and prep for this service.`, value: `${num(slots[0].t, 1)} min`, unit: 'avg ticket time, slowest slot', chart: bars(slots.slice(0, 6).map(s => s.k), slots.slice(0, 6).map(s => s.t), 'min') });
+    const dishes = [...groupBy(rows, 'dish')].map(([d, rs]) => ({ d, t: avg(rs, 'ticket_min') })).sort((a, b) => b.t - a.t);
+    out.push({ id: 'tickets.dish', title: `${dishes[0].d} is the slowest dish out of the pass`, text: `It averages ${num(dishes[0].t, 1)} min against ${num(dishes[dishes.length - 1].t, 1)} min for ${dishes[dishes.length - 1].d}.`, value: `${num(dishes[0].t, 1)} min`, unit: 'avg ticket time', chart: bars(dishes.map(x => x.d), dishes.map(x => x.t), 'min') });
+    const comp = rows.filter(r => r.comped).length / rows.length, slowComp = rows.filter(r => r.ticket_min > 28);
+    out.push({ id: 'tickets.comp', title: `${pct(comp, 1)} of tickets were comped`, text: `Comps jump to ${pct(slowComp.filter(r => r.comped).length / Math.max(1, slowComp.length), 1)} when a ticket takes over 28 minutes. Slow tickets cost money twice.`, value: pct(comp, 1), unit: 'comp rate', chart: bars(['≤ 28 min', '> 28 min'], [rows.filter(r => r.ticket_min <= 28 && r.comped).length / Math.max(1, rows.filter(r => r.ticket_min <= 28).length) * 100, slowComp.filter(r => r.comped).length / Math.max(1, slowComp.length) * 100], 'pct') });
+    return out;
+  },
+  bookings(rows) {
+    const out = [];
+    const ch = [...groupBy(rows.filter(r => r.channel !== 'Walk-in'), 'channel')].map(([c, rs]) => ({ c, ns: rs.filter(r => r.no_show).length / rs.length })).sort((a, b) => b.ns - a.ns);
+    out.push({ id: 'bookings.noshow', title: `${ch[0].c} bookings no-show ${pct(ch[0].ns)} of the time`, text: `${ch.map(x => `${x.c} ${pct(x.ns, 1)}`).join(', ')}. A card hold or reminder text on ${ch[0].c.toLowerCase()} bookings would protect busy nights.`, value: pct(ch[0].ns, 1), unit: `${ch[0].c.toLowerCase()} no-show rate`, chart: bars(ch.map(x => x.c), ch.map(x => x.ns * 100), 'pct') });
+    const cov = DOW.map((_, i) => { const rs = rows.filter(r => dowOf(r.date) === i); return sum(rs, 'covers') / Math.max(1, new Set(rs.map(r => r.date)).size); });
+    const top = cov.indexOf(Math.max(...cov));
+    out.push({ id: 'bookings.covers', title: `${DOW[top]} books the most covers`, text: `Average booked covers per ${DOW[top]}: ${num(cov[top])} (sample), against ${num(Math.min(...cov.filter(Boolean)))} on the quietest day.`, value: num(cov[top]), unit: `covers per ${DOW[top]} (sample)`, chart: bars(DOW, cov, 'n') });
+    const lead = [...groupBy(rows.filter(r => r.channel !== 'Walk-in'), 'channel')].map(([c, rs]) => ({ c, d: avg(rs, 'lead_days') })).sort((a, b) => b.d - a.d);
+    out.push({ id: 'bookings.lead', title: `${lead[0].c} guests book ${num(lead[0].d, 1)} days ahead`, text: 'Longer lead times mean more time to upsell and to remind guests. Aim campaigns at the channel that plans ahead.', value: `${num(lead[0].d, 1)} d`, unit: 'avg lead time', chart: bars(lead.map(x => x.c), lead.map(x => x.d), 'n') });
+    return out;
+  },
+  rota(rows) {
+    const out = [];
+    const perDay = DOW.map((_, i) => { const rs = rows.filter(r => dowOf(r.date) === i); return sum(rs, 'labour_cost') / Math.max(1, new Set(rs.map(r => r.date + r.site)).size); });
+    const hi = perDay.indexOf(Math.max(...perDay));
+    const bySiteMon = [...groupBy(rows.filter(r => dowOf(r.date) === 1), 'site')].map(([s, rs]) => ({ s, c: sum(rs, 'labour_cost') / Math.max(1, new Set(rs.map(r => r.date)).size) })).sort((a, b) => b.c - a.c);
+    out.push({ id: 'rota.labour', title: `Labour peaks on ${DOW[hi]} at ${money(perDay[hi])} per site`, text: bySiteMon.length > 1 ? `Watch Mondays: ${bySiteMon[0].s} spends ${money(bySiteMon[0].c)} on a Monday, the quietest trading day.` : 'Match hours to covers day by day.', value: money(perDay[hi]), unit: `labour per site, ${DOW[hi]}`, chart: bars(DOW, perDay, 'money') });
+    const roles = [...groupBy(rows, 'role')].map(([r, rs]) => [r, sum(rs, 'hours')]);
+    const th = roles.reduce((a, b) => a + b[1], 0);
+    out.push({ id: 'rota.roles', title: `Kitchen is ${pct(roles.find(r => r[0] === 'Kitchen')?.[1] / th || 0)} of rota hours`, text: roles.map(r => `${r[0]} ${num(r[1])} h`).join(', ') + ' in the sample.', value: `${num(th)} h`, unit: 'hours sampled', chart: bars(roles.map(r => r[0]), roles.map(r => r[1]), 'n') });
+    return out;
+  },
+  reviews(rows) {
+    const out = [];
+    const th = [...groupBy(rows, 'theme')].map(([t, rs]) => ({ t, r: avg(rs, 'rating'), n: rs.length })).sort((a, b) => a.r - b.r);
+    out.push({ id: 'reviews.theme', title: `${th[0].t} is the weakest-rated theme (${num(th[0].r, 1)}★)`, text: `Guests rate ${th[th.length - 1].t.toLowerCase()} highest (${num(th[th.length - 1].r, 1)}★). ${th[0].t} drags the average down across ${th[0].n} sampled reviews.`, value: `${num(th[0].r, 1)}★`, unit: `${th[0].t.toLowerCase()} rating`, chart: bars(th.map(x => x.t), th.map(x => x.r), 'star') });
+    const worst = [...groupBy(rows, r => r.site + ' · ' + r.theme)].map(([k, rs]) => ({ k, r: avg(rs, 'rating'), rs })).filter(x => x.rs.length >= 4).sort((a, b) => a.r - b.r)[0];
+    if (worst) { const quotes = [...new Set(worst.rs.filter(r => r.rating <= 2).map(r => r.snippet))].slice(0, 2); out.push({ id: 'reviews.quotes', title: `Guests at ${worst.k.split(' · ')[0]} complain about ${worst.k.split(' · ')[1].toLowerCase()}`, text: `${num(worst.r, 1)}★ average. What they say: ${quotes.map(q => `“${q}”`).join(' ') || 'mixed comments.'}`, value: `${num(worst.r, 1)}★`, unit: worst.k, chart: null }); }
+    const we = avg(rows.filter(r => [5, 6].includes(dowOf(r.date))), 'rating'), wd = avg(rows.filter(r => ![5, 6].includes(dowOf(r.date))), 'rating');
+    out.push({ id: 'reviews.weekend', title: we < wd ? `Weekend ratings dip to ${num(we, 2)}★` : `Weekends rate ${num(we, 2)}★`, text: `Weekdays average ${num(wd, 2)}★. ${we < wd ? 'Busier services cost goodwill.' : 'The team handles the rush well.'}`, value: `${num(we, 2)}★`, unit: 'Fri–Sat rating', chart: bars(['Weekdays', 'Fri–Sat'], [wd, we], 'star') });
+    return out;
+  },
+};
+function qualityInsights(id, sample) {
+  const rows = sample.rows, cols = SOURCE_META[id].cols;
+  const nulls = cols.map(c => [c, rows.filter(r => r[c] === null || r[c] === undefined || r[c] === '').length / Math.max(1, rows.length)]).filter(x => x[1] > 0);
+  const last = rows.reduce((m, r) => r.date > m ? r.date : m, '');
+  const lagDays = Math.round((new Date(TODAY) - new Date(last)) / 864e5);
+  const out = [];
+  out.push({ id: 'quality', title: nulls.length ? `${nulls.map(n => n[0]).join(', ')} has gaps` : 'No missing values in the sample', text: nulls.length ? `${nulls.map(n => `${n[0]} is ${pct(n[1], 1)} empty`).join('; ')}. Fix at source before this feeds reporting.` : `All ${cols.length} columns are complete across ${rows.length} sampled rows.`, value: nulls.length ? pct(Math.max(...nulls.map(n => n[1])), 1) : '0%', unit: 'worst column null rate', chart: nulls.length ? bars(nulls.map(n => n[0]), nulls.map(n => n[1] * 100), 'pct') : null, confidence: 'high' });
+  out.push({ id: 'quality.fresh', title: lagDays > 0 ? `${SOURCE_META[id].name} is ${lagDays} day${lagDays > 1 ? 's' : ''} behind` : `${SOURCE_META[id].name} is up to date`, text: `Latest row ${last}, and today is ${TODAY}. ${sample.population.toLocaleString()} rows in range, ${rows.length} sampled.`, value: `${lagDays} d`, unit: 'data lag', chart: null, confidence: 'high' });
+  return out;
+}
+const LENS_WHY = {
+  mara: 'Shapes rotas, targets and the weekly briefing.', theo: 'Affects the pass, prep lists and guest experience.', priya: 'Moves margin and the monthly P&L.',
+  owen: 'Shapes campaigns, reminders and reputation.', lena: 'Keeps lines fresh and stops money going down the drain.', sam: 'Decides whether anyone can trust the numbers.',
+};
+
+const BuiltInAgent = {
+  name: 'House analyst',
+  async personData(person, srcId, params) {
+    const s = await adapter.sample(srcId, params);
+    let ins = RECIPES[srcId](s.rows);
+    if (person === 'sam') ins = [...qualityInsights(srcId, s), ...ins];
+    const lens = PEOPLE[person].lens;
+    ins.forEach((x, i) => { x.score = (lens.indexOf(x.id) >= 0 ? 100 - lens.indexOf(x.id) * 10 : 0) + (lens.some(l => l.startsWith(srcId)) ? 5 : 0) - i; x.confidence = x.confidence || conf(s.rows.length); x.why = LENS_WHY[person]; });
+    ins.sort((a, b) => b.score - a.score);
+    const summary = `Sampled ${s.rows.length.toLocaleString()} of ${s.population.toLocaleString()} rows from ${SOURCE_META[srcId].name} (${params.site === 'All' ? 'all pubs' : params.site}, last ${params.days} days), read through ${PEOPLE[person].name.split(' ')[0]}'s lens as ${PEOPLE[person].role}.`;
+    return { summary, insights: ins.slice(0, 5), samples: { [srcId]: s } };
+  },
+  async dataData(a, b, params) {
+    const [sa, sb] = await Promise.all([adapter.sample(a, params), adapter.sample(b, params)]);
+    const daily = (id, rows) => { const m = new Map(); for (const [d, rs] of groupBy(rows, 'date')) m.set(d, DAILY[id](rs)); return m; };
+    const ma = daily(a, sa.rows), mb = daily(b, sb.rows);
+    const common = [...ma.keys()].filter(d => mb.has(d)).sort();
+    const xs = common.map(d => ma.get(d)), ys = common.map(d => mb.get(d));
+    const r = pearson(xs, ys);
+    const words = Math.abs(r) > 0.6 ? 'strongly' : Math.abs(r) > 0.35 ? 'moderately' : Math.abs(r) > 0.15 ? 'weakly' : 'barely';
+    const idx = arr => { const mn = Math.min(...arr), mx = Math.max(...arr); return arr.map(v => mx > mn ? (v - mn) / (mx - mn) * 100 : 50); };
+    const story = PAIR_STORY[[a, b].sort().join('+')];
+    const ins = [{ id: 'join.corr', title: words === 'barely' ? `${DAILY_NAME[a]} and ${DAILY_NAME[b]} barely move together` : `${DAILY_NAME[a]} and ${DAILY_NAME[b]} move ${words} ${r >= 0 ? 'together' : 'in opposite directions'}`, text: `Across ${common.length} matched days the correlation is r = ${num(r, 2)}. ${story ? story(r) : 'Treat this as a lead to investigate, not proof of cause.'}`, value: `r = ${num(r, 2)}`, unit: `${common.length} days joined on date`, confidence: common.length > 40 ? 'high' : common.length > 15 ? 'medium' : 'low',
+      chart: { type: 'line', labels: common.map(d => d.slice(5)), series: [{ name: DAILY_NAME[a], values: idx(xs) }, { name: DAILY_NAME[b], values: idx(ys) }], fmt: 'idx' } }];
+    const bySite = SITES.map(site => { const fa = sa.rows.filter(x => x.site === site), fb = sb.rows.filter(x => x.site === site); const da = daily(a, fa), db = daily(b, fb); const cm = [...da.keys()].filter(d => db.has(d)); return { site, r: pearson(cm.map(d => da.get(d)), cm.map(d => db.get(d))), n: cm.length }; }).filter(x => x.n >= 5);
+    if (bySite.length > 1) { bySite.sort((p, q) => Math.abs(q.r) - Math.abs(p.r)); ins.push({ id: 'join.sites', title: `The link is clearest at ${bySite[0].site}`, text: bySite.map(x => `${x.site} r = ${num(x.r, 2)}`).join(', ') + '.', value: `r = ${num(bySite[0].r, 2)}`, unit: bySite[0].site, confidence: 'medium', chart: bars(bySite.map(x => x.site), bySite.map(x => x.r), 'r') }); }
+    const summary = `Joined ${SOURCE_META[a].name} with ${SOURCE_META[b].name} by date: ${sa.rows.length.toLocaleString()} + ${sb.rows.length.toLocaleString()} sampled rows, ${params.site === 'All' ? 'all pubs' : params.site}, last ${params.days} days.`;
+    return { summary, insights: ins, samples: { [a]: sa, [b]: sb } };
+  },
+  async personPerson(p, q, params) {
+    const A = PEOPLE[p], B = PEOPLE[q];
+    const shared = A.loves.filter(s => B.loves.includes(s));
+    const topFor = async (who, src) => (await BuiltInAgent.personData(who, src, params)).insights[0];
+    const aTop = await topFor(p, A.loves[0]), bTop = await topFor(q, B.loves[0]);
+    const agenda = [
+      `${A.name.split(' ')[0]} brings: ${aTop.title.toLowerCase()}.`,
+      `${B.name.split(' ')[0]} brings: ${bTop.title.toLowerCase()}.`,
+      shared.length ? `Both of you watch ${shared.map(s => SOURCE_META[s].name).join(' and ')}. Agree one number you'll both track weekly.` : `You don't share a data source yet. Patch ${SOURCE_META[A.loves[0]].name} into ${SOURCE_META[B.loves[0]].name} on the board to find common ground.`,
+    ];
+    const ins = [
+      { ...aTop, id: 'intro.a', why: `From ${A.name.split(' ')[0]}'s desk` },
+      { ...bTop, id: 'intro.b', why: `From ${B.name.split(' ')[0]}'s desk` },
+    ];
+    const summary = `${A.name} (${A.role}) is patched through to ${B.name} (${B.role}). ${shared.length ? `Shared ground: ${shared.map(s => SOURCE_META[s].name).join(', ')}.` : 'No shared data sources yet.'}`;
+    return { summary, insights: ins, agenda, shared, samples: {} };
+  },
+};
+const DAILY = { sales: rs => sum(rs, 'revenue'), cellar: rs => sum(rs, 'waste_l'), tickets: rs => avg(rs, 'ticket_min'), bookings: rs => sum(rs, 'covers'), rota: rs => sum(rs, 'labour_cost'), reviews: rs => avg(rs, 'rating') };
+const DAILY_NAME = { sales: 'Takings', cellar: 'Beer waste', tickets: 'Ticket time', bookings: 'Booked covers', rota: 'Labour cost', reviews: 'Guest rating' };
+const PAIR_STORY = {
+  'reviews+tickets': r => r < 0 ? 'Slower kitchens, lower ratings: speed on busy services is a reputation issue, not just an ops one.' : 'Ticket time is not what drives ratings here. Look at service and ale quality.',
+  'bookings+rota': r => r > 0.3 ? 'Hours broadly follow covers. Check the days that break the pattern, like Mondays at The Stag.' : 'Hours barely track covers. The rota is set by habit, not by demand.',
+  'bookings+sales': r => r > 0.3 ? 'More covers, more takings, as expected. Spend per cover is the lever to watch.' : 'Takings do not track bookings closely. Walk-ins and the late trade matter.',
+  'cellar+sales': r => 'Busy days pour more, so they waste more in absolute terms. Track waste as a share of pours.',
+  'rota+sales': r => r > 0.3 ? 'Labour scales with trade. Compare labour as a percentage of takings by site.' : 'Labour and takings drift apart, a margin risk.',
+};
+
+/* ---------- optional: Claude as the agent (hosted artifact only) ---------- */
+let sampleFn = null;
+const ClaudeAgent = {
+  name: 'Claude',
+  async run(kind, a, b, params, onText) {
+    const base = kind === 'pp' ? await BuiltInAgent.personPerson(a, b, params) : kind === 'dd' ? await BuiltInAgent.dataData(a, b, params) : await BuiltInAgent.personData(a, b, params);
+    const srcs = Object.entries(base.samples);
+    const ctx = srcs.map(([id, s]) => `## ${SOURCE_META[id].name} (${s.rows.length} of ${s.population} rows sampled)\ncolumns: ${SOURCE_META[id].cols.join(', ')}\n` + toCSV(s.rows.slice(0, 60), SOURCE_META[id].cols)).join('\n\n');
+    const who = kind === 'pd' ? `${PEOPLE[a].name}, ${PEOPLE[a].role}` : kind === 'pp' ? `${PEOPLE[a].name} (${PEOPLE[a].role}) and ${PEOPLE[b].name} (${PEOPLE[b].role})` : 'the pub group leadership';
+    const prompt = `You are the house data analyst for a small group of gastropubs (mock data). Write insights for ${who}.
+Context from the built-in analyst: ${base.summary}
+Its findings: ${base.insights.map(i => `- ${i.title}: ${i.text}`).join('\n')}
+${ctx ? 'Sample rows (CSV):\n' + ctx : ''}
+Reply with only a JSON array of 3 to 5 objects: {"title": short headline with a number, "text": 1-2 plain sentences with the evidence and a practical next step, "value": the key figure as a short string, "unit": what the figure measures, "confidence": "high"|"medium"|"low"}.`;
+    const json = await sampleFn.json(prompt, { modelTier: 'default', onText });
+    const ins = (Array.isArray(json) ? json : []).slice(0, 5).map((x, i) => ({ id: 'claude.' + i, title: String(x.title || ''), text: String(x.text || ''), value: String(x.value || ''), unit: String(x.unit || ''), confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium', chart: null, ai: true }));
+    return { ...base, summary: base.summary + ' Insights written by Claude from the sample.', insights: ins.length ? ins : base.insights };
+  },
+};
+
+/* =====================================================================
+   5. State: jacks, lines (patched connections), dashboards
+   ===================================================================== */
+const JACKS = [
+  ...Object.entries(PEOPLE).map(([id, p]) => ({ id, kind: 'person', label: p.name.split(' ')[0], sub: p.role })),
+  ...Object.entries(SOURCE_META).map(([id, s]) => ({ id, kind: 'data', label: s.short, sub: s.name })),
+];
+const CORD_COLORS = ['#9c2f2f', '#2e6b47', '#c99a2e', '#2f4a7a', '#e8dcc0', '#6d3f6b', '#b5602a'];
+const DEFAULT_PARAMS = { n: 500, days: 30, site: 'All' };
+let lines = store.get('pp-lines', null);
+let dashboards = store.get('pp-dash', null);
+let selected = null;
+let agentKind = 'builtin';
+const results = new Map(); // lineId -> result (not persisted; regenerated)
+
+function lineKind(l) { const ka = jackById(l.a).kind, kb = jackById(l.b).kind; return ka === 'person' && kb === 'person' ? 'pp' : ka === 'data' && kb === 'data' ? 'dd' : 'pd'; }
+function jackById(id) { return JACKS.find(j => j.id === id); }
+function lineLabel(l) { return `${jackById(l.a).label} ⇄ ${jackById(l.b).label}`; }
+function saveState() { store.set('pp-lines', lines.map(({ id, a, b, color, params }) => ({ id, a, b, color, params }))); store.set('pp-dash', dashboards); }
+
+async function runLine(l) {
+  l.status = 'busy'; renderBoard(); renderLog(); if (selected === l.id) renderPad();
+  const k = lineKind(l);
+  // normalise: person first for person-data lines
+  let a = l.a, b = l.b;
+  if (k === 'pd' && jackById(a).kind === 'data') [a, b] = [b, a];
+  const params = { ...l.params, seed: l.seed || 1 };
+  try {
+    const started = performance.now();
+    let res;
+    if (agentKind === 'claude' && sampleFn) res = await ClaudeAgent.run(k, a, b, params, () => {});
+    else res = k === 'pp' ? await BuiltInAgent.personPerson(a, b, params) : k === 'dd' ? await BuiltInAgent.dataData(a, b, params) : await BuiltInAgent.personData(a, b, params);
+    const wait = 900 - (performance.now() - started); if (wait > 0) await sleep(wait); // let the pint pour
+    res.insights.forEach(x => { x.uid = uid(); x.chartType = x.chart ? x.chart.type : 'none'; });
+    res.agent = agentKind === 'claude' && sampleFn ? 'Claude' : 'House analyst';
+    results.set(l.id, res);
+    l.status = 'on';
+  } catch (e) {
+    results.set(l.id, { error: e?.code === 'not_granted' ? 'Claude was not allowed to run. Switch the agent back to the house analyst.' : `The agent couldn't finish: ${e?.message || e}` });
+    l.status = 'on';
+  }
+  renderBoard(); renderLog(); if (selected === l.id) renderPad();
+}
+function connect(a, b) {
+  if (a === b) return;
+  const ex = lines.find(l => (l.a === a && l.b === b) || (l.a === b && l.b === a));
+  if (ex) { select(ex.id); return; }
+  const used = new Set(lines.map(l => l.color));
+  const l = { id: uid(), a, b, color: CORD_COLORS.find(c => !used.has(c)) || CORD_COLORS[lines.length % CORD_COLORS.length], params: { ...DEFAULT_PARAMS }, status: 'busy' };
+  lines.push(l); saveState();
+  sfx.plug();
+  toast(`Patched: ${lineLabel(l)}`);
+  select(l.id);
+  runLine(l);
+}
+function hangUp(id) { lines = lines.filter(l => l.id !== id); results.delete(id); if (selected === id) selected = lines[lines.length - 1]?.id ?? null; saveState(); sfx.unplug(); renderAll(); }
+function select(id) { selected = id; renderBoard(); renderLog(); renderPad(); }
+
+/* =====================================================================
+   6. The switchboard (SVG): jacks, lamps, cords with gravity sag
+   ===================================================================== */
+const svg = $('board');
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
+const POS = {};
+let VB = { w: 1000, h: 600, plates: [42, 312] };
+function layout() {
+  const narrow = (svg.parentElement.clientWidth || innerWidth) < 640;
+  const ppl = JACKS.filter(j => j.kind === 'person'), dat = JACKS.filter(j => j.kind === 'data');
+  if (narrow) {
+    VB = { w: 600, h: 920, plates: [42, 470] };
+    ppl.forEach((j, i) => { POS[j.id] = { x: 100 + (i % 3) * 200, y: 170 + Math.floor(i / 3) * 170 }; });
+    dat.forEach((j, i) => { POS[j.id] = { x: 100 + (i % 3) * 200, y: 598 + Math.floor(i / 3) * 170 }; });
+  } else {
+    VB = { w: 1000, h: 600, plates: [42, 312] };
+    ppl.forEach((j, i) => { POS[j.id] = { x: 105 + i * 158, y: 170 }; });
+    dat.forEach((j, i) => { POS[j.id] = { x: 105 + i * 158, y: 440 }; });
+  }
+  svg.setAttribute('viewBox', `0 0 ${VB.w} ${VB.h}`);
+}
+layout();
+addEventListener('resize', () => { const before = VB.w; layout(); if (VB.w !== before) renderBoard(); });
+let drag = null, armed = null;
+function cordPath(p, q, extra = 0) {
+  const dx = Math.abs(q.x - p.x), sag = 60 + dx * 0.22 + extra;
+  const low = Math.max(p.y, q.y) + sag;
+  return `M${p.x},${p.y} C${p.x},${low} ${q.x},${low} ${q.x},${q.y}`;
+}
+function renderBoard() {
+  svg.innerHTML = '';
+  const defs = el('defs', {}, svg);
+  defs.innerHTML = `
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3820"/><stop offset="1" stop-color="#3a2212"/></linearGradient>
+    <pattern id="grain" width="140" height="12" patternUnits="userSpaceOnUse"><path d="M0 6 Q35 2 70 6 T140 6" stroke="rgba(0,0,0,.14)" fill="none"/><path d="M0 10 Q40 8 80 11 T140 9" stroke="rgba(255,220,170,.05)" fill="none"/></pattern>
+    <radialGradient id="brass" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#f3dc9a"/><stop offset=".45" stop-color="#c9a24a"/><stop offset="1" stop-color="#6b4f1a"/></radialGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2c577"/><stop offset="1" stop-color="#9c7a2e"/></linearGradient>
+    <radialGradient id="lampOn" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffb347"/><stop offset="1" stop-color="#b86a10"/></radialGradient>
+    <filter id="glow" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="6"/></filter>`;
+  el('rect', { x: 0, y: 0, width: VB.w, height: VB.h, rx: 10, fill: 'url(#panel)' }, svg);
+  el('rect', { x: 0, y: 0, width: VB.w, height: VB.h, rx: 10, fill: 'url(#grain)' }, svg);
+  // brass plates
+  for (const [y, t] of [[VB.plates[0], 'PATRONS · PEOPLE'], [VB.plates[1], 'CELLAR · DATA SOURCES']]) {
+    const cx = VB.w / 2;
+    el('rect', { x: cx - 170, y: y - 18, width: 340, height: 34, rx: 4, fill: 'url(#plate)', stroke: '#5c4415' }, svg);
+    const tx = el('text', { x: cx, y: y + 5, 'text-anchor': 'middle', 'font-family': 'Fraunces, Georgia, serif', 'font-weight': 700, 'font-size': 17, 'letter-spacing': 3, fill: '#2b1d08' }, svg); tx.textContent = t;
+    for (const sx of [cx - 160, cx + 160]) el('circle', { cx: sx, cy: y - 1, r: 3, fill: '#5c4415' }, svg);
+  }
+  const active = new Map(); lines.forEach(l => { for (const j of [l.a, l.b]) { if (!active.has(j) || l.status === 'busy') active.set(j, l.status); } });
+  // jacks
+  for (const j of JACKS) {
+    const p = POS[j.id], g = el('g', { class: 'jack' + (armed === j.id ? ' armed' : ''), tabindex: 0, role: 'button', 'data-id': j.id, 'aria-label': `${j.kind === 'person' ? 'Person' : 'Data source'}: ${j.label}, ${j.sub}. ${armed ? 'Press Enter to connect.' : 'Press Enter to pick up a cord.'}` }, svg);
+    const st = active.get(j.id);
+    // lamp
+    if (st) el('circle', { cx: p.x, cy: p.y - 62, r: 18, fill: '#ffb347', opacity: 0.55, filter: 'url(#glow)', class: st === 'busy' ? 'lampBlink' : '' }, g);
+    el('circle', { cx: p.x, cy: p.y - 62, r: 10, fill: st ? 'url(#lampOn)' : '#4a3a24', stroke: '#1a1008', 'stroke-width': 2 }, g);
+    if (st === 'busy') { const a = el('animate', { attributeName: 'opacity', values: '1;.3;1', dur: '0.7s', repeatCount: 'indefinite' }, g.lastChild); }
+    // jack socket
+    el('circle', { cx: p.x, cy: p.y, r: 24, fill: 'url(#brass)', stroke: '#3a2a0c', 'stroke-width': 2, class: 'ring' }, g);
+    el('circle', { cx: p.x, cy: p.y, r: 10, fill: '#120a05' }, g);
+    el('circle', { cx: p.x, cy: p.y, r: 36, fill: 'transparent' }, g); // bigger hit target
+  }
+  // cords (drawn after jacks so plugs sit on top)
+  lines.forEach((l, i) => {
+    const p = POS[l.a], q = POS[l.b], sel = l.id === selected;
+    const g = el('g', { class: 'cord', 'data-line': l.id }, svg);
+    const d = cordPath(p, q, (i % 3) * 16);
+    el('path', { d, fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-width': 9, transform: 'translate(3,5)' }, g);
+    el('path', { d, fill: 'none', stroke: l.color, 'stroke-width': sel ? 8 : 6, 'stroke-linecap': 'round' }, g);
+    el('path', { d, fill: 'none', stroke: 'rgba(255,255,255,.25)', 'stroke-width': 1.5, transform: 'translate(-1,-1.5)' }, g);
+    el('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 22 }, g); // easy to click
+    for (const pt of [p, q]) {
+      el('rect', { x: pt.x - 9, y: pt.y - 6, width: 18, height: 30, rx: 4, fill: l.color, stroke: '#1a1008', 'stroke-width': 1.5 }, g);
+      el('rect', { x: pt.x - 7, y: pt.y - 10, width: 14, height: 8, rx: 2, fill: 'url(#brass)', stroke: '#3a2a0c' }, g);
+    }
+    if (sel) el('path', { d, fill: 'none', stroke: '#ffb347', 'stroke-width': 2, 'stroke-dasharray': '6 8', opacity: 0.9 }, g);
+  });
+  // name cards sit above the cords so they stay readable
+  for (const j of JACKS) {
+    const p = POS[j.id], g = el('g', { 'pointer-events': 'none' }, svg);
+    el('rect', { x: p.x - 66, y: p.y + 34, width: 132, height: 50, rx: 3, fill: '#f7f0e1', stroke: '#9c7a2e', 'stroke-width': 1.5 }, g);
+    const t1 = el('text', { x: p.x, y: p.y + 55, 'text-anchor': 'middle', 'font-family': 'Fraunces, Georgia, serif', 'font-weight': 700, 'font-size': 17, fill: '#2b2118' }, g); t1.textContent = j.label;
+    const t2 = el('text', { x: p.x, y: p.y + 74, 'text-anchor': 'middle', 'font-family': 'Source Sans 3, sans-serif', 'font-size': 12.5, fill: '#6a5a47' }, g); t2.textContent = j.sub.length > 20 ? j.sub.slice(0, 19) + '…' : j.sub;
+  }
+  if (drag && drag.moved) {
+    const p = POS[drag.from];
+    el('path', { d: cordPath(p, drag.pt, 0), fill: 'none', stroke: drag.color, 'stroke-width': 6, 'stroke-linecap': 'round', opacity: 0.9 }, svg);
+    el('rect', { x: drag.pt.x - 9, y: drag.pt.y - 15, width: 18, height: 30, rx: 4, fill: drag.color, stroke: '#1a1008' }, svg);
+  }
+}
+function svgPoint(e) { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+function jackAt(pt, r = 44) { let best = null, bd = r * r; for (const j of JACKS) { const p = POS[j.id], d = (p.x - pt.x) ** 2 + (p.y - pt.y) ** 2; if (d < bd) { bd = d; best = j.id; } } return best; }
+svg.addEventListener('pointerdown', e => {
+  // a jack always wins over the plug sitting in it, so busy jacks can take more cords
+  const near = jackAt(svgPoint(e), 30), jackId = e.target.closest('.jack')?.dataset.id || near;
+  const cg = e.target.closest('.cord');
+  if (!jackId) { if (cg) select(cg.dataset.line); return; }
+  e.preventDefault(); sfx.init();
+  svg.setPointerCapture(e.pointerId);
+  const used = new Set(lines.map(l => l.color));
+  drag = { from: jackId, pt: svgPoint(e), moved: false, color: CORD_COLORS.find(c => !used.has(c)) || CORD_COLORS[0], x0: e.clientX, y0: e.clientY };
+});
+svg.addEventListener('pointermove', e => {
+  if (!drag) { const j = e.target.closest('.jack'); if (j) { const J = jackById(j.dataset.id); tipShow(e, `${J.label}: ${J.sub}`); } else tipHide(); return; }
+  drag.pt = svgPoint(e);
+  if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6) drag.moved = true;
+  renderBoard();
+});
+svg.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const from = drag.from, moved = drag.moved, to = jackAt(svgPoint(e));
+  drag = null;
+  if (moved) { armed = null; if (to && to !== from) connect(from, to); else renderBoard(); }
+  else { // tap: pick up, then tap another jack to connect
+    if (armed && armed !== from) { const a = armed; armed = null; connect(a, from); }
+    else { armed = armed === from ? null : from; renderBoard(); if (armed) toast(`Holding ${jackById(from).label}'s cord. Tap another jack.`); }
+  }
+});
+svg.addEventListener('pointerleave', tipHide);
+svg.addEventListener('dblclick', e => { const cg = e.target.closest('.cord'); if (cg) hangUp(cg.dataset.line); });
+svg.addEventListener('keydown', e => {
+  const jg = e.target.closest('.jack'); if (!jg || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); sfx.init();
+  const id = jg.dataset.id;
+  if (armed && armed !== id) { const a = armed; armed = null; connect(a, id); }
+  else { armed = armed === id ? null : id; renderBoard(); svg.querySelector(`.jack[data-id="${id}"]`)?.focus(); if (armed) toast(`Holding ${jackById(id).label}'s cord. Pick another jack.`); }
+});
+
+/* =====================================================================
+   7. Operator's log + order pad (line detail)
+   ===================================================================== */
+function renderLog() {
+  $('logCount').textContent = lines.length ? `${lines.length} line${lines.length > 1 ? 's' : ''} open` : '';
+  $('logList').innerHTML = lines.length ? lines.map((l, i) => {
+    const r = results.get(l.id), k = lineKind(l);
+    return `<li><button data-line="${l.id}" aria-current="${l.id === selected}"><span class="lamp ${l.status === 'busy' ? 'on busy' : 'on'}" style="background:${l.status === 'busy' ? '' : l.color}"></span><span class="lk">Line ${i + 1}: ${esc(lineLabel(l))} <em>· ${k === 'pp' ? 'people' : k === 'dd' ? 'data join' : 'insight'}</em></span><span class="ct">${l.status === 'busy' ? 'pouring…' : r?.insights ? `${r.insights.length} insights` : ''}</span></button></li>`;
+  }).join('') : '<li class="empty">No lines open. Drag a cord between two jacks.</li>';
+}
+$('logList').addEventListener('click', e => { const b = e.target.closest('[data-line]'); if (b) select(b.dataset.line); });
+
+const pint = `<svg viewBox="0 0 34 46" aria-hidden="true"><defs><clipPath id="glass"><path d="M4 4 L30 4 L27 44 L7 44 Z"/></clipPath></defs>
+  <g clip-path="url(#glass)"><rect x="0" y="46" width="34" height="46" fill="#c98a1c"><animate attributeName="y" values="46;12;12" keyTimes="0;.85;1" dur="1.1s" repeatCount="indefinite"/></rect>
+  <rect x="0" y="46" width="34" height="7" fill="#fff4dc"><animate attributeName="y" values="46;6;6" keyTimes="0;.85;1" dur="1.1s" repeatCount="indefinite"/></rect></g>
+  <path d="M4 4 L30 4 L27 44 L7 44 Z" fill="none" stroke="#2b2118" stroke-width="2"/></svg>`;
+function paramsControls(l, k) {
+  const sel = (id, label, opts, val) => `<label>${label}<select data-p="${id}">${opts.map(([v, t]) => `<option value="${v}" ${String(v) === String(val) ? 'selected' : ''}>${t}</option>`).join('')}</select></label>`;
+  return `<div class="controls">
+    ${k !== 'pp' ? sel('n', 'Sample size', [[100, '100 rows'], [250, '250 rows'], [500, '500 rows'], [1000, '1,000 rows'], [2000, '2,000 rows']], l.params.n) : ''}
+    ${sel('days', 'Date range', [[7, 'Last 7 days'], [30, 'Last 30 days'], [90, 'Last 90 days']], l.params.days)}
+    ${sel('site', 'Pub', [['All', 'All pubs'], ...SITES.map(s => [s, s])], l.params.site)}
+  </div>`;
+}
+function insightCard(x, i, lineId) {
+  const c = x.confidence || 'medium';
+  return `<article class="ins" data-uid="${x.uid}">
+    <div class="ih"><h4 data-edit="title">${esc(x.title)}</h4><span class="chip ${x.ai ? 'ai' : c === 'high' ? 'hi' : c === 'medium' ? 'md' : 'lo'}">${x.ai ? 'Claude · ' : ''}${c}</span></div>
+    ${x.value ? `<div class="fig"><b>${esc(x.value)}</b><span>${esc(x.unit || '')}</span></div>` : ''}
+    <p data-edit="text">${esc(x.text)}</p>
+    ${x.why ? `<div class="why">${esc(x.why)}</div>` : ''}
+    <div class="chart" data-chart></div>
+    <div class="acts">
+      <label class="sr" for="pin-${x.uid}">Pin to dashboard</label>
+      <select id="pin-${x.uid}" data-act="pinTo">${dashboards.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}<option value="__new">+ New dashboard…</option></select>
+      <button class="btn small primary" data-act="pin">Pin</button>
+      ${x.chart ? `<select data-act="ctype" aria-label="Chart type"><option value="bar" ${x.chartType === 'bar' ? 'selected' : ''}>Bar</option><option value="line" ${x.chartType === 'line' ? 'selected' : ''}>Line</option><option value="table" ${x.chartType === 'table' ? 'selected' : ''}>Table</option><option value="none" ${x.chartType === 'none' ? 'selected' : ''}>No chart</option></select>` : ''}
+      <button class="btn small" data-act="edit">Edit words</button>
+      <button class="btn small warn" data-act="drop">Remove</button>
+    </div>
+  </article>`;
+}
+function renderPad() {
+  const pad = $('pad');
+  const l = lines.find(x => x.id === selected);
+  if (!l) { pad.innerHTML = `<div class="emptyPad"><p>Nothing on the pad yet.</p>Drag a cord from a person to a data source to have the house analyst sample it, between two people to introduce them, or between two data sources to join them.</div>`; return; }
+  const k = lineKind(l), r = results.get(l.id), idx = lines.indexOf(l) + 1;
+  const kindLabel = { pp: 'Person to person: an introduction', pd: 'Person to data: insights for their role', dd: 'Data to data: a join' }[k];
+  let body = '';
+  if (l.status === 'busy') body = `<div class="pour">${pint}<span>${agentKind === 'claude' && sampleFn ? 'Claude is tasting the sample…' : 'Pulling a sample and pouring insights…'}</span></div>`;
+  else if (r?.error) body = `<p class="summary">${esc(r.error)}</p>`;
+  else if (r) {
+    body += `<div class="summary">${esc(r.summary)} <em>(${esc(r.agent)})</em></div>`;
+    if (k === 'pp') {
+      const [A, B] = [PEOPLE[l.a], PEOPLE[l.b]];
+      body += `<div class="people">${[A, B].map(p => `<div class="card-person"><b>${esc(p.name)}</b><span>${esc(p.role)}</span><span>Watches: ${p.loves.map(s => SOURCE_META[s].short).join(', ')}</span><code>${esc(p.email)}</code></div>`).join('')}</div>
+        <h3 style="margin:6px 0 4px;font:700 17px var(--display)">Suggested agenda</h3><ol class="agenda">${r.agenda.map(a => `<li>${esc(a)}</li>`).join('')}</ol>
+        <h3 style="margin:12px 0 6px;font:700 17px var(--display)">What each brings to the table</h3>`;
+    }
+    body += `<div class="insights">${r.insights.map((x, i) => insightCard(x, i, l.id)).join('') || '<p>No insights survived. Widen the sample.</p>'}</div>`;
+    const samp = Object.entries(r.samples || {});
+    if (samp.length) body += samp.map(([id, s]) => `<details class="sample"><summary>Taste the sample: ${esc(SOURCE_META[id].name)} <span>${s.rows.length.toLocaleString()} rows · ${s.from} to ${s.to}</span></summary>
+        <div class="tablewrap">${tableHTML(s.rows.slice(0, 60), SOURCE_META[id].cols)}</div>
+        <div class="btnrow" style="margin-top:6px"><button class="btn small" data-dl="csv" data-src="${id}">Download sample (${s.rows.length.toLocaleString()} rows, CSV)</button></div></details>`).join('');
+  }
+  pad.innerHTML = `<div class="kind">Line ${idx} · ${kindLabel}</div>
+    <h2>${esc(k === 'pd' ? `${jackById(personOf(l)).label}, meet the ${SOURCE_META[dataOf(l)].name}` : k === 'pp' ? `${PEOPLE[l.a].name} ⇄ ${PEOPLE[l.b].name}` : `${SOURCE_META[l.a].name} ⋈ ${SOURCE_META[l.b].name}`)}</h2>
+    <div class="who">${esc(k === 'pd' ? `${PEOPLE[personOf(l)].role} · ${SOURCE_META[dataOf(l)].desc}` : k === 'pp' ? 'Connecting people to people' : 'Joined on date, daily figures compared')}</div>
+    ${paramsControls(l, k)}
+    <div class="btnrow"><button class="btn primary" data-act="rerun">Re-pour</button><button class="btn" data-act="reseed">New sample</button>${r?.insights ? '<button class="btn" data-dl="md">Download insights (MD)</button><button class="btn" data-dl="json">JSON</button><button class="btn" data-act="pinAll">Pin all</button>' : ''}<button class="btn warn" data-act="hang">Hang up</button></div>
+    ${body}`;
+  pad.querySelectorAll('[data-chart]').forEach(box => { const art = box.closest('[data-uid]'); const x = r.insights.find(i => i.uid === art.dataset.uid); drawChart(box, x.chart, x.chartType); });
+}
+const personOf = l => jackById(l.a).kind === 'person' ? l.a : l.b;
+const dataOf = l => jackById(l.a).kind === 'data' ? l.a : l.b;
+$('pad').addEventListener('change', e => {
+  const l = lines.find(x => x.id === selected); if (!l) return;
+  const p = e.target.dataset.p;
+  if (p) { l.params[p] = p === 'site' ? e.target.value : +e.target.value; saveState(); runLine(l); return; }
+  if (e.target.dataset.act === 'ctype') { const x = findInsight(e.target); x.chartType = e.target.value; drawChart(e.target.closest('.ins').querySelector('[data-chart]'), x.chart, x.chartType); }
+});
+$('pad').addEventListener('click', e => {
+  const l = lines.find(x => x.id === selected); if (!l) return;
+  const b = e.target.closest('button'); if (!b) return;
+  const act = b.dataset.act, dl = b.dataset.dl, r = results.get(l.id);
+  if (act === 'rerun') runLine(l);
+  else if (act === 'reseed') { l.seed = (l.seed || 1) + 1; runLine(l); }
+  else if (act === 'hang') hangUp(l.id);
+  else if (act === 'pinAll') { const d = dashboards[0]; r.insights.forEach(x => pinInsight(x, l, d.id)); toast(`Pinned ${r.insights.length} insights to ${d.name}`); }
+  else if (act === 'pin') { const x = findInsight(b), sel = b.parentElement.querySelector('[data-act="pinTo"]'); let did = sel.value; if (did === '__new') { did = newDashboard(); } pinInsight(x, l, did); toast(`Pinned to ${dashboards.find(d => d.id === did).name}`); }
+  else if (act === 'edit') { const art = b.closest('.ins'), on = art.querySelector('[data-edit]').contentEditable !== 'true'; art.querySelectorAll('[data-edit]').forEach(n => n.contentEditable = on); b.textContent = on ? 'Done editing' : 'Edit words'; if (on) art.querySelector('[data-edit]').focus(); else { const x = findInsight(b); x.title = art.querySelector('[data-edit="title"]').textContent.trim(); x.text = art.querySelector('[data-edit="text"]').textContent.trim(); toast('Saved your wording'); } }
+  else if (act === 'drop') { const x = findInsight(b); r.insights = r.insights.filter(i => i !== x); renderPad(); renderLog(); }
+  else if (dl === 'csv') { const s = r.samples[b.dataset.src]; saveFile(`${slug(SOURCE_META[b.dataset.src].name)}-sample-${s.rows.length}.csv`, toCSV(s.rows, SOURCE_META[b.dataset.src].cols)); }
+  else if (dl === 'md') saveFile(`${slug(lineLabel(l))}-insights.md`, insightsMD(`Line: ${lineLabel(l)}`, r.summary, r.insights, l.params, r.agenda));
+  else if (dl === 'json') saveFile(`${slug(lineLabel(l))}-insights.json`, JSON.stringify({ line: lineLabel(l), kind: lineKind(l), params: l.params, agent: r.agent, summary: r.summary, agenda: r.agenda, insights: r.insights.map(cleanInsight), generated: new Date().toISOString(), data: 'mock' }, null, 2));
+});
+function findInsight(node) { const l = lines.find(x => x.id === selected), r = results.get(l.id), u = node.closest('[data-uid]').dataset.uid; return r.insights.find(i => i.uid === u); }
+const cleanInsight = x => ({ title: x.title, text: x.text, value: x.value, unit: x.unit, confidence: x.confidence, chart: x.chart, chartType: x.chartType, source: x.source });
+
+/* =====================================================================
+   8. Charts (SVG, cream surface, validated palette, hover tooltips)
+   ===================================================================== */
+const PAL = ['#1d6a9e', '#c2511c', '#1a8a5a', '#a8760e', '#8a4fa8'];
+const SINGLE = '#1a8a5a';
+const fmtV = (v, f) => f === 'money' ? money(v) : f === 'pct' ? `${num(v, v < 10 ? 1 : 0)}%` : f === 'min' ? `${num(v, 1)} min` : f === 'star' ? `${num(v, 2)}★` : f === 'r' ? num(v, 2) : f === 'idx' ? num(v, 0) : num(v, v < 10 ? 1 : 0);
+function drawChart(box, ch, type) {
+  box.innerHTML = '';
+  if (!ch || type === 'none') return;
+  if (type === 'table') { box.innerHTML = `<div class="tablewrap"><table class="t"><thead><tr><th>Label</th>${ch.series.map(s => `<th class="n">${esc(s.name === 'value' ? 'Value' : s.name)}</th>`).join('')}</tr></thead><tbody>${ch.labels.map((lb, i) => `<tr><td>${esc(lb)}</td>${ch.series.map(s => `<td class="n">${fmtV(s.values[i], ch.fmt)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; return; }
+  const W = Math.max(260, box.clientWidth || 360), multi = ch.series.length > 1;
+  if (multi) box.insertAdjacentHTML('beforeend', `<div class="legend">${ch.series.map((s, i) => `<span><i style="background:${PAL[i]}"></i>${esc(s.name)}</span>`).join('')}</div>`);
+  if (type === 'bar') {
+    const vals = ch.series[0].values, n = vals.length, rowH = 24, labW = Math.min(150, Math.max(...ch.labels.map(l => String(l).length)) * 7 + 10), valW = 70;
+    const hasNeg = vals.some(v => v < 0), max = Math.max(...vals.map(Math.abs)) || 1, pw = W - labW - valW, H = n * rowH + 4;
+    const zero = hasNeg ? labW + pw / 2 : labW, scale = hasNeg ? pw / 2 / max : pw / max;
+    const s = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': ch.labels.map((lb, i) => `${lb} ${fmtV(vals[i], ch.fmt)}`).join(', ') }, box);
+    if (hasNeg) el('line', { x1: zero, x2: zero, y1: 0, y2: H, stroke: '#d9cbb0' }, s);
+    vals.forEach((v, i) => {
+      const y = i * rowH + 3, w = Math.max(1, Math.abs(v) * scale), x = v >= 0 ? zero : zero - w;
+      const lb = el('text', { x: labW - 8, y: y + 13, 'text-anchor': 'end', 'font-size': 12.5, fill: '#6a5a47' }, s); lb.textContent = String(ch.labels[i]).length > 20 ? String(ch.labels[i]).slice(0, 19) + '…' : ch.labels[i];
+      const rr = Math.min(4, w / 2);
+      const path = v >= 0 ? `M${x},${y} h${w - rr} a${rr},${rr} 0 0 1 ${rr},${rr} v${18 - 2 * rr} a${rr},${rr} 0 0 1 ${-rr},${rr} h${-(w - rr)} Z` : `M${x + w},${y} h${-(w - rr)} a${rr},${rr} 0 0 0 ${-rr},${rr} v${18 - 2 * rr} a${rr},${rr} 0 0 0 ${rr},${rr} h${w - rr} Z`;
+      const p = el('path', { d: path, fill: SINGLE }, s);
+      p.addEventListener('pointermove', e => tipShow(e, `${ch.labels[i]}: ${fmtV(v, ch.fmt)}`)); p.addEventListener('pointerleave', tipHide);
+      const tv = el('text', { x: v >= 0 ? x + w + 6 : x - 6, y: y + 13, 'text-anchor': v >= 0 ? 'start' : 'end', 'font-size': 12.5, 'font-weight': 600, fill: '#2b2118' }, s); tv.textContent = fmtV(v, ch.fmt);
+    });
+  } else {
+    const H = 150, padL = 50, padR = 12, padT = 8, padB = 22, n = ch.labels.length;
+    const all = ch.series.flatMap(x => x.values), mx = Math.max(...all), mn = Math.min(0, ...all), rng = mx - mn || 1;
+    const x = i => padL + (n < 2 ? 0 : i / (n - 1)) * (W - padL - padR), y = v => padT + (1 - (v - mn) / rng) * (H - padT - padB);
+    const s = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': `${ch.series.map(z => z.name).join(' and ')} over ${n} points` }, box);
+    for (let k = 0; k <= 3; k++) { const v = mn + rng * k / 3; el('line', { x1: padL, x2: W - padR, y1: y(v), y2: y(v), stroke: '#e7dcc4' }, s); const t = el('text', { x: padL - 6, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#6a5a47' }, s); t.textContent = fmtV(v, ch.fmt); }
+    const every = Math.max(1, Math.ceil(n / 6));
+    ch.labels.forEach((lb, i) => { if (i % every && i !== n - 1) return; const t = el('text', { x: x(i), y: H - 5, 'text-anchor': 'middle', 'font-size': 11, fill: '#6a5a47' }, s); t.textContent = lb; });
+    ch.series.forEach((sr, si) => {
+      const c = multi ? PAL[si] : SINGLE;
+      if (!multi) el('path', { d: `M${x(0)},${y(mn)} ` + sr.values.map((v, i) => `L${x(i)},${y(v)}`).join(' ') + ` L${x(n - 1)},${y(mn)} Z`, fill: c, opacity: 0.1 }, s);
+      el('path', { d: sr.values.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join(' '), fill: 'none', stroke: c, 'stroke-width': 2, 'stroke-linejoin': 'round' }, s);
+      el('circle', { cx: x(n - 1), cy: y(sr.values[n - 1]), r: 4, fill: c, stroke: '#fffdf7', 'stroke-width': 2 }, s);
+    });
+    const hit = el('rect', { x: padL, y: 0, width: W - padL - padR, height: H, fill: 'transparent' }, s);
+    const cross = el('line', { y1: padT, y2: H - padB, stroke: '#6a5a47', 'stroke-width': 1, visibility: 'hidden' }, s);
+    hit.addEventListener('pointermove', e => { const r = s.getBoundingClientRect(); const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - r.left) * (W / r.width) - padL) / (W - padL - padR) * (n - 1)))); cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible'); tipShow(e, `${ch.labels[i]}: ` + ch.series.map(z => `${z.name === 'value' ? '' : z.name + ' '}${fmtV(z.values[i], ch.fmt)}`).join(' · ')); });
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tipHide(); });
+  }
+}
+function tableHTML(rows, cols) {
+  const isN = c => rows.every(r => r[c] === null || typeof r[c] === 'number');
+  return `<table class="t"><thead><tr>${cols.map(c => `<th class="${isN(c) ? 'n' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="${isN(c) ? 'n' : ''}">${r[c] === null ? '<em style="color:#b04a2a">null</em>' : esc(typeof r[c] === 'boolean' ? (r[c] ? 'yes' : 'no') : r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+const tip = $('tip');
+function tipShow(e, t) { tip.textContent = t; tip.style.display = 'block'; const w = tip.offsetWidth; tip.style.left = `${Math.min(innerWidth - w - 8, e.clientX + 12)}px`; tip.style.top = `${e.clientY + 14}px`; }
+function tipHide() { tip.style.display = 'none'; }
+
+/* =====================================================================
+   9. Dashboards: pin, rearrange, rename, adjust, export
+   ===================================================================== */
+let activeDash = null;
+function newDashboard(name) {
+  const d = { id: uid(), name: name || `Dashboard ${dashboards.length + 1}`, cards: [] };
+  dashboards.push(d); saveState(); renderDashTabs(); if (selected) renderPad(); return d.id;
+}
+function pinInsight(x, l, did) {
+  const d = dashboards.find(z => z.id === did) || dashboards[0];
+  const r = results.get(l.id);
+  const srcIds = Object.keys(r.samples || {});
+  d.cards.push({ id: uid(), title: x.title, text: x.text, value: x.value, unit: x.unit, confidence: x.confidence, ai: !!x.ai, chart: x.chart, chartType: x.chartType, line: lineLabel(l), kind: lineKind(l), params: { ...l.params }, agent: r.agent, pinned: new Date().toISOString(),
+    sample: srcIds.map(id => ({ source: id, rows: r.samples[id].rows.slice(0, 200) })) });
+  saveState(); updatePinCount(); sfx.pin();
+}
+function updatePinCount() { $('pinCount').textContent = dashboards.reduce((a, d) => a + d.cards.length, 0); }
+function renderDashTabs() {
+  if (!activeDash || !dashboards.find(d => d.id === activeDash)) activeDash = dashboards[0]?.id;
+  $('dashbar').innerHTML = dashboards.map(d => `<button class="dt" role="tab" data-d="${d.id}" aria-selected="${d.id === activeDash}">${esc(d.name)} <small>(${d.cards.length})</small></button>`).join('') +
+    `<button class="btn" data-dact="new">+ New board</button><span class="sp"></span>
+     <button class="btn" data-dact="md">Download (MD)</button><button class="btn" data-dact="json">JSON</button><button class="btn" data-dact="csv">Insights CSV</button><button class="btn" data-dact="sample">Sample data CSV</button>
+     <button class="btn" data-dact="rename">Rename</button>${dashboards.length > 1 ? '<button class="btn" data-dact="del">Delete board</button>' : ''}`;
+  updatePinCount();
+}
+function renderDash() {
+  renderDashTabs();
+  const d = dashboards.find(z => z.id === activeDash);
+  $('dName').textContent = d.name;
+  const sites = [...new Set(d.cards.map(c => c.params.site))];
+  $('dMeta').textContent = d.cards.length ? `${d.cards.length} pinned insight${d.cards.length > 1 ? 's' : ''} from ${new Set(d.cards.map(c => c.line)).size} line${new Set(d.cards.map(c => c.line)).size > 1 ? 's' : ''} · ${sites.join(', ')} · mock data` : '';
+  $('tiles').innerHTML = d.cards.length ? d.cards.map((c, i) => `<article class="tile" data-card="${c.id}">
+      <div class="src">${esc(c.line)} · ${c.params.site === 'All' ? 'All pubs' : esc(c.params.site)} · ${c.params.days}d${c.params.n && c.kind !== 'pp' ? ` · n=${c.params.n}` : ''} · ${esc(c.agent)}</div>
+      <h4 data-edit="title">${esc(c.title)}</h4>
+      ${c.value ? `<div class="fig"><b>${esc(c.value)}</b><span>${esc(c.unit || '')}</span></div>` : ''}
+      <p data-edit="text">${esc(c.text)}</p>
+      <div class="chart" data-chart></div>
+      <div class="acts">
+        ${c.chart ? `<select data-cact="ctype" aria-label="Chart type"><option value="bar" ${c.chartType === 'bar' ? 'selected' : ''}>Bar</option><option value="line" ${c.chartType === 'line' ? 'selected' : ''}>Line</option><option value="table" ${c.chartType === 'table' ? 'selected' : ''}>Table</option><option value="none" ${c.chartType === 'none' ? 'selected' : ''}>No chart</option></select>` : ''}
+        <select data-cact="move" aria-label="Move to dashboard"><option value="">Move to…</option>${dashboards.filter(z => z.id !== d.id).map(z => `<option value="${z.id}">${esc(z.name)}</option>`).join('')}</select>
+        <button class="btn small" data-cact="up" ${i === 0 ? 'disabled' : ''} aria-label="Move earlier">↑</button><button class="btn small" data-cact="down" ${i === d.cards.length - 1 ? 'disabled' : ''} aria-label="Move later">↓</button>
+        <button class="btn small" data-cact="edit">Edit words</button>
+        <button class="btn small warn" data-cact="del">Unpin</button>
+      </div></article>`).join('') : `<div class="dempty">This board is empty. Pin insights from any line on the switchboard.</div>`;
+  $('tiles').querySelectorAll('[data-chart]').forEach(box => { const c = d.cards.find(x => x.id === box.closest('[data-card]').dataset.card); drawChart(box, c.chart, c.chartType); });
+}
+$('dashbar').addEventListener('click', e => {
+  const t = e.target.closest('[data-d]'); if (t) { activeDash = t.dataset.d; renderDash(); return; }
+  const b = e.target.closest('[data-dact]'); if (!b) return;
+  const d = dashboards.find(z => z.id === activeDash), act = b.dataset.dact;
+  if (act === 'new') { activeDash = newDashboard(); renderDash(); startRename(); }
+  else if (act === 'rename') startRename();
+  else if (act === 'del') { dashboards = dashboards.filter(z => z.id !== d.id); activeDash = dashboards[0].id; saveState(); renderDash(); toast('Board deleted'); }
+  else if (act === 'md') saveFile(`${slug(d.name)}.md`, insightsMD(d.name, `${d.cards.length} pinned insights · exported ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · mock data`, d.cards));
+  else if (act === 'json') saveFile(`${slug(d.name)}.json`, JSON.stringify({ dashboard: d.name, exported: new Date().toISOString(), data: 'mock', cards: d.cards }, null, 2));
+  else if (act === 'csv') saveFile(`${slug(d.name)}-insights.csv`, toCSV(d.cards.map(c => ({ title: c.title, value: c.value, unit: c.unit, text: c.text, confidence: c.confidence, line: c.line, site: c.params.site, days: c.params.days, sample_n: c.params.n, agent: c.agent, pinned: c.pinned })), ['title', 'value', 'unit', 'text', 'confidence', 'line', 'site', 'days', 'sample_n', 'agent', 'pinned']));
+  else if (act === 'sample') {
+    const rows = []; const cols = new Set(['source', 'insight']);
+    d.cards.forEach(c => (c.sample || []).forEach(s => s.rows.forEach(r => { Object.keys(r).forEach(k => cols.add(k)); rows.push({ source: SOURCE_META[s.source].name, insight: c.title, ...r }); })));
+    if (!rows.length) { toast('No sample rows on this board yet'); return; }
+    saveFile(`${slug(d.name)}-sample-data.csv`, toCSV(rows, [...cols]));
+  }
+});
+function startRename() {
+  const h = $('dName'); h.contentEditable = 'true'; h.focus();
+  const range = document.createRange(); range.selectNodeContents(h); getSelection().removeAllRanges(); getSelection().addRange(range);
+  const done = () => { h.contentEditable = 'false'; const d = dashboards.find(z => z.id === activeDash); d.name = h.textContent.trim().slice(0, 60) || d.name; saveState(); renderDash(); h.removeEventListener('blur', done); };
+  h.addEventListener('blur', done); h.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); h.blur(); } };
+}
+$('dName').addEventListener('dblclick', startRename);
+$('tiles').addEventListener('click', e => {
+  const b = e.target.closest('[data-cact]'); if (!b || b.tagName === 'SELECT') return;
+  const d = dashboards.find(z => z.id === activeDash), card = b.closest('[data-card]'), i = d.cards.findIndex(c => c.id === card.dataset.card), c = d.cards[i];
+  const act = b.dataset.cact;
+  if (act === 'del') { d.cards.splice(i, 1); saveState(); renderDash(); }
+  else if (act === 'up' && i > 0) { [d.cards[i - 1], d.cards[i]] = [d.cards[i], d.cards[i - 1]]; saveState(); renderDash(); }
+  else if (act === 'down' && i < d.cards.length - 1) { [d.cards[i + 1], d.cards[i]] = [d.cards[i], d.cards[i + 1]]; saveState(); renderDash(); }
+  else if (act === 'edit') { const on = card.querySelector('[data-edit]').contentEditable !== 'true'; card.querySelectorAll('[data-edit]').forEach(n => n.contentEditable = on); b.textContent = on ? 'Done editing' : 'Edit words'; if (on) card.querySelector('[data-edit]').focus(); else { c.title = card.querySelector('[data-edit="title"]').textContent.trim(); c.text = card.querySelector('[data-edit="text"]').textContent.trim(); saveState(); toast('Saved your wording'); } }
+});
+$('tiles').addEventListener('change', e => {
+  const s = e.target.closest('[data-cact]'); if (!s) return;
+  const d = dashboards.find(z => z.id === activeDash), card = s.closest('[data-card]'), i = d.cards.findIndex(c => c.id === card.dataset.card), c = d.cards[i];
+  if (s.dataset.cact === 'ctype') { c.chartType = s.value; saveState(); drawChart(card.querySelector('[data-chart]'), c.chart, c.chartType); }
+  if (s.dataset.cact === 'move' && s.value) { const to = dashboards.find(z => z.id === s.value); to.cards.push(c); d.cards.splice(i, 1); saveState(); renderDash(); toast(`Moved to ${to.name}`); }
+});
+
+/* =====================================================================
+   10. Exports: CSV / Markdown / JSON (downloads capability when hosted)
+   ===================================================================== */
+const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'export';
+function toCSV(rows, cols) {
+  const q = v => { if (v === null || v === undefined) return ''; const s = typeof v === 'boolean' ? (v ? 'true' : 'false') : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  return [cols.join(','), ...rows.map(r => cols.map(c => q(r[c])).join(','))].join('\n');
+}
+function insightsMD(title, summary, items, params, agenda) {
+  const lines = [`# ${title}`, '', `_${summary}_`, ''];
+  if (params) lines.push(`**Sample:** ${params.n ? params.n + ' rows, ' : ''}last ${params.days} days, ${params.site === 'All' ? 'all pubs' : params.site}. Data: mock.`, '');
+  if (agenda) { lines.push('## Suggested agenda', ...agenda.map((a, i) => `${i + 1}. ${a}`), ''); }
+  items.forEach(x => {
+    lines.push(`## ${x.title}`, '');
+    if (x.value) lines.push(`**${x.value}** ${x.unit ? `(${x.unit})` : ''}`, '');
+    lines.push(x.text, '');
+    if (x.line) lines.push(`_From ${x.line} · ${x.params?.site === 'All' ? 'all pubs' : x.params?.site} · ${x.params?.days} days · ${x.agent}_`, '');
+    if (x.chart && x.chartType !== 'none') { lines.push('| Label | ' + x.chart.series.map(s => s.name === 'value' ? 'Value' : s.name).join(' | ') + ' |', '|---|' + x.chart.series.map(() => '---:').join('|') + '|', ...x.chart.labels.map((lb, i) => `| ${lb} | ` + x.chart.series.map(s => fmtV(s.values[i], x.chart.fmt)).join(' | ') + ' |'), ''); }
+  });
+  return lines.join('\n');
+}
+let downloadsCap = null;
+async function saveFile(filename, text) {
+  if (downloadsCap) {
+    try { await downloadsCap.save({ filename, data: text }); toast(`Saved ${filename}`); return; }
+    catch (e) { if (e?.code === 'declined') { toast('Download cancelled'); return; } if (!['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) { toast(`Couldn't save: ${e?.message || e?.code}`); return; } }
+  }
+  const blob = new Blob([text], { type: filename.endsWith('.csv') ? 'text/csv' : filename.endsWith('.json') ? 'application/json' : 'text/markdown' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast(`Downloaded ${filename}`);
+}
+
+/* =====================================================================
+   11. Sound: a soft plug click and bell (WebAudio, after first gesture)
+   ===================================================================== */
+const sfx = (() => {
+  let ctx = null;
+  const tone = (f, d, v, type = 'sine') => { if (!ctx) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + d + 0.02); };
+  return {
+    init() { if (!ctx) try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} },
+    plug() { tone(180, 0.06, 0.2, 'square'); setTimeout(() => tone(1320, 0.5, 0.06), 90); setTimeout(() => tone(1760, 0.6, 0.04), 160); },
+    unplug() { tone(140, 0.05, 0.15, 'square'); },
+    pin() { tone(880, 0.12, 0.05, 'triangle'); },
+  };
+})();
+
+/* =====================================================================
+   12. Views, toast, boot
+   ===================================================================== */
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), 2200); }
+function showView(v) {
+  const dash = v === 'dash';
+  $('viewBoard').hidden = dash; $('viewDash').hidden = !dash;
+  $('tabBoard').setAttribute('aria-selected', !dash); $('tabDash').setAttribute('aria-selected', dash);
+  if (dash) renderDash(); else { renderBoard(); renderPad(); }
+}
+$('tabBoard').onclick = () => showView('board');
+$('tabDash').onclick = () => showView('dash');
+function renderAll() { renderBoard(); renderLog(); renderPad(); updatePinCount(); }
+
+// first visit: a realistic working state (clearly mock) so the page shows what it does
+if (!lines) lines = [
+  { id: uid(), a: 'mara', b: 'sales', color: CORD_COLORS[0], params: { ...DEFAULT_PARAMS } },
+  { id: uid(), a: 'theo', b: 'tickets', color: CORD_COLORS[1], params: { ...DEFAULT_PARAMS } },
+  { id: uid(), a: 'owen', b: 'theo', color: CORD_COLORS[2], params: { ...DEFAULT_PARAMS } },
+  { id: uid(), a: 'bookings', b: 'rota', color: CORD_COLORS[3], params: { ...DEFAULT_PARAMS, days: 90 } },
+];
+if (!dashboards) dashboards = [{ id: uid(), name: 'Friday Briefing', cards: [] }, { id: uid(), name: 'Kitchen Pass', cards: [] }, { id: uid(), name: 'Back Office', cards: [] }];
+selected = lines[0]?.id ?? null;
+lines.forEach(l => { l.status = 'busy'; });
+renderAll();
+(async () => {
+  for (const l of lines) await runLine(l);
+  // seed the first board once so the dashboards view isn't empty
+  if (!store.get('pp-seeded', false) && dashboards[0].cards.length === 0) {
+    const pickFrom = (i, n) => { const l = lines[i]; const r = l && results.get(l.id); r?.insights?.slice(0, n).forEach(x => pinInsight(x, l, dashboards[0].id)); };
+    pickFrom(0, 2); pickFrom(1, 1); pickFrom(3, 1);
+    store.set('pp-seeded', true);
+    if (selected) renderPad();
+  }
+})();
+
+// runtime capabilities on the hosted page (absent elsewhere: everything still works)
+if (window.claude?.use) {
+  window.claude.use('downloads').then(d => { downloadsCap = d; }).catch(() => {});
+  window.claude.use('sample').then(s => { if (!s) return; sampleFn = s; $('agentPick').hidden = false; }).catch(() => {});
+}
+$('agentSel').addEventListener('change', e => { agentKind = e.target.value; toast(agentKind === 'claude' ? 'Claude will analyse the next pour. It asks permission first.' : 'Back to the house analyst'); const l = lines.find(x => x.id === selected); if (l) runLine(l); });
+
+/* ---------- public seam for plugging in real data later ---------- */
+window.Switchboard = {
+  /** Replace the mock data. The adapter must implement listSources(), schema(id) and sample(id, {n, days, site, seed}) → {rows, population, total, from, to}. */
+  useAdapter(a) { adapter = a; lines.forEach(l => runLine(l)); },
+  mock: MOCK, sources: SOURCE_META, people: PEOPLE,
+  connect, lines: () => lines, results, dashboards: () => dashboards,
+};
+</script>
+</body>
+</html>
