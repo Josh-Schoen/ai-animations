@@ -1,0 +1,1386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Query Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Deliberately single-theme (dark): the brief is a dark dashboard. */
+  :root {
+    color-scheme: dark;
+    --bg: #0b0f14;
+    --surface: #131820;
+    --surface-2: #1a212b;
+    --surface-3: #222b37;
+    --line: #263041;
+    --ink: #e6edf5;
+    --ink-2: #a9b4c2;
+    --muted: #6f7b8c;
+    --xp: #ffb454;
+    --xp-dim: rgba(255, 180, 84, .16);
+    --good: #3fcf8e;
+    --bad: #ff6b6b;
+    /* validated categorical palette, dark steps, on --surface */
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --grid: #232c38;
+    --display: "Chakra Petch", "IBM Plex Sans", system-ui, sans-serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    /* SQL syntax */
+    --k: #7fb2ff; --str: #e7c07b; --num: #d19bff; --fn: #56d4c1; --cm: #6f7b8c;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans); overflow: hidden; }
+  button { font: inherit; color: inherit; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--xp); outline-offset: 2px; }
+
+  .app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+
+  /* ---------- top bar ---------- */
+  .top {
+    display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #0f141b, var(--bg)); min-width: 0;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand a { color: var(--muted); text-decoration: none; font: 500 11px var(--mono); letter-spacing: .08em; white-space: nowrap; }
+  .brand a:hover { color: var(--ink); }
+  .brand h1 { margin: 0; font: 700 20px/1 var(--display); letter-spacing: .06em; white-space: nowrap; }
+  .brand h1 span { color: var(--xp); }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .tab { border: 0; background: none; padding: 6px 12px; border-radius: 6px; color: var(--ink-2); cursor: pointer; font-weight: 500; display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+  .tab[aria-selected="true"] { background: var(--surface-3); color: var(--ink); }
+  .tab .lock { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .tab.unlocked .lock { color: var(--xp); }
+  .spacer { flex: 1; }
+  .xpbox { display: grid; grid-template-columns: auto auto; column-gap: 10px; align-items: center; min-width: 220px; }
+  .xpbox .lvl { font: 600 13px var(--display); letter-spacing: .05em; color: var(--xp); white-space: nowrap; }
+  .xpbox .pts { font: 12px var(--mono); color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+  .xpbar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; margin-top: 5px; }
+  .xpbar i { display: block; height: 100%; width: 0; background: var(--xp); border-radius: 3px; transition: width .6s cubic-bezier(.2,.8,.2,1); box-shadow: 0 0 10px var(--xp); }
+  .iconbtn { display: none; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 5px 9px; cursor: pointer; font-size: 12px; }
+
+  /* ---------- console layout ---------- */
+  .view { min-height: 0; }
+  .view[hidden] { display: none !important; }
+  .console { display: grid; grid-template-columns: 290px minmax(0, 1fr) 300px; min-height: 0; height: 100%; }
+  .side { border-right: 1px solid var(--line); overflow-y: auto; min-height: 0; background: #0d1218; }
+  .side.right { border-right: 0; border-left: 1px solid var(--line); }
+  .sect { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .sect h2 { margin: 0 0 10px; font: 600 12px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); display: flex; justify-content: space-between; align-items: baseline; }
+  .sect h2 small { font: 11px var(--mono); letter-spacing: 0; color: var(--muted); text-transform: none; }
+
+  #schemaViz { width: 100%; height: 190px; display: block; border-radius: 8px; background: radial-gradient(circle at 50% 45%, #141c26, #0b0f14 70%); border: 1px solid var(--line); }
+  .tables { display: grid; gap: 6px; margin-top: 12px; }
+  .tbl { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+  .tbl.hot { border-color: var(--xp); box-shadow: 0 0 0 1px var(--xp-dim); }
+  .tbl summary { list-style: none; cursor: pointer; padding: 7px 10px; display: flex; justify-content: space-between; align-items: center; font: 500 12.5px var(--mono); }
+  .tbl summary::-webkit-details-marker { display: none; }
+  .tbl summary small { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .tbl ul { list-style: none; margin: 0; padding: 0 10px 8px; display: grid; gap: 1px; }
+  .tbl li { display: flex; justify-content: space-between; font: 11.5px var(--mono); color: var(--ink-2); padding: 1px 0; }
+  .tbl li span:last-child { color: var(--muted); }
+  .tbl .peek { margin: 0 10px 9px; font: 11px var(--mono); color: var(--xp); background: none; border: 1px dashed var(--line); border-radius: 5px; padding: 3px 8px; cursor: pointer; }
+  .tbl .peek:hover { border-color: var(--xp); }
+
+  .missions { display: grid; gap: 6px; }
+  .mission { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; cursor: pointer; display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: start; }
+  .mission:hover { border-color: #3a475a; }
+  .mission .ck { width: 16px; height: 16px; border: 1.5px solid var(--muted); border-radius: 4px; margin-top: 2px; display: grid; place-items: center; font-size: 11px; }
+  .mission .t { font-size: 13px; line-height: 1.35; }
+  .mission .x { font: 11px var(--mono); color: var(--xp); white-space: nowrap; margin-top: 2px; }
+  .mission.done { background: transparent; }
+  .mission.done .t { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+  .mission.done .ck { background: var(--good); border-color: var(--good); color: #06140d; }
+  .mission.done .x { color: var(--muted); }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge { font: 11px var(--mono); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .badge.on { color: var(--xp); border-color: var(--xp); background: var(--xp-dim); }
+  .help { color: var(--ink-2); font-size: 12.5px; margin: 0; }
+  .help code { font: 11.5px var(--mono); color: var(--ink); }
+
+  /* ---------- feed ---------- */
+  .main { display: grid; grid-template-rows: 1fr auto; min-height: 0; min-width: 0; }
+  .feed { overflow-y: auto; padding: 20px clamp(16px, 3vw, 36px) 12px; display: grid; gap: 22px; align-content: start; min-width: 0; }
+  .turn { display: grid; gap: 10px; min-width: 0; animation: rise .35s ease-out both; }
+  @keyframes rise { from { opacity: .001; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .q { justify-self: end; max-width: min(620px, 92%); background: var(--surface-3); border: 1px solid #2d394a; border-radius: 12px 12px 3px 12px; padding: 8px 13px; font-size: 14.5px; }
+  .agent { display: grid; gap: 10px; min-width: 0; border-left: 2px solid var(--line); padding-left: 14px; }
+  .agent.live { border-left-color: var(--xp); }
+  .who { font: 600 11px var(--display); letter-spacing: .14em; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .who .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .agent.live .who .dot { background: var(--xp); box-shadow: 0 0 8px var(--xp); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .say { margin: 0; color: var(--ink-2); max-width: 70ch; }
+  .say b { color: var(--ink); font-weight: 500; }
+  .plan { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font: 12.5px var(--mono); color: var(--ink-2); }
+  .plan li { display: flex; gap: 8px; }
+  .plan li::before { content: "›"; color: var(--xp); }
+  .plan li.warn::before { content: "!"; color: var(--bad); }
+  .sqlbox { border: 1px solid var(--line); background: #0e131a; border-radius: 10px; overflow: hidden; min-width: 0; }
+  .sqlbox header { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .sqlbox header .lbl { font: 500 11px var(--mono); color: var(--muted); letter-spacing: .06em; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: #3a475a; }
+  .btn.primary { background: var(--xp); border-color: var(--xp); color: #1b1204; font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn[disabled] { opacity: .45; cursor: default; }
+  pre.code { margin: 0; padding: 12px 14px; font: 13px/1.6 var(--mono); white-space: pre; overflow-x: auto; color: var(--ink); min-height: 44px; }
+  pre.code .k { color: var(--k); } pre.code .s { color: var(--str); } pre.code .n { color: var(--num); } pre.code .f { color: var(--fn); } pre.code .c { color: var(--cm); }
+  pre.code .caret { display: inline-block; width: 7px; height: 1.1em; vertical-align: -2px; background: var(--xp); animation: pulse .7s infinite; }
+  textarea.edit { display: block; width: 100%; min-height: 180px; resize: vertical; border: 0; background: #0e131a; color: var(--ink); padding: 12px 14px; font: 13px/1.6 var(--mono); outline: none; tab-size: 2; }
+  .stat { font: 12px var(--mono); color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .stat .ok { color: var(--good); } .stat .err { color: var(--bad); }
+  .errbox { border: 1px solid rgba(255,107,107,.4); background: rgba(255,107,107,.08); border-radius: 8px; padding: 8px 12px; font: 12px/1.5 var(--mono); color: #ffb3b3; white-space: pre-wrap; overflow-x: auto; }
+
+  .viz { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 14px 16px 12px; display: grid; gap: 10px; min-width: 0; }
+  .vhead { display: flex; align-items: flex-start; gap: 10px; }
+  .vhead .ttl { flex: 1; min-width: 0; }
+  .vhead h3 { margin: 0; font-size: 15px; font-weight: 600; text-wrap: balance; }
+  .vhead p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; flex: none; }
+  .seg button { border: 0; background: none; padding: 3px 9px; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface-3); color: var(--ink); }
+  .chart { min-height: 60px; position: relative; }
+  .chart svg { display: block; width: 100%; overflow: visible; }
+  .tablewrap { overflow: auto; max-height: 320px; border: 1px solid var(--line); border-radius: 8px; }
+  table.grid { border-collapse: collapse; width: 100%; font: 12.5px var(--mono); }
+  table.grid th { position: sticky; top: 0; background: var(--surface-2); color: var(--ink-2); font-weight: 500; text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.grid td { padding: 5px 10px; border-bottom: 1px solid #1c232d; white-space: nowrap; color: var(--ink); }
+  table.grid td.num, table.grid th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.grid tr { animation: rowin .3s ease-out both; }
+  @keyframes rowin { from { opacity: .001; } }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pinned { color: var(--xp) !important; border-color: var(--xp) !important; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .kpi { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .kpi .l { font-size: 12px; color: var(--ink-2); }
+  .kpi .v { font-size: 26px; font-weight: 600; letter-spacing: -.01em; margin-top: 2px; }
+
+  /* ---------- composer ---------- */
+  .composer { border-top: 1px solid var(--line); padding: 10px clamp(16px, 3vw, 36px) 14px; background: #0d1218; display: grid; gap: 8px; }
+  .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; }
+  .chip:hover { color: var(--ink); border-color: #3a475a; }
+  .ask { display: flex; gap: 8px; align-items: center; background: var(--surface); border: 1px solid #2d394a; border-radius: 12px; padding: 6px 6px 6px 14px; }
+  .ask:focus-within { border-color: var(--xp); box-shadow: 0 0 0 3px var(--xp-dim); }
+  .ask input { flex: 1; min-width: 0; background: none; border: 0; color: var(--ink); font: 15px var(--sans); padding: 6px 0; outline: none; }
+  .ask input::placeholder { color: var(--muted); }
+  .ask .btn.primary { padding: 7px 14px; font-size: 13px; border-radius: 8px; }
+  .hintline { font: 11px var(--mono); color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
+
+  /* ---------- dashboard ---------- */
+  .dash { height: 100%; overflow-y: auto; padding: 20px clamp(16px, 3vw, 36px) 40px; }
+  .dash-inner { max-width: 1320px; margin: 0 auto; display: grid; gap: 18px; }
+  .dhead { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; }
+  .dhead .ttl { flex: 1; min-width: 240px; }
+  .dhead h2 { margin: 0; font: 700 24px var(--display); letter-spacing: .04em; }
+  .dhead p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .filters label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+  .filters select { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font: 13px var(--sans); }
+  .live { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px 5px 8px; cursor: pointer; font-size: 12.5px; }
+  .live i { width: 26px; height: 15px; border-radius: 8px; background: var(--surface-3); position: relative; transition: background .2s; }
+  .live i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--ink-2); transition: left .2s; }
+  .live[aria-pressed="true"] { border-color: var(--good); }
+  .live[aria-pressed="true"] i { background: var(--good); }
+  .live[aria-pressed="true"] i::after { left: 13px; background: #06140d; }
+  .livefeed { font: 11.5px var(--mono); color: var(--muted); min-height: 16px; }
+  .livefeed b { color: var(--good); font-weight: 400; }
+  .hero { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 10px; display: grid; gap: 2px; position: relative; overflow: hidden; }
+  .tile .l { font-size: 12.5px; color: var(--ink-2); }
+  .tile .v { font-size: 30px; font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .tile.lead .v { font-size: 48px; line-height: 1.05; }
+  .tile .d { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+  .tile .d .up { color: var(--good); } .tile .d .down { color: var(--bad); }
+  .tile svg { width: 100%; height: 34px; display: block; margin-top: 4px; }
+  .flash { animation: flash 1s ease-out; }
+  @keyframes flash { 0% { box-shadow: inset 0 0 0 1px var(--good), 0 0 18px rgba(63,207,142,.25); } 100% { box-shadow: none; } }
+  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 12px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+  .card.wide { grid-column: 1 / -1; }
+  .card .vhead h3 { font-size: 14.5px; }
+  .card .tag { font: 10.5px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+  .card .x { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 0 4px; }
+  .card .x:hover { color: var(--ink); }
+  .empty { border: 1px dashed var(--line); border-radius: 12px; padding: 28px; text-align: center; color: var(--muted); }
+  .locked { max-width: 560px; margin: 60px auto; text-align: center; display: grid; gap: 12px; justify-items: center; }
+  .locked .big { font: 700 28px var(--display); letter-spacing: .05em; }
+  .locked .meter { width: 260px; height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+  .locked .meter i { display: block; height: 100%; background: var(--xp); }
+  .locked p { margin: 0; color: var(--ink-2); }
+
+  /* ---------- toast + tooltip ---------- */
+  #toasts { position: fixed; right: 16px; top: 64px; z-index: 50; display: grid; gap: 8px; justify-items: end; pointer-events: none; }
+  .toast { background: #1b1409; border: 1px solid var(--xp); color: var(--ink); border-radius: 10px; padding: 8px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 20px var(--xp-dim); font-size: 13px; display: flex; gap: 10px; align-items: center; animation: toast 3.6s ease-out forwards; max-width: min(360px, calc(100vw - 32px)); }
+  .toast b { color: var(--xp); font: 600 14px var(--display); white-space: nowrap; }
+  .toast.big { background: linear-gradient(135deg, #2a1d08, #1b1409); padding: 12px 16px; }
+  @keyframes toast { 0% { opacity: 0; transform: translateY(-8px); } 8% { opacity: 1; transform: none; } 85% { opacity: 1; } 100% { opacity: 0; } }
+  #tip { position: fixed; z-index: 60; pointer-events: none; background: #0a0e13; border: 1px solid #2d394a; border-radius: 8px; padding: 7px 10px; font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.5); min-width: 120px; display: none; }
+  #tip .h { color: var(--ink-2); margin-bottom: 3px; font-size: 11.5px; }
+  #tip .r { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+  #tip .r span:first-child { display: inline-flex; gap: 6px; align-items: center; color: var(--ink-2); }
+  #tip .r i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  #tip .r b { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1180px) {
+    .console { grid-template-columns: 270px minmax(0, 1fr); }
+    .side.right { display: none; }
+    .side.left .only-narrow { display: block; }
+  }
+  .only-narrow { display: none; }
+  @media (max-width: 1000px) { .hero { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cards { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .top { flex-wrap: wrap; gap: 8px 12px; padding: 8px 16px; }
+    .brand a { display: none; }
+    .xpbox { order: 3; min-width: 0; flex: 1 1 100%; }
+    .iconbtn { display: inline-block; }
+    .console { grid-template-columns: 1fr; }
+    .side.left { position: fixed; inset: 0 0 0 auto; width: min(340px, 88vw); z-index: 40; transform: translateX(100%); transition: transform .25s; box-shadow: -10px 0 40px rgba(0,0,0,.5); border-left: 1px solid var(--line); }
+    body.drawer .side.left { transform: none; }
+    .hero { grid-template-columns: 1fr 1fr; }
+    .tile.lead { grid-column: 1 / -1; }
+    .tile .v { font-size: 24px; }
+    .hintline span:last-child { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <a href="../../">← ALL</a>
+      <h1>QUERY<span>·</span>QUEST</h1>
+    </div>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button class="tab" role="tab" id="tabConsole" aria-selected="true" aria-controls="viewConsole">Console</button>
+      <button class="tab" role="tab" id="tabDash" aria-selected="false" aria-controls="viewDash">Dashboard <span class="lock" id="dashLock">0/3</span></button>
+    </div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="drawerBtn" aria-label="Open schema and missions">Schema · Missions</button>
+    <div class="xpbox" aria-live="polite">
+      <div class="lvl" id="lvl">LV1 · Intern</div>
+      <div class="pts" id="pts">0 XP</div>
+      <div class="xpbar"><i id="xpfill"></i></div>
+    </div>
+  </header>
+
+  <!-- ================= CONSOLE ================= -->
+  <section class="view console" id="viewConsole" role="tabpanel" aria-labelledby="tabConsole">
+    <aside class="side left" id="leftSide">
+      <div class="sect">
+        <h2>Schema <small>halcyon_supply</small></h2>
+        <canvas id="schemaViz" aria-label="Schema map: tables light up as the agent uses them"></canvas>
+        <div class="tables" id="tables"></div>
+      </div>
+      <div class="only-narrow" id="missionsNarrow"></div>
+    </aside>
+
+    <div class="main">
+      <div class="feed" id="feed" aria-live="polite"></div>
+      <div class="composer">
+        <div class="chips" id="chips"></div>
+        <form class="ask" id="askForm" autocomplete="off">
+          <input id="q" name="q" placeholder="Ask about the data, e.g. “top 5 products by units sold in 2026”" aria-label="Ask a question about the data" />
+          <button class="btn primary" id="askBtn" type="submit">Ask agent ⏎</button>
+        </form>
+        <div class="hintline"><span id="agentMode">Agent: built-in planner · SQL runs locally (AlaSQL)</span><span>↑ recalls last question · click a table to peek</span></div>
+      </div>
+    </div>
+
+    <aside class="side right" id="rightSide">
+      <div class="sect" id="missionSect">
+        <h2>Missions <small id="mCount">0/9</small></h2>
+        <div class="missions" id="missions"></div>
+      </div>
+      <div class="sect">
+        <h2>Badges</h2>
+        <div class="badges" id="badges"></div>
+      </div>
+      <div class="sect">
+        <h2>How to play</h2>
+        <p class="help">Ask a question in plain English. The agent plans, streams SQL, runs it, and picks a chart. Edit the SQL and re-run it for bonus XP. Pin three insights to unlock the live dashboard.</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ================= DASHBOARD ================= -->
+  <section class="view dash" id="viewDash" role="tabpanel" aria-labelledby="tabDash" hidden>
+    <div class="dash-inner" id="dashInner"></div>
+  </section>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<div id="tip" role="tooltip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/alasql/4.4.0/alasql.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const params = new URLSearchParams(location.search);
+
+/* =====================================================================
+   1. Dataset: Halcyon Supply Co., a fictional outdoor-gear retailer.
+      Seeded, so every visitor gets the same numbers.
+   ===================================================================== */
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rnd = mulberry32(20260927);
+const pickW = (items, weights) => { let r = rnd() * weights.reduce((a, b) => a + b, 0); for (let i = 0; i < items.length; i++) { r -= weights[i]; if (r <= 0) return items[i]; } return items[items.length - 1]; };
+
+const REGIONS = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West'];
+const SEGMENTS = ['Consumer', 'Club', 'Wholesale'];
+const CHANNELS = ['Web', 'Mobile App', 'Retail', 'Partner'];
+const STATUSES = ['completed', 'returned', 'cancelled'];
+const CATALOG = {
+  Tents: [['Ridgeline 2P Tent', 329], ['Basecamp 4P Tent', 489], ['Ultralight Bivy', 219], ['Summit Dome 3P', 399], ['Canopy Shelter', 149], ['Trekker Tarp', 89]],
+  Packs: [['Traverse 55L Pack', 239], ['Day Hiker 22L', 99], ['Alpine 40L Pack', 189], ['Hydration Vest', 119], ['Duffel 90L', 139], ['Sling Pack', 59]],
+  Footwear: [['Granite Hiking Boot', 199], ['Trail Runner GTX', 159], ['Approach Shoe', 149], ['Camp Slide', 49], ['Winter Mountaineer', 329], ['Wool Hiking Sock', 24]],
+  Apparel: [['Storm Shell Jacket', 279], ['Down Parka', 349], ['Fleece Midlayer', 119], ['Merino Base Layer', 89], ['Trek Pant', 99], ['Sun Hoodie', 69]],
+  Climbing: [['Dynamic Rope 60m', 229], ['Climbing Harness', 79], ['Quickdraw Set', 139], ['Belay Device', 34], ['Crash Pad', 199], ['Helmet', 89]],
+  'Camp Kitchen': [['Titan Stove', 69], ['Cook Set', 59], ['Water Filter', 49], ['Insulated Bottle', 34], ['Camp Chair', 79], ['Cooler 45qt', 249]],
+};
+const CATEGORIES = Object.keys(CATALOG);
+const MARGIN = { Tents: .46, Packs: .52, Footwear: .41, Apparel: .58, Climbing: .44, 'Camp Kitchen': .36 };
+const REGION_AFFINITY = { // category popularity by region
+  Northeast: { Apparel: 1.4, Footwear: 1.2 }, Southeast: { 'Camp Kitchen': 1.4, Tents: 1.1 },
+  Midwest: { Tents: 1.3, 'Camp Kitchen': 1.2 }, Southwest: { Footwear: 1.3, Packs: 1.2 }, West: { Climbing: 1.8, Packs: 1.3 },
+};
+const FIRST = ['Avery', 'Jordan', 'Riley', 'Quinn', 'Rowan', 'Sage', 'Emerson', 'Harper', 'Kai', 'Reese', 'Morgan', 'Parker', 'Skyler', 'Dakota', 'Hayden', 'Finley', 'River', 'Blake', 'Casey', 'Ellis'];
+const LAST = ['Okafor', 'Lindqvist', 'Moreau', 'Tanaka', 'Alvarez', 'Novak', 'Brennan', 'Castillo', 'Haddad', 'Ivanova', 'Mbeki', 'Sato', 'Delgado', 'Fischer', 'Kowalski', 'Nguyen', 'Oduya', 'Petrov', 'Quintero', 'Vasquez'];
+const CLUBS = ['Cascade Alpine Club', 'Ozark Trail Society', 'Blue Ridge Outing Co.', 'Mesa Climbers Guild', 'Lakeshore Paddlers', 'Granite State Hikers'];
+const SHOPS = ['Timberline Outfitters', 'Canyon Supply', 'Northwoods Provisions', 'Coastline Adventure', 'Prairie Gear Co.', 'Summit Sports Wholesale'];
+
+const MONTHS = []; // 2025-01 .. 2026-08
+for (let y = 2025; y <= 2026; y++) for (let m = 1; m <= 12; m++) { if (y === 2026 && m > 8) break; MONTHS.push(`${y}-${String(m).padStart(2, '0')}`); }
+const LATEST_MONTH = MONTHS[MONTHS.length - 1];
+
+const DB = { customers: [], products: [], orders: [], order_items: [] };
+(function seed() {
+  let pid = 1;
+  for (const cat of CATEGORIES) for (const [name, price] of CATALOG[cat]) {
+    DB.products.push({ id: pid++, name, category: cat, price, cost: Math.round(price * (1 - MARGIN[cat] + (rnd() - .5) * .08) * 100) / 100 });
+  }
+  const used = new Set();
+  for (let id = 1; id <= 620; id++) {
+    const segment = pickW(SEGMENTS, [72, 18, 10]);
+    let name;
+    if (segment === 'Club') name = `${CLUBS[id % CLUBS.length]} #${Math.ceil(id / CLUBS.length)}`;
+    else if (segment === 'Wholesale') name = `${SHOPS[id % SHOPS.length]} ${['North', 'South', 'East', 'West', 'Central'][id % 5]}`;
+    else { do { name = `${FIRST[Math.floor(rnd() * FIRST.length)]} ${LAST[Math.floor(rnd() * LAST.length)]}`; } while (used.has(name) && used.size < 390); }
+    used.add(name);
+    DB.customers.push({ id, name, region: pickW(REGIONS, [24, 19, 17, 15, 25]), segment, signup_month: MONTHS[Math.floor(rnd() * 14)] });
+  }
+})();
+
+let nextOrderId = 1;
+function makeOrder(month) {
+  const c = DB.customers[Math.floor(rnd() * DB.customers.length)];
+  const mi = MONTHS.indexOf(month), yr = +month.slice(0, 4), mo = +month.slice(5);
+  const appShare = 14 + mi * 1.1; // Mobile App grows over time
+  const channel = c.segment === 'Wholesale' ? pickW(CHANNELS, [10, 3, 12, 75]) : pickW(CHANNELS, [44, appShare, 30, 4]);
+  const status = pickW(STATUSES, [90, channel === 'Web' ? 8 : channel === 'Mobile App' ? 6 : 4, 3.5]);
+  const day = 1 + Math.floor(rnd() * 28);
+  const order = {
+    id: nextOrderId++, customer_id: c.id, order_date: `${month}-${String(day).padStart(2, '0')}`,
+    order_month: month, order_quarter: `${yr}-Q${Math.ceil(mo / 3)}`, order_year: yr, channel, status,
+  };
+  DB.orders.push(order);
+  const lines = 1 + Math.floor(rnd() * (c.segment === 'Wholesale' ? 5 : 3));
+  const aff = REGION_AFFINITY[c.region];
+  for (let k = 0; k < lines; k++) {
+    const cat = pickW(CATEGORIES, CATEGORIES.map(ct => (aff[ct] || 1) * (ct === 'Apparel' && (mo >= 10 || mo <= 2) ? 1.5 : 1) * (ct === 'Tents' && mo >= 4 && mo <= 8 ? 1.5 : 1)));
+    const p = DB.products.filter(x => x.category === cat)[Math.floor(rnd() * 6)];
+    const qty = c.segment === 'Wholesale' ? 3 + Math.floor(rnd() * 10) : c.segment === 'Club' ? 1 + Math.floor(rnd() * 4) : 1 + Math.floor(rnd() * 2);
+    const disc = c.segment === 'Wholesale' ? .78 : rnd() < .25 ? .85 : 1;
+    DB.order_items.push({ order_id: order.id, product_id: p.id, qty, unit_price: Math.round(p.price * disc * 100) / 100 });
+  }
+  return order;
+}
+MONTHS.forEach((m, i) => {
+  const mo = +m.slice(5);
+  const season = [0.8, 0.75, 0.9, 1.0, 1.15, 1.3, 1.35, 1.25, 1.0, 0.95, 1.2, 1.4][mo - 1];
+  const n = Math.round(150 * (1 + i * 0.022) * season);
+  for (let k = 0; k < n; k++) makeOrder(m);
+});
+
+alasql.options.cache = false;
+alasql('CREATE TABLE customers (id INT, name STRING, region STRING, segment STRING, signup_month STRING)');
+alasql('CREATE TABLE products (id INT, name STRING, category STRING, price NUMBER, cost NUMBER)');
+alasql('CREATE TABLE orders (id INT, customer_id INT, order_date STRING, order_month STRING, order_quarter STRING, order_year INT, channel STRING, status STRING)');
+alasql('CREATE TABLE order_items (order_id INT, product_id INT, qty INT, unit_price NUMBER)');
+for (const t of Object.keys(DB)) alasql.tables[t].data = DB[t];
+
+const SCHEMA = {
+  customers: [['id', 'INT'], ['name', 'STRING'], ['region', 'STRING'], ['segment', 'STRING'], ['signup_month', 'STRING']],
+  orders: [['id', 'INT'], ['customer_id', 'INT → customers'], ['order_date', 'STRING'], ['order_month', 'YYYY-MM'], ['order_quarter', 'YYYY-Qn'], ['order_year', 'INT'], ['channel', 'STRING'], ['status', 'STRING']],
+  order_items: [['order_id', 'INT → orders'], ['product_id', 'INT → products'], ['qty', 'INT'], ['unit_price', 'NUMBER']],
+  products: [['id', 'INT'], ['name', 'STRING'], ['category', 'STRING'], ['price', 'NUMBER'], ['cost', 'NUMBER']],
+};
+
+/* =====================================================================
+   2. SQL safety: read-only, no file/URL/JS access
+   ===================================================================== */
+function guardSQL(sql) {
+  const s = sql.replace(/--[^\n]*/g, ' ').trim().replace(/;\s*$/, '');
+  if (!/^(select|with)\b/i.test(s)) throw new Error('Only read-only SELECT queries can run here.');
+  if (/;/.test(s)) throw new Error('Run one statement at a time.');
+  if (/\b(into|insert|update|delete|drop|create|alter|attach|detach|require|source|truncate)\b|\b(csv|xlsx|xls|json|txt|tab|tsv|html|file)\s*\(|`|@\{|\bjavascript\b/i.test(s)) {
+    throw new Error('That statement reaches outside the sandbox (files, URLs, JS, or writes). Stick to SELECT over the four tables.');
+  }
+  return s;
+}
+function runSQL(sql) {
+  const s = guardSQL(sql);
+  const t0 = performance.now();
+  const rows = alasql(s);
+  return { rows: Array.isArray(rows) ? rows : [], ms: performance.now() - t0 };
+}
+
+/* =====================================================================
+   3. The built-in agent: question -> plan -> SQL
+   ===================================================================== */
+const METRICS = {
+  aov:         { label: 'Avg order value', unit: '$', items: true, completed: true, expr: 'ROUND(SUM(oi.qty * oi.unit_price) / COUNT(DISTINCT o.id), 2)', def: 'Σ(qty × unit_price) ÷ distinct orders, completed orders', re: /\b(aov|average order( value)?|avg\.? order( value)?|order value|basket size)\b/ },
+  margin:      { label: 'Margin %', unit: '%', items: true, products: true, completed: true, expr: 'ROUND(SUM(oi.qty * (oi.unit_price - p.cost)) * 100 / SUM(oi.qty * oi.unit_price), 1)', def: 'profit ÷ revenue × 100', re: /\b(profit )?margins?\b/ },
+  return_rate: { label: 'Return rate %', unit: '%', expr: "ROUND(SUM(CASE WHEN o.status = 'returned' THEN 1 ELSE 0 END) * 100 / COUNT(*), 1)", def: 'returned ÷ all rows × 100', re: /\breturn(s| rate|ed)?\b/ },
+  profit:      { label: 'Profit', unit: '$', items: true, products: true, completed: true, expr: 'ROUND(SUM(oi.qty * (oi.unit_price - p.cost)), 2)', def: 'Σ qty × (unit_price − cost), completed orders', re: /\b(gross )?profits?\b/ },
+  revenue:     { label: 'Revenue', unit: '$', items: true, completed: true, expr: 'ROUND(SUM(oi.qty * oi.unit_price), 2)', def: 'Σ qty × unit_price, completed orders', re: /\b(revenue|sales|gmv|turnover|income|earn(ed|ings)?|made|money)\b/ },
+  units:       { label: 'Units sold', unit: '', items: true, completed: true, expr: 'SUM(oi.qty)', def: 'Σ qty, completed orders', re: /\b(units?( sold)?|quantity|items sold|volume|best[- ]selling|sold)\b/ },
+  customers:   { label: 'Active customers', unit: '', expr: 'COUNT(DISTINCT o.customer_id)', def: 'distinct customers who ordered', re: /\b(how many customers|number of customers|customer count|active customers|unique customers|customers count)\b/ },
+  orders:      { label: 'Orders', unit: '', expr: 'COUNT(DISTINCT o.id)', def: 'distinct orders placed', re: /\b(orders?|purchases|transactions|order count)\b/ },
+};
+const DIMS = {
+  month:    { label: 'Month', expr: 'o.order_month', alias: 'month', time: true, re: /\b(monthly|per month|by month|each month|month over month|over time|trend(s|ing)?|timeline|months)\b/ },
+  quarter:  { label: 'Quarter', expr: 'o.order_quarter', alias: 'quarter', time: true, re: /\b(quarter(ly|s)?|by quarter|per quarter)\b/ },
+  year:     { label: 'Year', expr: 'o.order_year', alias: 'year', time: true, re: /\b(by year|per year|yearly|annual(ly)?|year over year|yoy)\b/ },
+  customer: { label: 'Customer', expr: 'c.name', alias: 'customer', customers: true, re: /\b((top|best|biggest|largest|which|by|per|each|leading)\s+(\d+\s+)?customers?|customers? (ranked|leaderboard))\b/ },
+  product:  { label: 'Product', expr: 'p.name', alias: 'product', items: true, products: true, re: /\b(products?|skus?|items?)\b/ },
+  region:   { label: 'Region', expr: 'c.region', alias: 'region', customers: true, re: /\b(regions?|regional|geograph\w*|territor\w*|where)\b/ },
+  category: { label: 'Category', expr: 'p.category', alias: 'category', items: true, products: true, re: /\b(categor(y|ies)|product lines?|departments?)\b/ },
+  channel:  { label: 'Channel', expr: 'o.channel', alias: 'channel', re: /\b(channels?|web vs|online vs|storefront)\b/ },
+  segment:  { label: 'Segment', expr: 'c.segment', alias: 'segment', customers: true, re: /\b(segments?|customer types?)\b/ },
+  status:   { label: 'Status', expr: 'o.status', alias: 'status', re: /\b(status(es)?|by outcome)\b/ },
+};
+const DOMAINS = { region: REGIONS, channel: CHANNELS, segment: SEGMENTS, category: CATEGORIES, status: STATUSES };
+const FILTER_FIELDS = {
+  region:   { expr: 'c.region', customers: true, values: REGIONS },
+  channel:  { expr: 'o.channel', values: CHANNELS, alias: { web: 'Web', online: 'Web', website: 'Web', app: 'Mobile App', 'mobile app': 'Mobile App', mobile: 'Mobile App', retail: 'Retail', store: 'Retail', stores: 'Retail', 'in-store': 'Retail', partner: 'Partner', partners: 'Partner' } },
+  segment:  { expr: 'c.segment', customers: true, values: SEGMENTS, alias: { consumers: 'Consumer', consumer: 'Consumer', clubs: 'Club', club: 'Club', wholesale: 'Wholesale', wholesalers: 'Wholesale' } },
+  category: { expr: 'p.category', items: true, products: true, values: CATEGORIES, alias: { tent: 'Tents', tents: 'Tents', packs: 'Packs', backpacks: 'Packs', footwear: 'Footwear', boots: 'Footwear', shoes: 'Footwear', apparel: 'Apparel', clothing: 'Apparel', jackets: 'Apparel', climbing: 'Climbing', 'camp kitchen': 'Camp Kitchen', kitchen: 'Camp Kitchen', cooking: 'Camp Kitchen' } },
+  year:     { expr: 'o.order_year', numeric: true },
+  quarter:  { expr: 'o.order_quarter' },
+};
+
+function planFromQuestion(question) {
+  let q = ' ' + question.toLowerCase().replace(/[’']/g, "'").replace(/[?!.,]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  const notes = [];
+  const plan = { question, metrics: [], dims: [], filters: {}, order: 'desc', limit: null };
+
+  // filters first, so their words don't read as dimensions
+  const yr = q.match(/\b(2025|2026)\b/g);
+  if (yr) plan.filters.year = +yr[yr.length - 1];
+  if (/\bthis year\b|\bytd\b|year to date/.test(q)) plan.filters.year = 2026;
+  if (/\blast year\b/.test(q)) plan.filters.year = 2025;
+  const qm = q.match(/\bq([1-4])\b(?:\s*(2025|2026))?/);
+  if (qm) {
+    const y = qm[2] ? +qm[2] : plan.filters.year || (+qm[1] <= 3 ? 2026 : 2025);
+    plan.filters.quarter = `${y}-Q${qm[1]}`; delete plan.filters.year;
+    q = q.replace(qm[0], ' ');
+  }
+  for (const [field, f] of Object.entries(FILTER_FIELDS)) {
+    if (!f.values) continue;
+    const names = [...f.values.map(v => [v.toLowerCase(), v]), ...Object.entries(f.alias || {})].sort((a, b) => b[0].length - a[0].length);
+    for (const [word, val] of names) {
+      const re = new RegExp(`\\b(in|from|for|via|through|on|of|the|only|within)?\\s*(the\\s+)?${word.replace(/[-]/g, '\\-')}\\b(?!\\s*(vs|versus))`);
+      // "by channel" style words are dims, not filters; only take explicit values
+      if (re.test(q) && !new RegExp(`\\b(by|per|each|across)\\s+${word}\\b`).test(q)) {
+        plan.filters[field] = val; q = q.replace(new RegExp(`\\b${word.replace(/[-]/g, '\\-')}\\b`), ' '); break;
+      }
+    }
+  }
+
+  // metrics, most specific first; strip matched text so "order value" doesn't also read as "orders"
+  const custDim = DIMS.customer.re.test(q);
+  for (const [key, m] of Object.entries(METRICS)) {
+    if (key === 'customers' && custDim) continue;
+    const hit = q.match(m.re);
+    if (hit) { plan.metrics.push(key); q = q.replace(m.re, ' '); }
+  }
+  // dimensions, ordered by where they appear
+  const found = [];
+  for (const [key, d] of Object.entries(DIMS)) {
+    const hit = q.match(d.re);
+    if (hit) { found.push([hit.index, key]); if (key !== 'product') q = q.replace(d.re, ' '); }
+  }
+  found.sort((a, b) => a[0] - b[0]);
+  plan.dims = found.map(f => f[1]);
+  if (plan.dims.includes('product') && plan.dims.includes('category') && /\bproduct lines?\b/.test(question.toLowerCase())) plan.dims = plan.dims.filter(d => d !== 'product');
+
+  // ordering + limits
+  const top = q.match(/\b(top|best|highest|largest|biggest|most|leading)\b(\s*(\d+))?/);
+  const bot = q.match(/\b(bottom|worst|lowest|least|smallest|fewest)\b(\s*(\d+))?/);
+  const nAny = question.match(/\b(top|bottom|best|worst)\s+(\d+)\b/i);
+  if (bot) plan.order = 'asc';
+  const n = nAny ? +nAny[2] : (top && top[3] ? +top[3] : bot && bot[3] ? +bot[3] : null);
+  if (n) plan.limit = Math.min(n, 25);
+
+  // defaults and constraints
+  if (!plan.metrics.length && !plan.dims.length && !Object.keys(plan.filters).length && !/\bhow many\b|\btotal\b|\boverall\b/.test(question.toLowerCase())) plan.unknown = true;
+  if (!plan.metrics.length) {
+    if (/\bhow many\b/.test(question.toLowerCase())) plan.metrics.push('orders');
+    else { plan.metrics.push('revenue'); if (plan.dims.length || Object.keys(plan.filters).length) notes.push({ warn: true, t: 'No metric named, so I\'m assuming revenue.' }); }
+  }
+  if (plan.metrics.includes('return_rate') && plan.metrics.length > 1) { notes.push({ warn: true, t: 'Return rate needs all orders, so it gets its own query.' }); plan.metrics = ['return_rate']; }
+  const timeDims = plan.dims.filter(d => DIMS[d].time), catDims = plan.dims.filter(d => !DIMS[d].time);
+  if (timeDims.length > 1) plan.dims = [timeDims[0], ...catDims];
+  plan.dims = [...plan.dims.filter(d => DIMS[d].time), ...plan.dims.filter(d => !DIMS[d].time)].slice(0, 2);
+  if (plan.dims.length === 2 && ['product', 'customer'].includes(plan.dims[1])) { notes.push({ warn: true, t: `Too many ${plan.dims[1]}s to split by, so I'll group by ${DIMS[plan.dims[0]].label.toLowerCase()} only.` }); plan.dims = [plan.dims[0]]; }
+  if (plan.dims.length && plan.metrics.length > 1) {
+    const u = METRICS[plan.metrics[0]].unit;
+    const same = plan.metrics.filter(m => METRICS[m].unit === u);
+    if (same.length < plan.metrics.length || plan.dims.length > 1) { notes.push({ warn: true, t: `One scale per chart: showing ${METRICS[plan.metrics[0]].label.toLowerCase()}. Ask separately for the rest.` }); plan.metrics = [plan.metrics[0]]; }
+    else plan.metrics = same.slice(0, 3);
+  }
+  if (!plan.dims.length) plan.metrics = plan.metrics.slice(0, 4);
+  if (!plan.limit && ['product', 'customer'].includes(plan.dims[0])) plan.limit = 10;
+  if (plan.dims.includes('status')) plan.noCompleted = true;
+  plan.notes = notes;
+  return plan;
+}
+
+function buildSQL(plan, extraFilters = {}) {
+  const filters = { ...plan.filters, ...extraFilters };
+  for (const k of Object.keys(filters)) if (filters[k] === '' || filters[k] == null) delete filters[k];
+  if (filters.quarter && extraFilters.year) delete filters.quarter;
+  const need = { c: false, oi: false, p: false };
+  const touch = o => { if (o.customers) need.c = true; if (o.items) need.oi = true; if (o.products) { need.oi = true; need.p = true; } };
+  plan.metrics.forEach(m => touch(METRICS[m])); plan.dims.forEach(d => touch(DIMS[d])); Object.keys(filters).forEach(f => touch(FILTER_FIELDS[f]));
+
+  const sel = [...plan.dims.map(d => `${DIMS[d].expr} AS ${DIMS[d].alias}`), ...plan.metrics.map(m => `${METRICS[m].expr} AS ${m}`)];
+  const lines = [`SELECT ${sel.join(',\n       ')}`, 'FROM orders o'];
+  if (need.c) lines.push('JOIN customers c ON c.id = o.customer_id');
+  if (need.oi) lines.push('JOIN order_items oi ON oi.order_id = o.id');
+  if (need.p) lines.push('JOIN products p ON p.id = oi.product_id');
+  const where = [];
+  if (plan.metrics.some(m => METRICS[m].completed) && !plan.noCompleted) where.push("o.status = 'completed'");
+  for (const [f, v] of Object.entries(filters)) where.push(`${FILTER_FIELDS[f].expr} = ${FILTER_FIELDS[f].numeric ? v : `'${String(v).replace(/'/g, "''")}'`}`);
+  if (where.length) lines.push(`WHERE ${where.join('\n  AND ')}`);
+  if (plan.dims.length) {
+    lines.push(`GROUP BY ${plan.dims.map(d => DIMS[d].expr).join(', ')}`);
+    const t = plan.dims.filter(d => DIMS[d].time);
+    if (t.length) lines.push(`ORDER BY ${[...t, ...plan.dims.filter(d => !DIMS[d].time)].map(d => DIMS[d].alias).join(', ')}`);
+    else if (plan.dims.length === 2) lines.push(`ORDER BY ${DIMS[plan.dims[0]].alias}, ${plan.metrics[0]} DESC`);
+    else lines.push(`ORDER BY ${plan.metrics[0]} ${plan.order.toUpperCase()}`);
+    if (plan.limit && !t.length && plan.dims.length === 1) lines.push(`LIMIT ${plan.limit}`);
+  }
+  return { sql: lines.join('\n'), tables: ['orders', need.c && 'customers', need.oi && 'order_items', need.p && 'products'].filter(Boolean), filters };
+}
+
+function describePlan(plan, built) {
+  const out = [];
+  out.push(`Metric${plan.metrics.length > 1 ? 's' : ''}: ${plan.metrics.map(m => METRICS[m].label.toLowerCase()).join(', ')}${plan.dims.length ? ` · by ${plan.dims.map(d => DIMS[d].label.toLowerCase()).join(' × ')}` : ''}`);
+  const f = Object.entries(built.filters);
+  if (f.length) out.push(`Filter: ${f.map(([k, v]) => `${k} = ${v}`).join(', ')}`);
+  out.push(`Tables: ${built.tables.join(' ⋈ ')}`);
+  plan.metrics.forEach(m => out.push(`${METRICS[m].label} = ${METRICS[m].def}`));
+  if (plan.limit && plan.dims.length === 1 && !DIMS[plan.dims[0]].time) out.push(`${plan.order === 'asc' ? 'Bottom' : 'Top'} ${plan.limit} ${DIMS[plan.dims[0]].label.toLowerCase()}s`);
+  return [...out.map(t => ({ t })), ...plan.notes];
+}
+
+/* =====================================================================
+   4. Result -> chart spec
+   ===================================================================== */
+const PALETTE = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7', '--s8'].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
+function colorFor(name, domain, i) {
+  const idx = domain ? domain.indexOf(name) : -1;
+  return PALETTE[(idx >= 0 ? idx : i) % PALETTE.length];
+}
+const isNum = v => typeof v === 'number' && isFinite(v);
+const unitOf = col => METRICS[col]?.unit ?? (/revenue|profit|price|cost|value|aov|amount|sales|total/i.test(col) ? '$' : /rate|pct|percent|margin|share/i.test(col) ? '%' : '');
+const labelOf = col => METRICS[col]?.label ?? Object.values(DIMS).find(d => d.alias === col)?.label ?? col.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+const isTimeCol = (col, rows) => /month|quarter|year|date/i.test(col) || rows.every(r => /^\d{4}(-(\d{2}|Q\d))?(-\d{2})?$/.test(String(r[col])));
+
+function specFromRows(rows, plan) {
+  if (!rows.length) return { type: 'empty' };
+  const cols = Object.keys(rows[0]);
+  const numCols = cols.filter(c => rows.every(r => r[c] == null || isNum(r[c])) && !(c === 'year' && cols.length > 1) && !/(^|_)id$/.test(c));
+  const labCols = cols.filter(c => !numCols.includes(c));
+  if (!numCols.length) return { type: 'table' };
+  const unit = unitOf(numCols[0]);
+
+  if (!labCols.length && rows.length === 1) {
+    return { type: 'kpi', tiles: numCols.slice(0, 4).map(c => ({ label: labelOf(c), value: rows[0][c], unit: unitOf(c) })) };
+  }
+  const x = labCols[0] ?? numCols[0];
+  if (!labCols.length) return { type: 'table' };
+  const time = isTimeCol(x, rows);
+  const domainKey = k => Object.values(DIMS).find(d => d.alias === k) ? Object.keys(DIMS).find(dk => DIMS[dk].alias === k) : null;
+
+  if (labCols.length >= 2) {
+    const sKey = labCols[1], metric = numCols[0];
+    const cats = [...new Set(rows.map(r => r[x]))];
+    const names = [...new Set(rows.map(r => r[sKey]))];
+    const dom = DOMAINS[domainKey(sKey)];
+    if (dom) names.sort((a, b) => dom.indexOf(a) - dom.indexOf(b));
+    if (names.length > 8) return { type: 'table' };
+    const series = names.map((n, i) => ({ name: String(n), color: colorFor(n, dom, i), values: cats.map(c => { const r = rows.find(rr => rr[x] === c && rr[sKey] === n); return r ? r[metric] : 0; }) }));
+    if (!time) { // order rows by total
+      const tot = cats.map((c, i) => [c, series.reduce((a, s) => a + (s.values[i] || 0), 0), i]).sort((a, b) => b[1] - a[1]);
+      series.forEach(s => { s.values = tot.map(t => s.values[t[2]]); });
+      return { type: 'stack', categories: tot.map(t => String(t[0])), series, unit: unitOf(metric), metricLabel: labelOf(metric), xLabel: labelOf(x), seriesLabel: labelOf(sKey) };
+    }
+    return { type: 'line', categories: cats.map(String), series, unit: unitOf(metric), metricLabel: labelOf(metric), xLabel: labelOf(x), seriesLabel: labelOf(sKey) };
+  }
+  const plotted = numCols.filter(c => unitOf(c) === unit).slice(0, 3);
+  if (time) {
+    return { type: 'line', categories: rows.map(r => String(r[x])), unit, xLabel: labelOf(x), metricLabel: plotted.map(labelOf).join(' & '),
+      series: plotted.map((c, i) => ({ name: labelOf(c), color: PALETTE[i], values: rows.map(r => r[c]) })) };
+  }
+  const dom = DOMAINS[domainKey(x)];
+  return { type: 'bar', categories: rows.map(r => String(r[x])), unit, xLabel: labelOf(x), metricLabel: labelOf(plotted[0]),
+    series: [{ name: labelOf(plotted[0]), color: PALETTE[0], values: rows.map(r => r[plotted[0]]) }], domain: dom };
+}
+
+/* =====================================================================
+   5. Formatting + charts (hand-built SVG, hover tooltips)
+   ===================================================================== */
+function fmt(v, unit, compact = false) {
+  if (v == null || !isFinite(v)) return '—';
+  if (unit === '%') return `${(+v).toFixed(1)}%`;
+  const abs = Math.abs(v);
+  let s;
+  if (compact && abs >= 1e6) s = `${(v / 1e6).toFixed(abs >= 1e7 ? 1 : 2)}M`;
+  else if (compact && abs >= 1e4) s = `${(v / 1e3).toFixed(abs >= 1e5 ? 0 : 1)}K`;
+  else s = (+v).toLocaleString('en-US', { maximumFractionDigits: unit === '$' && abs < 1000 ? 2 : 0, minimumFractionDigits: unit === '$' && abs < 1000 && v % 1 ? 2 : 0 });
+  return unit === '$' ? `$${s}` : s;
+}
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+}
+const niceMonth = s => /^\d{4}-\d{2}$/.test(s) ? new Date(+s.slice(0, 4), +s.slice(5) - 1, 1).toLocaleString('en-US', { month: 'short' }) + (s.endsWith('-01') ? ` ’${s.slice(2, 4)}` : '') : s;
+const svgNS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(svgNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
+const textW = (s, size = 12) => String(s).length * size * 0.56;
+
+const tip = $('tip');
+function showTip(e, head, rows) {
+  tip.innerHTML = `<div class="h">${esc(head)}</div>${rows.map(r => `<div class="r"><span>${r.color ? `<i style="background:${r.color}"></i>` : ''}${esc(r.name)}</span><b>${esc(r.value)}</b></div>`).join('')}`;
+  tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+  tip.style.left = `${x}px`; tip.style.top = `${y}px`;
+}
+const hideTip = () => { tip.style.display = 'none'; };
+
+function renderChart(box, spec) {
+  box.innerHTML = '';
+  const W = Math.max(260, box.clientWidth || 600);
+  if (spec.type === 'kpi') {
+    box.innerHTML = `<div class="kpis">${spec.tiles.map(t => `<div class="kpi"><div class="l">${esc(t.label)}</div><div class="v">${fmt(t.value, t.unit, true)}</div></div>`).join('')}</div>`;
+    return;
+  }
+  if (spec.type === 'empty') { box.innerHTML = '<p class="say">No rows matched. Try widening the filters.</p>'; return; }
+  if (spec.type === 'table') { box.innerHTML = '<p class="say">This result reads best as a table (see the Table tab).</p>'; return; }
+  if (spec.series.length > 1) {
+    const lg = document.createElement('div'); lg.className = 'legend';
+    lg.innerHTML = spec.series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('');
+    box.appendChild(lg);
+  }
+  if (spec.type === 'bar' || spec.type === 'stack') barChart(box, spec, W);
+  else lineChart(box, spec, W);
+}
+
+function barChart(box, spec, W) {
+  const n = spec.categories.length, rowH = 30, barH = Math.min(22, rowH - 8);
+  const labW = Math.min(170, Math.max(...spec.categories.map(c => textW(c, 12))) + 12);
+  const totals = spec.categories.map((_, i) => spec.series.reduce((a, s) => a + Math.max(0, s.values[i] || 0), 0));
+  const max = niceMax(Math.max(...totals));
+  const valW = 64, plotW = Math.max(60, W - labW - valW), H = n * rowH + 22;
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': `${spec.metricLabel} by ${spec.xLabel}` }, box);
+  const x = v => labW + (v / max) * plotW;
+  for (let k = 0; k <= 4; k++) {
+    const v = max * k / 4;
+    el('line', { x1: x(v), x2: x(v), y1: 0, y2: n * rowH, stroke: 'var(--grid)', 'stroke-width': 1 }, svg);
+    const t = el('text', { x: x(v), y: n * rowH + 15, 'text-anchor': k === 0 ? 'start' : 'middle', fill: 'var(--muted)', 'font-size': 11 }, svg); t.textContent = fmt(v, spec.unit, true);
+  }
+  spec.categories.forEach((c, i) => {
+    const y = i * rowH + (rowH - barH) / 2;
+    const lab = el('text', { x: labW - 10, y: y + barH / 2 + 4, 'text-anchor': 'end', fill: 'var(--ink-2)', 'font-size': 12 }, svg);
+    lab.textContent = c.length > 24 ? c.slice(0, 23) + '…' : c;
+    let acc = 0;
+    spec.series.forEach((s, si) => {
+      const v = Math.max(0, s.values[i] || 0); if (!v) return;
+      const x0 = x(acc), x1 = x(acc + v); acc += v;
+      const last = spec.series.slice(si + 1).every(ss => !(ss.values[i] > 0));
+      const w = Math.max(1, x1 - x0 - (last ? 0 : 2)), r = last ? Math.min(4, w / 2) : 0;
+      const path = `M${x0},${y} h${w - r} ${r ? `a${r},${r} 0 0 1 ${r},${r}` : ''} v${barH - 2 * r} ${r ? `a${r},${r} 0 0 1 ${-r},${r}` : ''} h${-(w - r)} Z`;
+      const p = el('path', { d: path, fill: s.color }, svg);
+      const rowsTip = spec.type === 'stack'
+        ? [...spec.series.map(ss => ({ name: ss.name, color: ss.color, value: fmt(ss.values[i], spec.unit) })), { name: 'Total', value: fmt(totals[i], spec.unit) }]
+        : [{ name: s.name, color: s.color, value: fmt(v, spec.unit) }];
+      p.addEventListener('pointermove', e => { p.setAttribute('opacity', .85); showTip(e, c, rowsTip); });
+      p.addEventListener('pointerleave', () => { p.removeAttribute('opacity'); hideTip(); });
+    });
+    const tv = el('text', { x: x(totals[i]) + 6, y: y + barH / 2 + 4, fill: 'var(--ink)', 'font-size': 12, 'font-weight': 500 }, svg);
+    tv.textContent = fmt(totals[i], spec.unit, true);
+    // wide invisible hit row for easier hover
+    const hit = el('rect', { x: 0, y: i * rowH, width: labW, height: rowH, fill: 'transparent' }, svg);
+    hit.addEventListener('pointermove', e => showTip(e, c, spec.series.map(ss => ({ name: ss.name, color: ss.color, value: fmt(ss.values[i], spec.unit) }))));
+    hit.addEventListener('pointerleave', hideTip);
+  });
+}
+
+function lineChart(box, spec, W, opts = {}) {
+  const H = opts.height || 240, padL = 56, padR = spec.series.length <= 4 ? 96 : 16, padT = 10, padB = 26;
+  const n = spec.categories.length;
+  const all = spec.series.flatMap(s => s.values).filter(isNum);
+  const max = niceMax(Math.max(...all, 0));
+  const pw = W - padL - padR, ph = H - padT - padB;
+  const x = i => padL + (n <= 1 ? pw / 2 : (i / (n - 1)) * pw), y = v => padT + ph - (v / max) * ph;
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': `${spec.metricLabel} by ${spec.xLabel}` }, box);
+  for (let k = 0; k <= 4; k++) {
+    const v = max * k / 4;
+    el('line', { x1: padL, x2: padL + pw, y1: y(v), y2: y(v), stroke: 'var(--grid)', 'stroke-width': 1 }, svg);
+    const t = el('text', { x: padL - 8, y: y(v) + 4, 'text-anchor': 'end', fill: 'var(--muted)', 'font-size': 11 }, svg); t.textContent = fmt(v, spec.unit, true);
+  }
+  const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 58))));
+  spec.categories.forEach((c, i) => {
+    if (i % every && i !== n - 1) return;
+    const t = el('text', { x: x(i), y: H - 6, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': 11 }, svg); t.textContent = niceMonth(c);
+  });
+  spec.series.forEach(s => {
+    const pts = s.values.map((v, i) => [x(i), y(v || 0)]);
+    if (spec.series.length === 1) el('path', { d: `M${pts[0][0]},${y(0)} ${pts.map(p => `L${p[0]},${p[1]}`).join(' ')} L${pts[pts.length - 1][0]},${y(0)} Z`, fill: s.color, opacity: .1 }, svg);
+    el('path', { d: pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join(' '), fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    const last = pts[pts.length - 1];
+    el('circle', { cx: last[0], cy: last[1], r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+  });
+  if (spec.series.length <= 4) { // direct end labels, nudged only if they'd overlap
+    const ends = spec.series.map(s => ({ s, y: y(s.values[n - 1] || 0) })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+    ends.forEach(({ s, y: ly }) => {
+      const t = el('text', { x: x(n - 1) + 8, y: ly + 4, fill: 'var(--ink)', 'font-size': 11.5, 'font-weight': 500 }, svg);
+      t.textContent = spec.series.length === 1 ? fmt(s.values[n - 1], spec.unit, true) : `${s.name.length > 11 ? s.name.slice(0, 10) + '…' : s.name}`;
+    });
+  }
+  const cross = el('line', { y1: padT, y2: padT + ph, stroke: 'var(--muted)', 'stroke-width': 1, visibility: 'hidden' }, svg);
+  const dots = spec.series.map(s => el('circle', { r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg));
+  const hit = el('rect', { x: padL, y: 0, width: pw, height: H, fill: 'transparent' }, svg);
+  hit.addEventListener('pointermove', e => {
+    const r = svg.getBoundingClientRect(), mx = (e.clientX - r.left) * (W / r.width);
+    const i = Math.max(0, Math.min(n - 1, Math.round(((mx - padL) / pw) * (n - 1))));
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+    spec.series.forEach((s, si) => { dots[si].setAttribute('cx', x(i)); dots[si].setAttribute('cy', y(s.values[i] || 0)); dots[si].setAttribute('visibility', 'visible'); });
+    showTip(e, spec.categories[i], spec.series.map(s => ({ name: s.name, color: s.color, value: fmt(s.values[i], spec.unit) })));
+  });
+  hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('visibility', 'hidden')); hideTip(); });
+}
+
+function sparkline(values, color) {
+  const w = 200, h = 34, max = Math.max(...values), min = Math.min(...values);
+  const x = i => (i / (values.length - 1)) * (w - 6) + 1, y = v => h - 4 - ((v - min) / (max - min || 1)) * (h - 8);
+  const d = values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${d} L${x(values.length - 1)},${h} L1,${h} Z" fill="${color}" opacity=".1"/><path d="${d}" fill="none" stroke="var(--muted)" stroke-width="1.5" vector-effect="non-scaling-stroke"/><circle cx="${x(values.length - 1)}" cy="${y(values[values.length - 1])}" r="3" fill="${color}"/></svg>`;
+}
+
+function tableHTML(rows, max = 200) {
+  if (!rows.length) return '<p class="say" style="padding:10px">0 rows.</p>';
+  const cols = Object.keys(rows[0]);
+  const num = cols.map(c => rows.every(r => r[c] == null || isNum(r[c])));
+  return `<table class="grid"><thead><tr>${cols.map((c, i) => `<th class="${num[i] ? 'num' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, max).map((r, ri) => `<tr style="animation-delay:${Math.min(ri, 20) * 18}ms">${cols.map((c, i) => `<td class="${num[i] ? 'num' : ''}">${num[i] && r[c] != null ? esc(/^(id|.*_id|year)$/.test(c) ? r[c] : fmt(r[c], unitOf(c))) : esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>${rows.length > max ? `<p class="say" style="padding:6px 10px">Showing ${max} of ${rows.length} rows.</p>` : ''}`;
+}
+
+// re-render charts when their container width changes
+const ro = new ResizeObserver(entries => entries.forEach(en => { const b = en.target; if (b._spec && Math.abs((b._w || 0) - b.clientWidth) > 4) { b._w = b.clientWidth; renderChart(b, b._spec); } }));
+function mountChart(box, spec) { box._spec = spec; box._w = box.clientWidth; renderChart(box, spec); ro.observe(box); }
+
+/* =====================================================================
+   6. SQL syntax highlighting
+   ===================================================================== */
+const KW = /^(select|from|where|join|left|right|inner|outer|on|group|by|order|limit|as|and|or|not|in|is|null|case|when|then|else|end|distinct|asc|desc|having|with|union|all|between|like|offset)$/i;
+const FN = /^(sum|count|avg|min|max|round|coalesce|upper|lower|substring|len|length|abs)$/i;
+function highlight(sql) {
+  return sql.replace(/(--[^\n]*)|('(?:[^']|'')*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|([^A-Za-z0-9_'\-]+|-)/g, (m, cm, str, num, word, other) => {
+    if (cm) return `<span class="c">${esc(cm)}</span>`;
+    if (str) return `<span class="s">${esc(str)}</span>`;
+    if (num) return `<span class="n">${num}</span>`;
+    if (word) return KW.test(word) ? `<span class="k">${word}</span>` : FN.test(word) ? `<span class="f">${word}</span>` : esc(word);
+    return esc(other);
+  });
+}
+const tablesIn = sql => Object.keys(SCHEMA).filter(t => new RegExp(`\\b${t}\\b`, 'i').test(sql));
+
+/* =====================================================================
+   7. Game state: XP, levels, missions, badges
+   ===================================================================== */
+const LEVELS = [[0, 'Intern'], [120, 'Analyst'], [300, 'Senior Analyst'], [520, 'Data Lead'], [800, 'Chief Data Officer']];
+const MISSIONS = [
+  { id: 'region',  t: 'Rank regions by revenue', xp: 50, hint: 'Which region brings in the most revenue?', match: p => p && eqSet(p.metrics, ['revenue']) && eqSet(p.dims, ['region']) },
+  { id: 'trend',   t: 'Chart the monthly revenue trend', xp: 50, hint: 'Show revenue by month', match: p => p && p.metrics.includes('revenue') && p.dims[0] === 'month' && p.dims.length === 1 },
+  { id: 'topprod', t: 'Find the top 5 products by units sold', xp: 60, hint: 'Top 5 products by units sold', match: p => p && eqSet(p.metrics, ['units']) && eqSet(p.dims, ['product']) && p.limit === 5 && p.order === 'desc' },
+  { id: 'aov',     t: 'Which channel has the highest average order value?', xp: 60, hint: 'Average order value by channel', match: p => p && eqSet(p.metrics, ['aov']) && eqSet(p.dims, ['channel']) },
+  { id: 'margin',  t: 'Compare profit margin by category', xp: 70, hint: 'Margin by category', match: p => p && eqSet(p.metrics, ['margin']) && eqSet(p.dims, ['category']) },
+  { id: 'split',   t: 'Break revenue down by region and channel', xp: 80, hint: 'Revenue by region and channel', match: p => p && eqSet(p.metrics, ['revenue']) && p.dims[0] === 'region' && p.dims[1] === 'channel' },
+  { id: 'returns', t: 'Find the channel with the worst return rate', xp: 70, hint: 'Return rate by channel', match: p => p && eqSet(p.metrics, ['return_rate']) && eqSet(p.dims, ['channel']) },
+  { id: 'handsql', t: 'Edit the agent\'s SQL and run your own version', xp: 80, hint: null, match: (p, ctx) => ctx?.handEdited },
+  { id: 'dash',    t: 'Pin 3 insights to unlock the dashboard', xp: 100, hint: null, match: (p, ctx) => ctx?.pins >= 3 },
+];
+const BADGES = [
+  { id: 'first', t: 'First query' }, { id: 'chart3', t: 'Chart collector' }, { id: 'explorer', t: 'Schema explorer' },
+  { id: 'hand', t: 'SQL hand' }, { id: 'filter', t: 'Filter pro' }, { id: 'ten', t: '10 questions' }, { id: 'live', t: 'Live ops' },
+];
+const eqSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+const game = { xp: 0, done: new Set(), badges: new Set(), asked: 0, chartTypes: new Set(), metricsSeen: new Set(), pins: [] };
+
+function levelFor(xp) { let i = 0; while (i < LEVELS.length - 1 && xp >= LEVELS[i + 1][0]) i++; return i; }
+const xpBatch = { n: 0, why: [], timer: null };
+function addXP(n, why, big = false) {
+  const before = levelFor(game.xp);
+  game.xp += n;
+  if (big) toast(`+${n} XP`, why, true);
+  else {
+    xpBatch.n += n; xpBatch.why.push(why);
+    clearTimeout(xpBatch.timer);
+    xpBatch.timer = setTimeout(() => { toast(`+${xpBatch.n} XP`, xpBatch.why.join(' · ')); xpBatch.n = 0; xpBatch.why = []; }, 350);
+  }
+  const after = levelFor(game.xp);
+  if (after > before) setTimeout(() => toast('LEVEL UP', `You're now ${LEVELS[after][1]}`, true), 500);
+  renderHud();
+}
+function renderHud() {
+  const i = levelFor(game.xp), [base, name] = LEVELS[i], next = LEVELS[i + 1];
+  $('lvl').textContent = `LV${i + 1} · ${name}`;
+  $('pts').textContent = next ? `${game.xp} / ${next[0]} XP` : `${game.xp} XP · max level`;
+  $('xpfill').style.width = next ? `${((game.xp - base) / (next[0] - base)) * 100}%` : '100%';
+  const pinsN = game.pins.length;
+  $('dashLock').textContent = pinsN >= 3 ? `${pinsN} ●` : `🔒 ${pinsN}/3`;
+  $('tabDash').classList.toggle('unlocked', pinsN >= 3);
+  renderMissions();
+  $('badges').innerHTML = BADGES.map(b => `<span class="badge ${game.badges.has(b.id) ? 'on' : ''}">${esc(b.t)}</span>`).join('');
+}
+function renderMissions() {
+  const html = MISSIONS.map(m => `<button class="mission ${game.done.has(m.id) ? 'done' : ''}" data-m="${m.id}" ${m.hint ? '' : 'data-nohint'}>
+      <span class="ck">${game.done.has(m.id) ? '✓' : ''}</span><span class="t">${esc(m.t)}</span><span class="x">+${m.xp}</span></button>`).join('');
+  $('missions').innerHTML = html;
+  $('mCount').textContent = `${game.done.size}/${MISSIONS.length}`;
+  $('missionsNarrow').innerHTML = `<div class="sect"><h2>Missions <small>${game.done.size}/${MISSIONS.length}</small></h2><div class="missions">${html}</div></div><div class="sect"><h2>Badges</h2><div class="badges">${$('badges').innerHTML}</div></div>`;
+}
+function badge(id) {
+  if (game.badges.has(id)) return;
+  game.badges.add(id);
+  const b = BADGES.find(x => x.id === id);
+  addXP(25, `Badge unlocked: ${b.t}`);
+}
+function checkMissions(plan, ctx) {
+  for (const m of MISSIONS) {
+    if (game.done.has(m.id)) continue;
+    if (m.match(plan, { ...ctx, pins: game.pins.length })) {
+      game.done.add(m.id);
+      addXP(m.xp, `Mission complete: ${m.t}`, true);
+      if (m.id === 'dash') setTimeout(() => toast('DASHBOARD UNLOCKED', 'Open the Dashboard tab to see your insights go live.', true), 700);
+    }
+  }
+  renderHud();
+}
+function toast(head, body, big = false) {
+  const t = document.createElement('div'); t.className = 'toast' + (big ? ' big' : '');
+  t.innerHTML = `<b>${esc(head)}</b><span>${esc(body)}</span>`;
+  $('toasts').appendChild(t);
+  while ($('toasts').children.length > 3) $('toasts').firstChild.remove();
+  setTimeout(() => t.remove(), 3700);
+}
+
+/* =====================================================================
+   8. Feed: one turn per question
+   ===================================================================== */
+const feed = $('feed');
+let busy = false;
+const speedFactor = params.get('fast') ? 0.15 : 1;
+const scrollDown = () => { feed.scrollTop = feed.scrollHeight; };
+
+async function typeInto(node, text, cps = 70, skip) {
+  let shown = '';
+  for (let i = 0; i < text.length;) {
+    if (skip.now) { node.textContent = text; return; }
+    const step = 1 + Math.floor(Math.random() * 3);
+    shown = text.slice(0, i += step);
+    node.textContent = shown;
+    await sleep((1000 / cps) * step * speedFactor);
+  }
+}
+async function streamSQL(pre, sql, skip) {
+  const toks = sql.match(/\s+|[A-Za-z_][A-Za-z0-9_.]*|'[^']*'|\d+(\.\d+)?|./g) || [];
+  let acc = '';
+  for (const t of toks) {
+    acc += t;
+    if (!skip.now) {
+      pre.innerHTML = highlight(acc) + '<span class="caret"></span>';
+      schema.touch(tablesIn(acc));
+      await sleep((/\s/.test(t) ? 8 : 16 + Math.random() * 40) * speedFactor);
+    }
+  }
+  pre.innerHTML = highlight(sql);
+  schema.touch(tablesIn(sql));
+}
+
+function newTurn(question) {
+  const art = document.createElement('article'); art.className = 'turn';
+  art.innerHTML = `${question ? `<div class="q">${esc(question)}</div>` : ''}<div class="agent live"><div class="who"><span class="dot"></span>AGENT</div></div>`;
+  feed.appendChild(art); scrollDown();
+  return { art, agent: art.querySelector('.agent') };
+}
+function add(parent, html) { const d = document.createElement('div'); d.innerHTML = html.trim(); const n = d.firstElementChild; parent.appendChild(n); scrollDown(); return n; }
+
+async function ask(question, { tutorial = false, peek = null } = {}) {
+  if (busy || !question.trim()) return;
+  busy = true; $('askBtn').disabled = true;
+  const { art, agent } = newTurn(question);
+  const skip = { now: false };
+  agent.addEventListener('click', () => { skip.now = true; }, { once: true });
+  try {
+    let plan = null, sql, prose;
+    if (peek) {
+      sql = `SELECT *\nFROM ${peek}\nLIMIT 12`;
+      prose = `Peeking at <b>${peek}</b>: ${alasql(`SELECT COUNT(*) AS n FROM ${peek}`)[0].n.toLocaleString()} rows.`;
+    } else if (REMOTE) {
+      prose = `Sending your question and the schema to the remote agent at <b>${esc(new URL(REMOTE).host)}</b>.`;
+    } else {
+      plan = planFromQuestion(question);
+      if (plan.unknown) {
+        add(agent, `<p class="say">I couldn't find a metric, breakdown or filter in that. I know about <b>revenue, profit, margin, units, orders, customers, average order value</b> and <b>return rate</b>, broken down by <b>month, quarter, year, region, channel, segment, category, product, customer</b> or <b>status</b>. Try one of the suggestions below, or name a metric and a breakdown.</p>`);
+        return;
+      }
+      const built = buildSQL(plan);
+      sql = built.sql;
+      plan._built = built;
+      prose = null;
+    }
+    const say = add(agent, `<p class="say"></p>`);
+    if (prose) say.innerHTML = prose; else say.remove();
+    if (plan) {
+      const ul = add(agent, '<ul class="plan"></ul>');
+      for (const step of describePlan(plan, plan._built)) {
+        const li = document.createElement('li'); if (step.warn) li.className = 'warn'; ul.appendChild(li); scrollDown();
+        await typeInto(li, step.t, 110, skip);
+        await sleep(120 * speedFactor * (skip.now ? 0 : 1));
+      }
+    }
+    const box = add(agent, `<div class="sqlbox"><header><span class="lbl">SQL · AlaSQL dialect</span><button class="btn" data-a="copy" disabled>Copy</button><button class="btn" data-a="edit" disabled>Edit</button><button class="btn primary" data-a="run" hidden>Run ▶</button></header><pre class="code"><span class="caret"></span></pre></div>`);
+    const pre = box.querySelector('pre');
+    if (REMOTE && !peek) sql = await remoteSQL(question, pre, skip);
+    else await streamSQL(pre, sql, skip);
+    await execute(agent, box, sql, plan, { tutorial, peek, question });
+  } catch (e) {
+    add(agent, `<div class="errbox">${esc(e.message)}</div>`);
+  } finally {
+    agent.classList.remove('live');
+    busy = false; $('askBtn').disabled = false; schema.idle();
+  }
+}
+
+async function execute(agent, box, sql, plan, ctx) {
+  const pre = box.querySelector('pre');
+  box.querySelector('[data-a=copy]').disabled = false;
+  box.querySelector('[data-a=edit]').disabled = false;
+  let stat = agent.querySelector(':scope > .stat') || add(agent, '<div class="stat"></div>');
+  stat.innerHTML = '<span>Executing…</span>';
+  schema.run(tablesIn(sql));
+  await sleep(350 * speedFactor);
+  let res;
+  try { res = runSQL(sql); }
+  catch (e) {
+    stat.innerHTML = `<span class="err">✗ Query failed</span>`;
+    agent.querySelector(':scope > .viz')?.remove(); agent.querySelector(':scope > .actions')?.remove();
+    const old = agent.querySelector(':scope > .errbox'); if (old) old.remove();
+    add(agent, `<div class="errbox">${esc(String(e.message).split('\n').slice(0, 4).join('\n'))}</div>`);
+    wireSqlBox(agent, box, plan, ctx);
+    return;
+  }
+  agent.querySelector(':scope > .errbox')?.remove();
+  stat.innerHTML = `<span class="ok">✓ ${res.rows.length.toLocaleString()} row${res.rows.length === 1 ? '' : 's'}</span><span>${res.ms.toFixed(0)} ms</span><span>${tablesIn(sql).join(' ⋈ ')}</span>`;
+  const spec = specFromRows(res.rows, plan);
+  const title = ctx.peek ? `${ctx.peek} (sample)` : ctx.handEdited ? 'Your SQL' : ctx.question;
+  let viz = agent.querySelector(':scope > .viz');
+  viz?.remove();
+  viz = add(agent, `<div class="viz"><div class="vhead"><div class="ttl"><h3>${esc(title)}</h3><p>${esc(subtitle(spec, plan))}</p></div>
+      <div class="seg" role="group" aria-label="View"><button aria-pressed="${spec.type === 'table' || ctx.peek ? 'false' : 'true'}" data-v="chart">Chart</button><button aria-pressed="${spec.type === 'table' || ctx.peek ? 'true' : 'false'}" data-v="table">Table</button></div></div>
+      <div class="chart"></div><div class="tablewrap" hidden>${tableHTML(res.rows)}</div></div>`);
+  const chartBox = viz.querySelector('.chart'), tbl = viz.querySelector('.tablewrap');
+  const showTable = spec.type === 'table' || !!ctx.peek;
+  chartBox.hidden = showTable; tbl.hidden = !showTable;
+  if (!showTable) mountChart(chartBox, spec);
+  viz.querySelector('.seg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    viz.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    const t = b.dataset.v === 'table';
+    chartBox.hidden = t; tbl.hidden = !t;
+    if (!t && !chartBox._spec) mountChart(chartBox, spec);
+  });
+  agent.querySelector(':scope > .actions')?.remove();
+  const actions = add(agent, `<div class="actions"><button class="btn" data-a="pin" ${spec.type === 'empty' ? 'disabled' : ''}>📌 Pin to dashboard</button></div>`);
+  const pinBtn = actions.querySelector('[data-a=pin]');
+  pinBtn.addEventListener('click', () => pin({ title, sql, plan: ctx.handEdited ? null : plan, spec }, pinBtn));
+  wireSqlBox(agent, box, plan, ctx);
+
+  // scoring
+  if (!ctx.tutorial && !ctx.rerun) {
+    game.asked++;
+    addXP(20, ctx.peek ? `Peeked at ${ctx.peek}` : 'Question answered');
+    if (game.asked === 1) badge('first');
+    if (game.asked === 10) badge('ten');
+  }
+  if (ctx.peek) { game.peeked = (game.peeked || new Set()).add(ctx.peek); if (game.peeked.size >= 3) badge('explorer'); }
+  if (!ctx.tutorial && spec.type !== 'empty' && spec.type !== 'table' && !game.chartTypes.has(spec.type)) {
+    game.chartTypes.add(spec.type);
+    if (game.chartTypes.size > 1) addXP(15, `New chart type: ${spec.type}`);
+    if (game.chartTypes.size >= 3) badge('chart3');
+  }
+  if (plan && Object.keys(plan.filters).length >= 2 && !ctx.tutorial) badge('filter');
+  if (ctx.handEdited) { addXP(30, 'Hand-tuned SQL ran'); badge('hand'); }
+  if (!ctx.tutorial) checkMissions(ctx.handEdited ? null : plan, { handEdited: ctx.handEdited });
+}
+function subtitle(spec, plan) {
+  if (spec.type === 'kpi') return 'Headline figures';
+  if (!spec.series) return '';
+  const f = plan ? Object.entries(plan._built?.filters || plan.filters || {}).map(([k, v]) => v).join(' · ') : '';
+  return `${spec.metricLabel}${spec.xLabel ? ` by ${spec.xLabel.toLowerCase()}` : ''}${spec.seriesLabel ? ` and ${spec.seriesLabel.toLowerCase()}` : ''}${f ? ` · ${f}` : ''}`;
+}
+function wireSqlBox(agent, box, plan, ctx) {
+  if (box._wired) return; box._wired = true;
+  const pre = box.querySelector('pre'), editB = box.querySelector('[data-a=edit]'), runB = box.querySelector('[data-a=run]'), copyB = box.querySelector('[data-a=copy]');
+  let ta = null;
+  copyB.onclick = async () => {
+    const text = ta ? ta.value : pre.textContent;
+    try { await navigator.clipboard.writeText(text); copyB.textContent = 'Copied'; }
+    catch { const r = document.createRange(); r.selectNodeContents(pre); getSelection().removeAllRanges(); getSelection().addRange(r); copyB.textContent = 'Selected'; }
+    setTimeout(() => { copyB.textContent = 'Copy'; }, 1200);
+  };
+  editB.onclick = () => {
+    if (ta) { pre.innerHTML = highlight(ta.value); ta.remove(); ta = null; pre.hidden = false; runB.hidden = true; editB.textContent = 'Edit'; return; }
+    ta = document.createElement('textarea'); ta.className = 'edit'; ta.spellcheck = false; ta.value = pre.textContent;
+    ta.setAttribute('aria-label', 'Edit SQL');
+    pre.hidden = true; box.appendChild(ta); ta.focus();
+    runB.hidden = false; editB.textContent = 'Cancel';
+    box.querySelector('.lbl').textContent = 'SQL · editing (Ctrl+Enter to run)';
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runB.click(); } });
+  };
+  runB.onclick = async () => {
+    if (!ta || busy) return;
+    const sql = ta.value;
+    const changed = sql.replace(/\s+/g, ' ').trim() !== pre.textContent.replace(/\s+/g, ' ').trim();
+    pre.innerHTML = highlight(sql); ta.remove(); ta = null; pre.hidden = false; runB.hidden = true; editB.textContent = 'Edit';
+    box.querySelector('.lbl').textContent = changed ? 'SQL · your edit' : 'SQL · AlaSQL dialect';
+    busy = true; agent.classList.add('live');
+    try { await execute(agent, box, sql, changed ? null : plan, { ...ctx, handEdited: changed, rerun: !changed, tutorial: ctx.tutorial && !changed }); }
+    finally { busy = false; agent.classList.remove('live'); schema.idle(); }
+  };
+}
+
+/* ---------- optional remote agent (?agent=https://…) ---------- */
+const REMOTE = (() => { const a = params.get('agent'); try { return a && /^https?:/.test(new URL(a).protocol) ? a : null; } catch { return null; } })();
+if (REMOTE) $('agentMode').textContent = `Agent: remote (${new URL(REMOTE).host}) · SQL runs locally (AlaSQL)`;
+async function remoteSQL(question, pre, skip) {
+  const schemaText = Object.entries(SCHEMA).map(([t, cols]) => `${t}(${cols.map(c => `${c[0]} ${c[1]}`).join(', ')})`).join('\n');
+  const res = await fetch(REMOTE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ question, schema: schemaText, dialect: 'AlaSQL (SQL-92 subset); SELECT only; revenue = qty * unit_price on completed orders' }) });
+  if (!res.ok || !res.body) throw new Error(`Remote agent answered ${res.status}. Check the ?agent= URL.`);
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let raw = '';
+  for (;;) {
+    const { value, done } = await reader.read(); if (done) break;
+    let chunk = dec.decode(value, { stream: true });
+    // accept plain text or SSE "data:" lines
+    if (/^data:/m.test(chunk)) chunk = chunk.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).replace(/^ /, '')).filter(l => l !== '[DONE]').join('');
+    raw += chunk;
+    const show = raw.replace(/```(sql)?/gi, '').trimStart();
+    pre.innerHTML = highlight(show) + '<span class="caret"></span>';
+    schema.touch(tablesIn(show));
+  }
+  const m = raw.match(/```(?:sql)?\s*([\s\S]*?)```/i);
+  const sql = (m ? m[1] : raw).trim();
+  pre.innerHTML = highlight(sql);
+  return sql;
+}
+
+/* =====================================================================
+   9. Pins + dashboard
+   ===================================================================== */
+function pin(item, btn) {
+  if (btn.classList.contains('pinned')) return;
+  btn.classList.add('pinned'); btn.textContent = '📌 Pinned';
+  game.pins.push({ ...item, id: Math.random().toString(36).slice(2) });
+  addXP(10, 'Insight pinned');
+  checkMissions(null, {});
+  renderHud();
+  if (!$('viewDash').hidden) renderDash();
+}
+
+const dashState = { year: '', region: '', channel: '', live: false, timer: null, lastVals: {} };
+function dashFilters() { const f = {}; if (dashState.year) f.year = +dashState.year; if (dashState.region) f.region = dashState.region; if (dashState.channel) f.channel = dashState.channel; return f; }
+function kpiQuery(metrics, extra = {}) {
+  const plan = { metrics, dims: [], filters: {}, order: 'desc', limit: null, notes: [] };
+  return runSQL(buildSQL(plan, { ...dashFilters(), ...extra }).sql).rows[0] || {};
+}
+function renderDash() {
+  const inner = $('dashInner');
+  if (game.pins.length < 3) {
+    inner.innerHTML = `<div class="locked"><div class="big">🔒 DASHBOARD LOCKED</div><p>Pin ${3 - game.pins.length} more insight${3 - game.pins.length === 1 ? '' : 's'} from the console to assemble your command dashboard.</p><div class="meter"><i style="width:${(game.pins.length / 3) * 100}%"></i></div><button class="btn primary" id="backToConsole">Back to console</button></div>`;
+    $('backToConsole').onclick = () => showView('console');
+    return;
+  }
+  const sel = (id, label, opts, val) => `<label>${label}<select id="${id}"><option value="">All</option>${opts.map(o => `<option ${String(o) === String(val) ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+  inner.innerHTML = `
+    <div class="dhead">
+      <div class="ttl"><h2>Command dashboard</h2><p>${game.pins.length} pinned insights · filters re-run every agent-built query</p></div>
+      <div class="filters">
+        ${sel('fYear', 'Year', [2025, 2026], dashState.year)}${sel('fRegion', 'Region', REGIONS, dashState.region)}${sel('fChannel', 'Channel', CHANNELS, dashState.channel)}
+        <button class="live" id="liveBtn" aria-pressed="${dashState.live}"><i></i>Live orders</button>
+      </div>
+    </div>
+    <div class="livefeed" id="liveFeed">${dashState.live ? 'Streaming new orders into August 2026…' : 'Turn on live orders to stream new sales into the data.'}</div>
+    <div class="hero" id="hero"></div>
+    <div class="cards" id="cards"></div>`;
+  ['fYear', 'fRegion', 'fChannel'].forEach((id, i) => $(id).addEventListener('change', e => {
+    dashState[['year', 'region', 'channel'][i]] = e.target.value; refreshDash(false);
+    if (Object.values(dashFilters()).length >= 2) badge('filter');
+  }));
+  $('liveBtn').onclick = toggleLive;
+  const cards = $('cards');
+  game.pins.forEach((p, i) => {
+    const card = document.createElement('section'); card.className = 'card'; card.dataset.id = p.id;
+    if (game.pins.length % 2 === 1 && i === game.pins.length - 1) card.classList.add('wide');
+    card.innerHTML = `<div class="vhead"><div class="ttl"><h3>${esc(p.title)}</h3><p class="sub"></p></div>${p.plan ? '' : '<span class="tag">fixed SQL</span>'}<button class="x" aria-label="Unpin">✕</button></div><div class="chart"></div>`;
+    card.querySelector('.x').onclick = () => { game.pins = game.pins.filter(x => x.id !== p.id); renderHud(); renderDash(); };
+    cards.appendChild(card);
+  });
+  refreshDash(false);
+}
+function refreshDash(flash) {
+  if ($('viewDash').hidden || game.pins.length < 3) return;
+  // hero tiles
+  const k = kpiQuery(['revenue', 'aov', 'margin', 'orders']);
+  const monthly = runSQL(buildSQL({ metrics: ['revenue', 'orders'], dims: ['month'], filters: {}, order: 'desc', notes: [] }, dashFilters()).sql).rows;
+  const byM = Object.fromEntries(monthly.map(r => [r.month, r]));
+  const cur = byM[LATEST_MONTH], prev = byM['2025-08'];
+  const delta = (a, b) => (a && b ? ((a - b) / b) * 100 : null);
+  const d = (a, b, label) => { const v = delta(a, b); return v == null ? `<span>${label}</span>` : `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toFixed(1)}%</span><span>Aug ’26 vs Aug ’25</span>`; };
+  const tiles = [
+    { key: 'rev', l: 'Revenue', v: fmt(k.revenue, '$', true), d: d(cur?.revenue, prev?.revenue, 'all months in view'), spark: monthly.map(r => r.revenue), lead: true },
+    { key: 'ord', l: 'Completed orders', v: fmt(k.orders, '', true), d: d(cur?.orders, prev?.orders, 'all months in view'), spark: monthly.map(r => r.orders) },
+    { key: 'aov', l: 'Avg order value', v: fmt(k.aov, '$'), d: '<span>completed orders</span>' },
+    { key: 'mar', l: 'Margin', v: fmt(k.margin, '%'), d: '<span>profit ÷ revenue</span>' },
+  ];
+  const hero = $('hero');
+  if (!hero.children.length) hero.innerHTML = tiles.map(t => `<div class="tile ${t.lead ? 'lead' : ''}" data-k="${t.key}"><div class="l">${t.l}</div><div class="v"></div><div class="d"></div><div class="sp"></div></div>`).join('');
+  tiles.forEach(t => {
+    const node = hero.querySelector(`[data-k="${t.key}"]`);
+    const changed = dashState.lastVals[t.key] !== undefined && dashState.lastVals[t.key] !== t.v;
+    node.querySelector('.v').textContent = t.v; node.querySelector('.d').innerHTML = t.d;
+    node.querySelector('.sp').innerHTML = t.spark && t.spark.length > 1 ? sparkline(t.spark, PALETTE[0]) : '';
+    if (flash && changed) { node.classList.remove('flash'); void node.offsetWidth; node.classList.add('flash'); }
+    dashState.lastVals[t.key] = t.v;
+  });
+  // pinned cards
+  game.pins.forEach(p => {
+    const card = document.querySelector(`.card[data-id="${p.id}"]`); if (!card) return;
+    let sql = p.sql, spec = p.spec, sub;
+    try {
+      if (p.plan) { const built = buildSQL(p.plan, dashFilters()); sql = built.sql; spec = specFromRows(runSQL(sql).rows, p.plan); sub = subtitle(spec, { ...p.plan, _built: built }); }
+      else { spec = specFromRows(runSQL(sql).rows, null); sub = subtitle(spec, null); }
+    } catch (e) { sub = e.message; }
+    card.querySelector('.sub').textContent = sub;
+    const box = card.querySelector('.chart');
+    const sig = JSON.stringify(spec);
+    if (box._sig !== sig) {
+      box._sig = sig;
+      if (spec.type === 'table' || spec.type === 'empty') { box._spec = null; box.innerHTML = spec.type === 'empty' ? '<p class="say">No rows for these filters.</p>' : `<div class="tablewrap">${tableHTML(runSQL(sql).rows, 50)}</div>`; }
+      else mountChart(box, spec);
+      if (flash) { card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); }
+    }
+  });
+}
+function toggleLive() {
+  dashState.live = !dashState.live;
+  $('liveBtn').setAttribute('aria-pressed', dashState.live);
+  clearInterval(dashState.timer);
+  if (dashState.live) {
+    badge('live');
+    let added = 0;
+    dashState.timer = setInterval(() => {
+      const n = 2 + Math.floor(Math.random() * 4);
+      const made = [];
+      for (let i = 0; i < n; i++) made.push(makeOrder(LATEST_MONTH));
+      added += n;
+      const o = made[made.length - 1], c = DB.customers.find(x => x.id === o.customer_id);
+      const lf = $('liveFeed');
+      if (lf) lf.innerHTML = `<b>● LIVE</b> +${n} orders · latest #${o.id} from ${esc(c.name)} (${esc(c.region)}, ${esc(o.channel)}) · ${added} streamed this session`;
+      refreshDash(true);
+    }, 2500);
+  } else {
+    const lf = $('liveFeed'); if (lf) lf.textContent = 'Live orders paused.';
+  }
+}
+
+/* =====================================================================
+   10. Schema constellation (three.js): tables glow as the agent uses them
+   ===================================================================== */
+const schema = (() => {
+  const canvas = $('schemaViz');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  camera.position.set(0, 1.6, 7.2); camera.lookAt(0, -0.1, 0);
+  const group = new THREE.Group(); scene.add(group);
+  const POS = { customers: [-2.9, 0.5, 0.4], orders: [-0.9, -0.35, -0.2], order_items: [1.0, 0.55, 0.2], products: [2.9, -0.35, -0.3] };
+  const EDGES = [['customers', 'orders'], ['orders', 'order_items'], ['order_items', 'products']];
+  const IDLE = new THREE.Color('#3a4a60'), HOT = new THREE.Color('#ffb454'), RUN = new THREE.Color('#3fcf8e');
+  const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.3, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  const labelTex = text => { const c = document.createElement('canvas'); c.width = 256; c.height = 64; const g = c.getContext('2d'); g.font = '500 26px JetBrains Mono, monospace'; g.fillStyle = '#a9b4c2'; g.textAlign = 'center'; g.fillText(text, 128, 40); const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t; };
+  const nodes = {};
+  for (const [name, p] of Object.entries(POS)) {
+    const size = 0.4 + Math.log10(DB[name].length) * 0.08;
+    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(size, 1), new THREE.MeshBasicMaterial({ color: IDLE.clone(), wireframe: true }));
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: IDLE.clone(), transparent: true, opacity: .35, depthWrite: false, blending: THREE.AdditiveBlending }));
+    glow.scale.setScalar(size * 5);
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(name), transparent: true, depthWrite: false }));
+    label.scale.set(2.8, 0.7, 1); label.position.y = -size - 0.5;
+    const g = new THREE.Group(); g.position.set(...p); g.add(glow, core, label); group.add(g);
+    nodes[name] = { g, core, glow, heat: 0, run: 0 };
+  }
+  const edges = EDGES.map(([a, b]) => {
+    const pa = new THREE.Vector3(...POS[a]), pb = new THREE.Vector3(...POS[b]);
+    const mid = pa.clone().lerp(pb, .5); mid.y += 0.6;
+    const curve = new THREE.QuadraticBezierCurve3(pa, mid, pb);
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(40)), new THREE.LineBasicMaterial({ color: IDLE.clone(), transparent: true, opacity: .7 }));
+    group.add(line);
+    return { a, b, curve, line, heat: 0 };
+  });
+  const packets = [];
+  for (let i = 0; i < 18; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: RUN, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); s.scale.setScalar(.35); s.visible = false; group.add(s); packets.push({ s, e: null, t: 0, sp: 1 }); }
+  let active = new Set(), running = false;
+  function size() { const w = canvas.clientWidth, h = canvas.clientHeight; if (w && canvas.width !== Math.floor(w * renderer.getPixelRatio())) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.position.z = 7.2 * Math.max(1, 1.75 / camera.aspect); camera.updateProjectionMatrix(); } }
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    size();
+    group.rotation.y = reduce ? 0 : Math.sin(now / 6000) * 0.35;
+    for (const [name, n] of Object.entries(nodes)) {
+      const target = active.has(name) ? 1 : 0;
+      n.heat += (target - n.heat) * Math.min(1, dt * 6);
+      const col = IDLE.clone().lerp(running && active.has(name) ? RUN : HOT, n.heat);
+      n.core.material.color.copy(col); n.glow.material.color.copy(col);
+      n.glow.material.opacity = .25 + n.heat * .55 + (running && active.has(name) ? Math.sin(now / 90) * .15 : 0);
+      n.core.rotation.y += dt * (0.3 + n.heat * 2);
+    }
+    edges.forEach(e => {
+      const on = active.has(e.a) && active.has(e.b);
+      e.heat += ((on ? 1 : 0) - e.heat) * Math.min(1, dt * 6);
+      e.line.material.color.copy(IDLE.clone().lerp(running ? RUN : HOT, e.heat));
+    });
+    packets.forEach(p => {
+      if (!p.e) {
+        const live = edges.filter(e => active.has(e.a) && active.has(e.b));
+        if (running && live.length && Math.random() < dt * 8) { p.e = live[Math.floor(Math.random() * live.length)]; p.t = 0; p.sp = .8 + Math.random() * .8; p.dir = Math.random() < .5; }
+        p.s.visible = false; return;
+      }
+      p.t += dt * p.sp; if (p.t >= 1 || !running) { p.e = null; p.s.visible = false; return; }
+      p.e.curve.getPoint(p.dir ? 1 - p.t : p.t, p.s.position); p.s.visible = true;
+    });
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  const markList = names => document.querySelectorAll('.tbl').forEach(t => t.classList.toggle('hot', names.includes(t.dataset.t)));
+  return {
+    touch(names) { running = false; active = new Set(names); markList(names); },
+    run(names) { running = true; active = new Set(names); markList(names); },
+    idle() { setTimeout(() => { if (!busy) { running = false; active = new Set(); markList([]); } }, 900); },
+  };
+})();
+
+/* =====================================================================
+   11. Wiring
+   ===================================================================== */
+$('tables').innerHTML = Object.entries(SCHEMA).map(([t, cols]) => `
+  <details class="tbl" data-t="${t}" ${t === 'orders' ? 'open' : ''}>
+    <summary><span>${t}</span><small>${DB[t].length.toLocaleString()} rows</small></summary>
+    <ul>${cols.map(c => `<li><span>${c[0]}</span><span>${esc(c[1])}</span></li>`).join('')}</ul>
+    <button class="peek" data-peek="${t}">Peek at rows ▸</button>
+  </details>`).join('');
+$('tables').addEventListener('click', e => {
+  const b = e.target.closest('[data-peek]'); if (!b) return;
+  closeDrawer(); ask(`Show me some rows from ${b.dataset.peek}`, { peek: b.dataset.peek });
+});
+document.addEventListener('click', e => {
+  const m = e.target.closest('.mission'); if (!m) return;
+  const mm = MISSIONS.find(x => x.id === m.dataset.m);
+  if (mm.hint) { $('q').value = mm.hint; $('q').focus(); closeDrawer(); }
+  else if (mm.id === 'handsql') toast('HINT', 'Click Edit on any SQL block, change it (add a filter, a column, a LIMIT), then Run.');
+  else toast('HINT', 'Use the 📌 Pin button under any chart.');
+});
+
+const CHIPS = ['Revenue by region in 2026', 'Monthly orders by channel', 'Top 10 customers by revenue', 'Margin by category', 'Return rate by channel', 'Units sold by segment in Q2', 'Revenue and profit by quarter', 'How many customers ordered in 2026?'];
+$('chips').innerHTML = CHIPS.map(c => `<button class="chip" type="button">${esc(c)}</button>`).join('');
+$('chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) { $('q').value = b.textContent; $('askForm').requestSubmit(); } });
+
+const history = [];
+$('askForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = $('q').value.trim(); if (!q || busy) return;
+  history.push(q); $('q').value = '';
+  ask(q);
+});
+$('q').addEventListener('keydown', e => { if (e.key === 'ArrowUp' && !$('q').value && history.length) { $('q').value = history[history.length - 1]; e.preventDefault(); } });
+
+function showView(v) {
+  const dash = v === 'dash';
+  $('viewConsole').hidden = dash; $('viewDash').hidden = !dash;
+  $('tabConsole').setAttribute('aria-selected', !dash); $('tabDash').setAttribute('aria-selected', dash);
+  if (dash) renderDash();
+}
+$('tabConsole').onclick = () => showView('console');
+$('tabDash').onclick = () => showView('dash');
+function closeDrawer() { document.body.classList.remove('drawer'); }
+$('drawerBtn').onclick = () => document.body.classList.toggle('drawer');
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+$('viewConsole').addEventListener('click', e => { if (document.body.classList.contains('drawer') && !e.target.closest('#leftSide') && !e.target.closest('#drawerBtn')) closeDrawer(); });
+
+renderHud();
+(async () => {
+  const { agent } = newTurn(null);
+  add(agent, `<p class="say">I'm your data agent for <b>Halcyon Supply Co.</b>: ${DB.orders.length.toLocaleString()} orders, ${DB.customers.length} customers and ${DB.products.length} products from Jan 2025 to Aug 2026. Ask me anything in plain English. I'll plan it, stream the SQL, run it, and chart the answer. Here's a warm-up.</p>`);
+  agent.classList.remove('live');
+  await sleep(500);
+  await ask('Revenue by category in 2026', { tutorial: true });
+  $('q').focus({ preventScroll: true });
+})();
+window.QQ = { DB, planFromQuestion, buildSQL, runSQL, game }; // for debugging from the console
+</script>
+</body>
+</html>
