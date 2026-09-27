@@ -16,4 +16,11 @@ window.ANIMATIONS = [
     tags: ['sql', 'agents', 'dashboard', 'game'],
     added: '2026-09-27',
   },
+  {
+    slug: 'breach',
+    title: 'Breach',
+    description: 'A whale-jumping duel against an AI agent: tap fast to build surge, let go to breach, land flat for bigger splashes, and race the agent to 500 points.',
+    tags: ['three.js', 'game', 'agents'],
+    added: '2026-09-27',
+  },
 ];
