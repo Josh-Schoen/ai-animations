@@ -18,10 +18,23 @@ python3 -m http.server 8000   # then open http://localhost:8000
 - **Run of runs.** Each suite is 48 runs. Finished runs orbit the agent as green or red beads, and the HUD grid fills in. After a suite, a debrief banner appears and the agent is reconfigured for the next suite (`S-01 … S-04`, each with different temperature/prompt settings and reliability).
 - **Totals.** Overall runs, cleared, compromised, overall accuracy against an 80% threshold with a sparkline, per-suite accuracy history, per-step pass/fail intel, and a live telemetry log.
 
+## Drill-in
+
+Tap or click any step node (or its label) to fly the camera to it and open its dossier:
+- the step's spec: tool, assertion, timeout, expected latency, and whether it can retry
+- its live status and last event
+- pass/fail counts and pass rate against the expected rate for the current config
+- the last 32 executions, with retries marked
+- latency avg, p50 and p95 with a chart against the timeout
+- a breakdown of failure modes
+
+Tap the agent to see its full configuration, overall totals, suite history, and which steps caused failures. Inside the dossier, ‹ › cycles through the steps, "Jump to" picks any node, and ✕ flies the camera back out.
+
 ## Controls
 
-- Drag to orbit, scroll to zoom.
-- `Space`: pause/resume. Buttons set speed (1×–8×) and reset.
+- Drag to orbit, scroll or pinch to zoom.
+- `Space`: pause/resume. Buttons set speed (1×–8×), reset, and toggle fullscreen (`F`).
+- `1`–`8` drill into a step, `A` into the agent, `←`/`→` cycle steps, `Esc` closes the dossier.
 - URL params: `?speed=4` sets the starting speed, `?runs=16` sets runs per suite (8–96).
 
 ## Customising

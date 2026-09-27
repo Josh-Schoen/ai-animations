@@ -153,6 +153,7 @@
   }
   #controls button:hover { border-color: var(--prime); box-shadow: 0 0 8px rgba(0,255,200,.4); }
   #controls button.on { background: var(--prime); color: #001a14; }
+  #controls button:focus-visible { outline: 1px solid var(--prime); outline-offset: 2px; }
 
   #stamp {
     position: fixed; top: 22%; left: 50%; z-index: 20; pointer-events: none;
@@ -181,16 +182,97 @@
   #banner .t { font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: .2em; color: var(--prime); text-shadow: 0 0 20px rgba(0,255,200,.7); margin: 6px 0; }
   #banner .s { font-size: 13px; letter-spacing: .25em; color: var(--ink); }
 
+  /* tappable nodes */
+  .nl { pointer-events: auto; cursor: pointer; }
+  .nl:hover { border-color: var(--prime); }
+  .nl.focus { border-color: var(--prime); box-shadow: 0 0 0 1px var(--prime), 0 0 18px rgba(0,255,200,.5); }
+  #stage canvas.hot { cursor: pointer; }
+
+  #hint {
+    position: fixed; left: 50%; bottom: 58px; transform: translateX(-50%); z-index: 10; pointer-events: none;
+    font-size: 10px; letter-spacing: .3em; color: var(--dim); white-space: nowrap; transition: opacity .6s;
+  }
+  #hint b { color: var(--prime); font-weight: 400; }
+  body.focused #hint, body.seen #hint { opacity: 0; }
+
+  /* ---------- drill-in dossier ---------- */
+  #dossier {
+    position: fixed; z-index: 15; top: 16px; right: 16px; bottom: 16px; width: 372px;
+    display: flex; flex-direction: column; padding: 0; opacity: 0; transform: translateX(24px);
+    pointer-events: none; transition: opacity .35s, transform .35s;
+  }
+  body.focused #dossier { opacity: 1; transform: none; pointer-events: auto; }
+  body.focused #stats, body.focused #intel { opacity: 0; pointer-events: none; }
+  #stats, #intel { transition: opacity .35s; }
+  #dossier .dh { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px; border-bottom: 1px solid var(--line); }
+  #dossier .dh .ttl { flex: 1; min-width: 0; }
+  #dossier .dh .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; letter-spacing: .3em; color: var(--dim); }
+  #dossier .dh h2 { margin: 2px 0 0; font-family: var(--display); font-size: 17px; letter-spacing: .12em; color: var(--prime); text-shadow: 0 0 10px rgba(0,255,200,.5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #dossier .dh button {
+    font-family: var(--mono); font-size: 13px; color: var(--prime); background: rgba(0,30,24,.75);
+    border: 1px solid var(--line); width: 30px; height: 30px; cursor: pointer; flex: none;
+  }
+  #dossier .dh button:hover, #dossier .dh button:focus-visible { border-color: var(--prime); outline: none; box-shadow: 0 0 8px rgba(0,255,200,.4); }
+  #dossier .db { flex: 1; overflow-y: auto; padding: 4px 12px 14px; scrollbar-width: thin; scrollbar-color: var(--faint) transparent; }
+  #dossier section { padding: 10px 0; border-bottom: 1px dashed var(--faint); }
+  #dossier section:last-child { border-bottom: none; }
+  #dossier h3 { margin: 0 0 7px; font-size: 9px; font-weight: 400; letter-spacing: .3em; color: var(--dim); }
+  #dossier .kv { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 3px; font-size: 11px; }
+  #dossier .kv b { font-weight: 400; color: var(--dim); text-transform: uppercase; font-size: 10px; letter-spacing: .08em; }
+  #dossier .kv span { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+  #dossier .chip { display: inline-block; font-size: 10px; letter-spacing: .15em; padding: 1px 6px; border: 1px solid currentColor; color: var(--dim); }
+  #dossier .chip.running { color: var(--run); } #dossier .chip.pass { color: var(--pass); }
+  #dossier .chip.fail { color: var(--fail); } #dossier .chip.warn { color: var(--warn); }
+  #dossier .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  #dossier .tile .l { font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+  #dossier .tile .v { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  #dossier .tile.pass .v { color: var(--pass); } #dossier .tile.fail .v { color: var(--fail); } #dossier .tile.warn .v { color: var(--warn); }
+  #dossier .rate { display: flex; align-items: baseline; justify-content: space-between; margin-top: 10px; }
+  #dossier .rate .big { font-family: var(--display); font-weight: 900; font-size: 32px; color: var(--prime); text-shadow: 0 0 14px rgba(0,255,200,.5); font-variant-numeric: tabular-nums; }
+  #dossier .rate .big small { font-size: 15px; }
+  #dossier .rate .exp { font-size: 10px; color: var(--dim); text-align: right; line-height: 1.6; }
+  #dossier .rate .exp span { color: var(--ink); }
+  #dossier .hist { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+  #dossier .hist i { aspect-ratio: 1; border: 1px solid var(--faint); }
+  #dossier .hist i.pass { background: var(--pass); border-color: var(--pass); }
+  #dossier .hist i.fail { background: var(--fail); border-color: var(--fail); box-shadow: 0 0 5px rgba(255,45,85,.7); }
+  #dossier .hist i.retry { outline: 1px solid var(--warn); outline-offset: 1px; }
+  #dossier .legend { display: flex; gap: 12px; margin-top: 6px; font-size: 9px; color: var(--dim); letter-spacing: .1em; }
+  #dossier canvas { width: 100%; height: 70px; display: block; }
+  #dossier .modes div { display: grid; grid-template-columns: 1fr 70px 22px; gap: 8px; align-items: center; font-size: 10.5px; padding: 2px 0; }
+  #dossier .modes .mb { height: 4px; background: var(--faint); position: relative; }
+  #dossier .modes .mb i { position: absolute; inset: 0 auto 0 0; background: var(--fail); }
+  #dossier .modes .c { text-align: right; color: var(--fail); font-variant-numeric: tabular-nums; }
+  #dossier .modes .none { display: block; color: var(--dim); }
+  #dossier .modes .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #dossier .event { font-size: 10.5px; color: #8fdcca; line-height: 1.5; }
+  #dossier .tools { display: flex; flex-wrap: wrap; gap: 4px; }
+  #dossier .tools span { border: 1px solid var(--faint); padding: 1px 5px; font-size: 10px; color: #7fd9c4; }
+  #dossier .jump { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  #dossier .jump button {
+    font-family: var(--mono); font-size: 9.5px; color: var(--ink); background: rgba(0,30,24,.6); border: 1px solid var(--faint);
+    padding: 4px 2px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .04em;
+  }
+  #dossier .jump button:hover, #dossier .jump button:focus-visible { border-color: var(--prime); outline: none; }
+  #dossier .jump button.fail { color: var(--fail); } #dossier .jump button.running { color: var(--run); }
+  #dossier .foot { padding: 8px 12px; border-top: 1px solid var(--line); font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+
   @media (max-width: 900px) {
     #intel { display: none; }
     #log { height: 120px; font-size: 10px; }
   }
   @media (max-width: 700px) {
+    #dossier { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 58%; transform: translateY(24px); }
+    body.focused #log { display: none; }
+    #dossier .foot { display: none; }
+    #hint { bottom: auto; top: 140px; }
     #stats { top: auto; bottom: 150px; right: 16px; left: 16px; width: auto; }
     #stats .panel:nth-child(2) { display: none; }
     #spark { display: none; }
     #log { height: 84px; }
-    #controls { bottom: auto; top: 104px; }
+    #controls { bottom: auto; top: 104px; left: 16px; right: 16px; transform: none; justify-content: center; flex-wrap: wrap; gap: 4px; }
+    #controls button { padding: 6px 8px; font-size: 10px; letter-spacing: .08em; }
+    #controls .lg { display: none; }
     .nl .rw { display: none; }
     .nl .bar { display: none; }
     .nl { min-width: 0; }
@@ -256,7 +338,19 @@
   <button data-speed="4">4×</button>
   <button data-speed="8">8×</button>
   <button id="bReset">RESET</button>
+  <button id="bFull" title="F">⛶<span class="lg"> FULLSCREEN</span></button>
 </div>
+<div id="hint"><b>TAP A NODE</b> TO DRILL IN · DRAG TO ORBIT · PINCH OR SCROLL TO ZOOM</div>
+<aside class="hud panel" id="dossier" data-tag="DOSSIER // DRILL-IN" aria-live="polite">
+  <div class="dh">
+    <button data-act="prev" title="Previous step (←)" aria-label="Previous step">‹</button>
+    <div class="ttl"><div class="k" id="dK">STEP 01 / 08</div><h2 id="dT">—</h2></div>
+    <button data-act="next" title="Next step (→)" aria-label="Next step">›</button>
+    <button data-act="close" title="Close (Esc)" aria-label="Close dossier">✕</button>
+  </div>
+  <div class="db" id="dB"></div>
+  <div class="foot">ESC CLOSE · ← → CYCLE STEPS · A AGENT</div>
+</aside>
 
 <div id="stamp"></div>
 <div id="banner"><div class="box"><div class="k" id="bnK">DEBRIEF</div><div class="t" id="bnT">SUITE COMPLETE</div><div class="s" id="bnS"></div></div></div>
@@ -481,8 +575,10 @@ const agent = (() => {
   ret.rotation.x = -Math.PI / 2; ret.position.y = FLOOR_Y - AGENT_POS.y + 0.06; g.add(ret);
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, AGENT_POS.y - FLOOR_Y, 6), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.agent, opacity: 0.5 }));
   beam.position.y = (FLOOR_Y - AGENT_POS.y) / 2; g.add(beam);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(3.6, 12, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  hit.userData.pick = 'agent'; g.add(hit);
   scene.add(g);
-  return { group: g, shell, shell2, core, haze, rings, ret, color: COLORS.agent.clone(), target: COLORS.agent.clone(), flash: 0 };
+  return { hit, group: g, shell, shell2, core, haze, rings, ret, color: COLORS.agent.clone(), target: COLORS.agent.clone(), flash: 0 };
 })();
 
 // Agent configuration label
@@ -491,6 +587,7 @@ agentEl.className = 'nl agent';
 const agentLabel = new CSS2DObject(agentEl);
 agentLabel.position.set(0, 7.6, 0);
 agent.group.add(agentLabel);
+agentEl.addEventListener('click', () => focusOn('agent'));
 
 function renderAgentLabel(liveText = 'STANDBY') {
   const c = CONFIGS[state.suiteIdx % CONFIGS.length];
@@ -541,7 +638,9 @@ const nodes = STEPS.map((s, i) => {
   // drop line to floor
   const drop = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, pos.y - FLOOR_Y, 4), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.idle, opacity: 0.5 }));
   drop.position.y = -(pos.y - FLOOR_Y) / 2;
-  g.add(fill, edges, core, halo, glow, beam, drop);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(2.2, 10, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  hit.userData.pick = i;
+  g.add(fill, edges, core, halo, glow, beam, drop, hit);
   scene.add(g);
 
   const el = document.createElement('div');
@@ -558,12 +657,13 @@ const nodes = STEPS.map((s, i) => {
   const label = new CSS2DObject(el);
   label.position.set(0, 3.6, 0);
   g.add(label);
+  el.addEventListener('click', () => focusOn(i));
 
   return {
     step: s, i, pos, group: g, fill, edges, core, halo, glow, beam, drop, el,
     stEl: el.querySelector('.st'), ltEl: el.querySelector('.lt'), prEl: el.querySelector('.pr'), barEl: el.querySelector('.bar i'),
     state: 'idle', color: COLORS.idle.clone(), target: COLORS.idle.clone(), pulse: 0,
-    runs: 0, passes: 0, fails: 0,
+    runs: 0, passes: 0, fails: 0, retries: 0, lat: [], hist: [], reasons: {}, lastEvent: 'No activity yet.',
   };
 });
 
@@ -711,6 +811,7 @@ function setStepState(n, st, statusText) {
   n.pulse = 1;
   const row = intelRows[n.i];
   row.el.className = 'row ' + (st === 'running' || st === 'warn' ? 'running' : st === 'fail' ? 'fail' : '');
+  if (focus.id === n.i) refreshDossier();
 }
 
 function startRun() {
@@ -735,6 +836,8 @@ function beginStep(i) {
   const retry = s.flaky && Math.random() < 0.22;
   if (retry) {
     after(latency * 0.55, () => {
+      n.retries++; run.retried = true;
+      n.lastEvent = `Run #${pad(run.id, 4)}: transient fault, retrying.`;
       setStepState(n, 'warn', 'RETRY');
       log(`RUN #${pad(run.id, 4)} ▸ ${pad(i + 1, 2)} ${s.key} transient fault → retry 1/${CONFIGS[state.suiteIdx % CONFIGS.length].retries}`, 'warn', '↻ RETRY');
       after(latency * 0.7, () => endStep(i, ok, latency * 1.25));
@@ -754,7 +857,14 @@ function endStep(i, ok, latency) {
   updateStepRate(n);
   ping(n.pos, ok ? COLORS.pass : COLORS.fail, ok ? 3.5 : 6, ok ? 0.7 : 1.1);
   if (!ok) ping(n.pos, COLORS.fail, 9, 1.6);
-  const reason = ok ? '' : ` — ${pick(FAIL_REASONS[s.key])}`;
+  const why = ok ? '' : pick(FAIL_REASONS[s.key]);
+  const reason = ok ? '' : ` — ${why}`;
+  n.lat.push(ms); if (n.lat.length > 200) n.lat.shift();
+  n.hist.push({ ok, id: run.id, retry: !!run.retried }); if (n.hist.length > 32) n.hist.shift();
+  run.retried = false;
+  if (!ok) n.reasons[why] = (n.reasons[why] || 0) + 1;
+  n.lastEvent = ok ? `Run #${pad(run.id, 4)}: passed in ${ms}ms.` : `Run #${pad(run.id, 4)}: failed after ${ms}ms. ${why}.`;
+  refreshDossier();
   log(`RUN #${pad(run.id, 4)} ▸ ${pad(i + 1, 2)} ${s.key} ${ms}ms${reason}`, ok ? 'pass' : 'fail', ok ? '✓ PASS' : '✗ FAIL');
 
   const last = i === N - 1;
@@ -783,6 +893,7 @@ function finishRun(ok, failIdx) {
   stamp(ok, run, failIdx);
   log(`RUN #${pad(run.id, 4)} ▸ ${ok ? 'CLEARED' : 'COMPROMISED'} in ${(sim.time - run.t0).toFixed(1)}s · overall ${(100 * state.pass / state.total).toFixed(1)}%`, ok ? 'pass' : 'fail', ok ? '■ RESULT' : '■ RESULT');
   updateHud();
+  refreshDossier();
   after(1.3, () => { agent.target.copy(COLORS.agent); startRun(); });
 }
 
@@ -913,14 +1024,270 @@ document.querySelectorAll('[data-speed]').forEach(b => b.onclick = () => {
   document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', x === b));
 });
 $('bReset').onclick = reset;
+
+/* ---------- fullscreen ---------- */
+const bFull = $('bFull');
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+const canFs = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+if (!canFs) bFull.hidden = true;
+async function toggleFullscreen() {
+  try {
+    if (fsEl()) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else await (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement);
+  } catch { bFull.hidden = true; }
+}
+bFull.onclick = toggleFullscreen;
+const syncFs = () => { bFull.innerHTML = fsEl() ? '⛶<span class="lg"> EXIT FULL</span>' : '⛶<span class="lg"> FULLSCREEN</span>'; bFull.classList.toggle('on', !!fsEl()); };
+document.addEventListener('fullscreenchange', syncFs);
+document.addEventListener('webkitfullscreenchange', syncFs);
+
+/* ---------- tap-to-drill-in ---------- */
+const focus = { id: null };
+const fly = { active: false };
+const HOME_TARGET = new THREE.Vector3(0, 1.5, 0);
+const homeDist = () => (innerWidth / innerHeight < 0.9 ? 62 : 42);
+const narrow = () => innerWidth <= 700;
+function flyTo(pos, target, dur = 1.1) {
+  Object.assign(fly, { active: true, p0: camera.position.clone(), q0: controls.target.clone(), p1: pos, q1: target, s: performance.now(), dur: dur * 1000 });
+}
+function focusOn(id) {
+  focus.id = id;
+  document.body.classList.add('focused', 'seen');
+  controls.autoRotate = false;
+  if (id === 'agent') {
+    const dir = camera.position.clone().sub(AGENT_POS).setY(0).normalize();
+    const tgt = AGENT_POS.clone().setY(AGENT_POS.y + (narrow() ? -3 : 1));
+    flyTo(AGENT_POS.clone().addScaledVector(dir, narrow() ? 30 : 20).setY(AGENT_POS.y + 9), tgt);
+  } else {
+    const n = nodes[id];
+    const out = new THREE.Vector3(n.pos.x, 0, n.pos.z).normalize();
+    // look in from outside the ring so the agent sits behind the step
+    const side = new THREE.Vector3(-out.z, 0, out.x);
+    const tgt = n.pos.clone().setY(n.pos.y + (narrow() ? -3.5 : 1.8));
+    if (!narrow()) tgt.addScaledVector(side, 2.8); // keep the node left of the dossier panel
+    flyTo(n.pos.clone().addScaledVector(out, narrow() ? 30 : 15).setY(n.pos.y + (narrow() ? 8 : 5)), tgt);
+  }
+  agentEl.classList.toggle('focus', id === 'agent');
+  nodes.forEach(n => n.el.classList.toggle('focus', n.i === id));
+  refreshDossier();
+}
+function unfocus() {
+  if (focus.id === null) return;
+  focus.id = null;
+  document.body.classList.remove('focused');
+  agentEl.classList.remove('focus');
+  nodes.forEach(n => n.el.classList.remove('focus'));
+  const dir = camera.position.clone().sub(HOME_TARGET).setY(0).normalize();
+  flyTo(HOME_TARGET.clone().addScaledVector(dir, homeDist() * 0.88).setY(HOME_TARGET.y + homeDist() * 0.45), HOME_TARGET.clone(), 1.2);
+  controls.autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function cycle(d) {
+  const cur = typeof focus.id === 'number' ? focus.id : d > 0 ? -1 : N;
+  focusOn((cur + d + N) % N);
+}
+$('dossier').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'close') unfocus();
+  else if (act === 'prev') cycle(-1);
+  else if (act === 'next') cycle(1);
+  else if (b.dataset.go !== undefined) focusOn(b.dataset.go === 'agent' ? 'agent' : +b.dataset.go);
+});
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (e.key === 'Escape') unfocus();
+  else if (e.key === 'ArrowRight') cycle(1);
+  else if (e.key === 'ArrowLeft') cycle(-1);
+  else if (e.key === 'f' || e.key === 'F') { if (canFs) toggleFullscreen(); }
+  else if (e.key === 'a' || e.key === 'A') focusOn('agent');
+  else if (/^[1-8]$/.test(e.key)) focusOn(+e.key - 1);
+});
+
+// distinguish a tap from an orbit drag, then raycast against the node hit spheres
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const pickables = [agent.hit, ...nodes.map(n => n.group.children.find(c => c.userData.pick === n.i))];
+function pickAt(x, y) {
+  ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hitObj = ray.intersectObjects(pickables, false)[0];
+  return hitObj ? hitObj.object.userData.pick : null;
+}
+let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down) return;
+  const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), quick = performance.now() - down.t < 450;
+  down = null;
+  if (moved > 8 || !quick) return;
+  const id = pickAt(e.clientX, e.clientY);
+  if (id !== null && id !== undefined) focusOn(id);
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || e.buttons) return;
+  const id = pickAt(e.clientX, e.clientY);
+  renderer.domElement.classList.toggle('hot', id !== null && id !== undefined);
+});
+
+// targeting reticle around the focused node
+const reticle = new THREE.Group();
+for (let k = 0; k < 4; k++) {
+  const arc = new THREE.Mesh(new THREE.RingGeometry(2.5, 2.62, 24, 1, k * Math.PI / 2 + 0.25, Math.PI / 2 - 0.5), new THREE.MeshBasicMaterial({ ...additive({}), color: 0x00ffc8, side: THREE.DoubleSide }));
+  reticle.add(arc);
+}
+reticle.visible = false; scene.add(reticle);
+
+/* ---------- dossier content ---------- */
+const dB = $('dB'), dK = $('dK'), dT = $('dT');
+const pct = (a, b) => b ? (100 * a / b).toFixed(1) : '--.-';
+function quantile(arr, q) { if (!arr.length) return null; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; }
+function jumpRow() {
+  return `<section><h3>JUMP TO</h3><div class="jump">
+    <button data-go="agent">AGENT</button>
+    ${nodes.map(n => `<button data-go="${n.i}" class="${n.state === 'fail' ? 'fail' : n.state === 'running' || n.state === 'warn' ? 'running' : ''}">${pad(n.i + 1, 2)} ${n.step.key}</button>`).join('')}
+  </div></section>`;
+}
+function refreshDossier() {
+  if (focus.id === null) return;
+  const scroll = dB.scrollTop;
+  if (focus.id === 'agent') renderAgentDossier(); else renderStepDossier(nodes[focus.id]);
+  dB.scrollTop = scroll;
+}
+function renderStepDossier(n) {
+  const s = n.step, c = CONFIGS[state.suiteIdx % CONFIGS.length];
+  const avg = n.lat.length ? Math.round(n.lat.reduce((a, b) => a + b, 0) / n.lat.length) : null;
+  const p50 = quantile(n.lat, 0.5), p95 = quantile(n.lat, 0.95);
+  const chip = n.state === 'skip' ? '' : n.state;
+  const reasons = Object.entries(n.reasons).sort((a, b) => b[1] - a[1]);
+  const maxR = reasons.length ? reasons[0][1] : 1;
+  dK.textContent = `STEP ${pad(n.i + 1, 2)} / ${pad(N, 2)} · ${s.kind.toUpperCase()}`;
+  dT.textContent = s.key;
+  dB.innerHTML = `
+    <section>
+      <h3>STATUS</h3>
+      <span class="chip ${chip}">${n.stEl.textContent}</span>
+      <div class="event" style="margin-top:6px">${n.lastEvent}</div>
+    </section>
+    <section>
+      <h3>SPECIFICATION</h3>
+      <div class="kv">
+        <b>kind</b><span>${s.kind}</span>
+        <b>tool</b><span>${s.tool}</span>
+        <b>assertion</b><span>${s.assert}</span>
+        <b>timeout</b><span>${s.timeout} ms</span>
+        <b>expected latency</b><span>~${Math.round(s.lat * 1000)} ms</span>
+        <b>flaky / retryable</b><span>${s.flaky ? `yes · up to ${c.retries} retr${c.retries > 1 ? 'ies' : 'y'}` : 'no'}</span>
+        <b>order</b><span>${n.i ? `after ${nodes[n.i - 1].step.key}` : 'entry point'}</span>
+      </div>
+    </section>
+    <section>
+      <h3>PERFORMANCE · ALL SUITES</h3>
+      <div class="tiles">
+        <div class="tile"><div class="l">EXECUTED</div><div class="v">${n.runs}</div></div>
+        <div class="tile pass"><div class="l">PASSED</div><div class="v">${n.passes}</div></div>
+        <div class="tile fail"><div class="l">FAILED</div><div class="v">${n.fails}</div></div>
+      </div>
+      <div class="rate">
+        <div class="big">${pct(n.passes, n.runs)}<small>%</small></div>
+        <div class="exp">EXPECTED (${c.suite}) <span>${(effectivePass(s) * 100).toFixed(1)}%</span><br />RETRIES <span style="color:var(--warn)">${n.retries}</span></div>
+      </div>
+    </section>
+    <section>
+      <h3>LAST ${pad(n.hist.length, 2)} EXECUTIONS</h3>
+      <div class="hist">${n.hist.map(h => `<i class="${h.ok ? 'pass' : 'fail'}${h.retry ? ' retry' : ''}" title="Run #${pad(h.id, 4)} ${h.ok ? 'pass' : 'fail'}${h.retry ? ' (retried)' : ''}"></i>`).join('')}${'<i></i>'.repeat(Math.max(0, 32 - n.hist.length))}</div>
+      <div class="legend"><span style="color:var(--pass)">■ PASS</span><span style="color:var(--fail)">■ FAIL</span><span style="color:var(--warn)">□ RETRIED</span></div>
+    </section>
+    <section>
+      <h3>LATENCY · MS</h3>
+      <div class="kv">
+        <b>avg</b><span>${avg ?? '—'}</span>
+        <b>p50</b><span>${p50 ?? '—'}</span>
+        <b>p95</b><span>${p95 ?? '—'}</span>
+        <b>headroom to timeout</b><span>${p95 ? `${Math.round(100 * (1 - p95 / s.timeout))}%` : '—'}</span>
+      </div>
+      <canvas id="dLat" style="margin-top:8px"></canvas>
+    </section>
+    <section class="modes">
+      <h3>FAILURE MODES</h3>
+      ${reasons.length ? reasons.map(([r, k]) => `<div><span class="nm" title="${r}">${r}</span><span class="mb"><i style="width:${100 * k / maxR}%"></i></span><span class="c">${k}</span></div>`).join('') : '<span class="none">No failures recorded.</span>'}
+    </section>
+    ${jumpRow()}`;
+  drawLatency(n);
+}
+function drawLatency(n) {
+  const cv = $('dLat'); if (!cv) return;
+  const d = Math.min(devicePixelRatio, 2), r = cv.getBoundingClientRect();
+  cv.width = Math.max(1, r.width * d); cv.height = Math.max(1, r.height * d);
+  const g = cv.getContext('2d'), w = cv.width, h = cv.height, L = n.lat.slice(-40), T = n.step.timeout;
+  const top = Math.max(T * 1.1, ...L), y = v => h - (v / top) * (h - 6 * d) - 3 * d;
+  g.strokeStyle = 'rgba(0,255,200,.08)'; g.lineWidth = d;
+  for (let k = 1; k < 4; k++) { g.beginPath(); g.moveTo(0, h * k / 4); g.lineTo(w, h * k / 4); g.stroke(); }
+  g.setLineDash([4 * d, 4 * d]); g.strokeStyle = 'rgba(255,45,85,.6)';
+  g.beginPath(); g.moveTo(0, y(T)); g.lineTo(w, y(T)); g.stroke(); g.setLineDash([]);
+  g.fillStyle = 'rgba(255,45,85,.8)'; g.font = `${9 * d}px Share Tech Mono, monospace`; g.fillText(`TIMEOUT ${T}ms`, 3 * d, y(T) - 3 * d);
+  if (!L.length) return;
+  const bw = w / 40;
+  L.forEach((v, k) => {
+    const hk = n.hist[n.hist.length - L.length + k];
+    g.fillStyle = hk && !hk.ok ? '#ff2d55' : 'rgba(0,229,255,.75)';
+    g.fillRect(k * bw + bw * 0.15, y(v), bw * 0.7, h - y(v));
+  });
+}
+function renderAgentDossier() {
+  const c = CONFIGS[state.suiteIdx % CONFIGS.length];
+  const totalFails = nodes.reduce((a, n) => a + n.fails, 0) || 1;
+  const liveEl = document.getElementById('agentLive');
+  dK.textContent = `SUBJECT UNDER TEST · CONFIG ${c.suite}`;
+  dT.textContent = `AGENT ${AGENT.callsign}`;
+  dB.innerHTML = `
+    <section>
+      <h3>CURRENT RUN</h3>
+      <span class="chip ${agentEl.dataset.state || 'running'}">${liveEl ? liveEl.textContent : 'STANDBY'}</span>
+    </section>
+    <section>
+      <h3>CONFIGURATION</h3>
+      <div class="kv">
+        <b>model</b><span>${AGENT.model}</span>
+        <b>temperature</b><span>${c.temperature.toFixed(1)}</span>
+        <b>top_p</b><span>${c.top_p.toFixed(2)}</span>
+        <b>max_steps</b><span>${AGENT.max_steps}</span>
+        <b>retries</b><span>${c.retries}</span>
+        <b>memory</b><span>${AGENT.memory}</span>
+        <b>system prompt</b><span>${c.prompt} · #${hash(c.prompt)}</span>
+      </div>
+      <h3 style="margin-top:10px">TOOLS</h3>
+      <div class="tools">${AGENT.tools.map(t => `<span>${t}</span>`).join('')}</div>
+    </section>
+    <section>
+      <h3>MISSION STATUS</h3>
+      <div class="tiles">
+        <div class="tile"><div class="l">TOTAL RUNS</div><div class="v">${state.total}</div></div>
+        <div class="tile pass"><div class="l">CLEARED</div><div class="v">${state.pass}</div></div>
+        <div class="tile fail"><div class="l">COMPROMISED</div><div class="v">${state.fail}</div></div>
+      </div>
+      <div class="rate">
+        <div class="big">${pct(state.pass, state.total)}<small>%</small></div>
+        <div class="exp">SUITE ${c.suite} <span>${pad(state.suiteRun)}/${pad(SUITE_SIZE)}</span><br />SUITE ACC <span>${pct(state.suitePass, state.suiteRun)}%</span></div>
+      </div>
+    </section>
+    <section>
+      <h3>SUITE HISTORY</h3>
+      <div class="kv">${state.suites.length ? state.suites.map(x => `<b>${x.name} · ${x.cfg}</b><span style="color:${x.acc >= THRESHOLD ? 'var(--pass)' : 'var(--fail)'}">${(x.acc * 100).toFixed(1)}%</span>`).join('') : '<b>no suite completed yet</b><span></span>'}</div>
+    </section>
+    <section class="modes">
+      <h3>FAILURE ATTRIBUTION BY STEP</h3>
+      ${nodes.map(n => `<div><span class="nm">${pad(n.i + 1, 2)} ${n.step.key}</span><span class="mb"><i style="width:${100 * n.fails / totalFails}%"></i></span><span class="c">${n.fails}</span></div>`).join('')}
+    </section>
+    ${jumpRow()}`;
+}
 document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', +x.dataset.speed === sim.speed));
 
 function reset() {
+  unfocus();
   state.epoch++;
   sim.events.length = 0;
   packets.forEach(p => p.sprites.forEach(freeSprite)); packets.length = 0;
   Object.assign(state, { suiteIdx: 0, suiteRun: 0, suitePass: 0, suiteFail: 0, total: 0, pass: 0, fail: 0, accHistory: [], suites: [], run: null });
-  nodes.forEach(n => { n.runs = n.passes = n.fails = 0; n.prEl.textContent = '—'; n.ltEl.textContent = '—'; n.barEl.style.width = '0'; setStepState(n, 'idle'); });
+  nodes.forEach(n => { n.runs = n.passes = n.fails = n.retries = 0; n.lat = []; n.hist = []; n.reasons = {}; n.lastEvent = 'No activity yet.'; n.prEl.textContent = '—'; n.ltEl.textContent = '—'; n.barEl.style.width = '0'; setStepState(n, 'idle'); });
   intelRows.forEach(r => { r.bar.style.width = '0'; r.p.textContent = '—'; r.f.textContent = '0'; });
   clearOrbit(); buildGrid(); renderSuites();
   $('banner').classList.remove('show');
@@ -1002,8 +1369,29 @@ function tick() {
   nodes.forEach(n => {
     const behind = camera.position.distanceTo(n.pos) > agentDist + 4;
     const live = n.state === 'running' || n.state === 'warn' || n.state === 'fail';
-    n.el.style.opacity = behind && !live ? 0.45 : '';
+    const other = focus.id !== null && focus.id !== n.i;
+    n.el.style.opacity = other && !live ? 0.3 : behind && !live && focus.id !== n.i ? 0.45 : '';
   });
+  agentEl.style.opacity = typeof focus.id === 'number' ? 0.35 : '';
+
+  // drill-in camera flight + reticle
+  if (fly.active) {
+    const u = Math.min(1, (performance.now() - fly.s) / fly.dur);
+    const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+    camera.position.lerpVectors(fly.p0, fly.p1, e);
+    controls.target.lerpVectors(fly.q0, fly.q1, e);
+    if (u >= 1) fly.active = false;
+  }
+  if (focus.id !== null) {
+    const fp = focus.id === 'agent' ? AGENT_POS : nodes[focus.id].pos;
+    reticle.visible = true;
+    reticle.position.copy(fp);
+    reticle.quaternion.copy(camera.quaternion);
+    reticle.rotateZ(wall * 0.8);
+    reticle.scale.setScalar((focus.id === 'agent' ? 2.3 : 1) * (1 + 0.05 * Math.sin(wall * 5)));
+    const fc = focus.id === 'agent' ? agent.color : nodes[focus.id].color;
+    reticle.children.forEach(m => m.material.color.copy(fc));
+  } else reticle.visible = false;
 
   // agent
   agent.flash = Math.max(0, agent.flash - rdt * 1.2);
