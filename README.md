@@ -2,6 +2,8 @@
 
 A gallery of standalone three.js animations about AI systems. Each animation is a self-contained page in its own folder. There's no build step: three.js loads from jsDelivr through an import map.
 
+**Play online:** [josh-schoen.github.io/ai-animations](https://josh-schoen.github.io/ai-animations/), served by GitHub Pages from `main`. You can also open any `index.html` straight from disk; it only needs an internet connection for three.js and fonts.
+
 ```bash
 npm run serve        # python3 -m http.server 8000
 # open http://localhost:8000 for the gallery
@@ -9,15 +11,15 @@ npm run serve        # python3 -m http.server 8000
 
 ## Animations
 
-| Folder | What it shows |
-| --- | --- |
-| [`animations/agent-eval-nightglass`](animations/agent-eval-nightglass/) | An AI agent running eval suites: live step status, edge traffic, run-of-runs, totals and accuracy, with tap-to-drill-in step details. |
-| [`animations/query-quest`](animations/query-quest/) | A SQL game: ask a question in plain English, an agent streams the SQL, runs it in the browser, charts the result, and pinned insights unlock a live dark dashboard. |
-| [`animations/breach`](animations/breach/) | A whale-jumping game against an AI agent: faster tapping means higher breaches and bigger splashes, first to 500 points wins. |
-| [`animations/vector-ko`](animations/vector-ko/) | A green wireframe boxing game with the controls across the top: read the tells, dodge, counter for stars, and land the star uppercut. |
-| [`animations/micro-rally`](animations/micro-rally/) | An RC-style toy truck racer with four tracks, item boxes (missiles, nitro, oil), AI rivals and a championship. |
-| [`animations/kinetic-fury`](animations/kinetic-fury/) | A 2.5D arcade fighter: four fierce original fighters with elemental specials and supers, best-of-three against a CPU. |
-| [`animations/patch-and-pint`](animations/patch-and-pint/) | A gastropub switchboard of SQL joins: ask a question, filter the tables to pre-connected join routes, patch one in, and get the SQL, join health and insights on dashboards. |
+| Folder | Play | What it shows |
+| --- | --- | --- |
+| [`animations/agent-eval-nightglass`](animations/agent-eval-nightglass/) | [Play](https://josh-schoen.github.io/ai-animations/animations/agent-eval-nightglass/) | An AI agent running eval suites: live step status, edge traffic, run-of-runs, totals and accuracy, with tap-to-drill-in step details. |
+| [`animations/query-quest`](animations/query-quest/) | [Play](https://josh-schoen.github.io/ai-animations/animations/query-quest/) | A SQL game: ask a question in plain English, an agent streams the SQL, runs it in the browser, charts the result, and pinned insights unlock a live dark dashboard. |
+| [`animations/breach`](animations/breach/) | [Play](https://josh-schoen.github.io/ai-animations/animations/breach/) | A whale-jumping game against an AI agent: faster tapping means higher breaches and bigger splashes, first to 500 points wins. |
+| [`animations/vector-ko`](animations/vector-ko/) | [Play](https://josh-schoen.github.io/ai-animations/animations/vector-ko/) | A green wireframe boxing game with the controls across the top: read the tells, dodge, counter for stars, and land the star uppercut. |
+| [`animations/micro-rally`](animations/micro-rally/) | [Play](https://josh-schoen.github.io/ai-animations/animations/micro-rally/) | An RC-style toy truck racer with four tracks, item boxes (missiles, nitro, oil), AI rivals and a championship. |
+| [`animations/kinetic-fury`](animations/kinetic-fury/) | [Play](https://josh-schoen.github.io/ai-animations/animations/kinetic-fury/) | A 2.5D arcade fighter: four fierce original fighters with elemental specials and supers, best-of-three against a CPU. |
+| [`animations/patch-and-pint`](animations/patch-and-pint/) | [Play](https://josh-schoen.github.io/ai-animations/animations/patch-and-pint/) | A gastropub switchboard of SQL joins: ask a question, filter the tables to pre-connected join routes, patch one in, and get the SQL, join health and insights on dashboards. |
 
 ## Layout
 
