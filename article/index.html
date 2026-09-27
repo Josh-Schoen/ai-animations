@@ -44,7 +44,7 @@
   .prose td { padding: 8px 12px 8px 0; vertical-align: top; border-bottom: 1px solid var(--color-border); }
   .prose td:first-child { white-space: nowrap; }
   .prose figure { margin: 12px 0 32px; }
-  .prose figure img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface-alt); }
+  .prose figure img, .prose figure video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface-alt); }
   .prose > p:last-child { margin: 40px 0 0; padding-left: 24px; border-left: 2px solid var(--color-accent); font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
   .post-nav { margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--color-border); display: flex; flex-wrap: wrap; gap: 16px; }
 </style>
@@ -55,6 +55,7 @@
   <nav class="site-nav" aria-label="Site">
     <a href="../animations/">Games</a>
     <a href="./" aria-current="page">Story</a>
+    <a href="https://accidentalengineer.com/">Blog</a>
     <a class="opt" href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a>
     <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
   </nav>
@@ -128,15 +129,15 @@
 <h2 id="see-them-in-action">See them in action</h2>
 <p>Everything below was captured from the real games in the same headless browser the agent used for testing. The motion clips play at real game speed, and in the two games the computer is playing itself.</p>
 <p><strong>Micro Rally:</strong> the computer driving my red car off the start line, from fourth to first, with a minimap and live standings.</p>
-<figure><img src="media/micro-rally.gif" alt="Micro Rally race in motion" loading="lazy" decoding="async"></figure>
+<figure><video autoplay muted loop playsinline preload="metadata" poster="media/micro-rally-poster.jpg" aria-label="Micro Rally race in motion" width="960" height="540"><source src="media/micro-rally.mp4" type="video/mp4"><source src="media/micro-rally.webm" type="video/webm"></video></figure>
 <p><strong>Kinetic Fury:</strong> Kaizen, the Storm Monk, against Vex, the Inferno, in the opening seconds of round one.</p>
-<figure><img src="media/kinetic-fury.gif" alt="Kinetic Fury fight in motion" loading="lazy" decoding="async"></figure>
+<figure><video autoplay muted loop playsinline preload="metadata" poster="media/kinetic-fury-poster.jpg" aria-label="Kinetic Fury fight in motion" width="960" height="540"><source src="media/kinetic-fury.mp4" type="video/mp4"><source src="media/kinetic-fury.webm" type="video/webm"></video></figure>
 <p><strong>Vector KO:</strong> Punch-Out energy in green wireframe, with the controls up top.</p>
 <figure><img src="media/vector-ko.jpg" alt="Vector KO wireframe boxing" loading="lazy" decoding="async"></figure>
 <p><strong>Breach:</strong> tap faster, jump higher, splash bigger, and beat the AI to 500.</p>
 <figure><img src="media/breach.jpg" alt="Breach whale jump game" loading="lazy" decoding="async"></figure>
 <p><strong>Nightglass:</strong> an AI agent running through its eval suite, live, with every step passing, retrying or failing in 3D.</p>
-<figure><img src="media/nightglass.gif" alt="Nightglass agent eval run in motion" loading="lazy" decoding="async"></figure>
+<figure><video autoplay muted loop playsinline preload="metadata" poster="media/nightglass-poster.jpg" aria-label="Nightglass agent eval run in motion" width="960" height="540"><source src="media/nightglass.mp4" type="video/mp4"><source src="media/nightglass.webm" type="video/webm"></video></figure>
 <p><strong>Query Quest:</strong> ask in English, watch the SQL stream in, get a dashboard.</p>
 <figure><img src="media/query-quest.jpg" alt="Query Quest SQL game" loading="lazy" decoding="async"></figure>
 <p><strong>Patch &amp; Pint:</strong> the SQL join switchboard, with a question patched in and its SQL.</p>
@@ -241,7 +242,7 @@
     </div>
     <nav aria-label="Footer">
       <div><span>Navigate</span><a href="../">Home</a><a href="../animations/">Games</a><a href="./">Story</a></div>
-      <div><span>Meta</span><a href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a></div>
+      <div><span>Meta</span><a href="https://accidentalengineer.com/">Blog</a><a href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a></div>
     </nav>
   </div>
   <div class="bottom"><span>&copy; 2026 Josh Schoen</span><span>Built in conversation with Claude Code. No build step.</span></div>

@@ -36,11 +36,11 @@ Everything below was captured from the real games in the same headless browser t
 
 **Micro Rally:** the computer driving my red car off the start line, from fourth to first, with a minimap and live standings.
 
-![Micro Rally race in motion](media/micro-rally.gif)
+![Micro Rally race in motion](media/micro-rally.mp4)
 
 **Kinetic Fury:** Kaizen, the Storm Monk, against Vex, the Inferno, in the opening seconds of round one.
 
-![Kinetic Fury fight in motion](media/kinetic-fury.gif)
+![Kinetic Fury fight in motion](media/kinetic-fury.mp4)
 
 **Vector KO:** Punch-Out energy in green wireframe, with the controls up top.
 
@@ -52,7 +52,7 @@ Everything below was captured from the real games in the same headless browser t
 
 **Nightglass:** an AI agent running through its eval suite, live, with every step passing, retrying or failing in 3D.
 
-![Nightglass agent eval run in motion](media/nightglass.gif)
+![Nightglass agent eval run in motion](media/nightglass.mp4)
 
 **Query Quest:** ask in English, watch the SQL stream in, get a dashboard.
 
