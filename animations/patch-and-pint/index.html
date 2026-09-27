@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Source+Sans+3:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
 <style>
+
   /* A deliberate single look: dark oak, brass and cream menu cards, gastropub style. */
   :root {
     color-scheme: dark;
@@ -190,6 +191,56 @@
   @media (max-width: 1060px) { .grid { grid-template-columns: 1fr; } }
   @media (max-width: 560px) { .people { grid-template-columns: 1fr; } .tiles { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+  /* ---------- question bar + filters ---------- */
+  .ask { display: grid; gap: 8px; margin: 0 6px 12px; }
+  .ask form { display: flex; gap: 8px; background: var(--cream); border-radius: 8px; padding: 6px 6px 6px 12px; box-shadow: inset 0 0 0 1px var(--paper-line), 0 4px 14px rgba(0,0,0,.35); }
+  .ask input { flex: 1; min-width: 0; border: 0; background: none; font: 500 17px var(--sans); color: var(--paper-ink); outline: none; padding: 4px 0; }
+  .ask input::placeholder { color: #9a8a74; }
+  .ask form:focus-within { box-shadow: inset 0 0 0 2px var(--brass), 0 4px 14px rgba(0,0,0,.35); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip2 { border: 1px solid rgba(239,233,220,.3); background: rgba(0,0,0,.18); color: var(--chalk); border-radius: 999px; padding: 3px 11px; font: 500 13.5px var(--sans); }
+  .chip2:hover { border-color: var(--brass-hi); }
+  .chip2[aria-pressed="true"] { background: var(--brass); color: #2b1d08; border-color: var(--brass); font-weight: 700; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .filters .lbl { font: 700 12px var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-dim); margin-right: 2px; }
+  .sugg { margin-top: 12px; background: var(--board); border: 6px solid var(--wood-3); border-radius: 4px; padding: 10px 12px; color: var(--chalk); }
+  .sugg h3 { margin: 0 0 4px; font: 700 26px/1.1 var(--chalkf); color: var(--cream); }
+  .sugg .why { font-size: 14.5px; color: var(--chalk-dim); margin: 0 0 8px; }
+  .sugg .why b { color: var(--brass-hi); font-weight: 600; }
+  .route { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; border-top: 1px dashed rgba(239,233,220,.2); padding: 8px 0; }
+  .route:first-of-type { border-top: 0; }
+  .route .path { font: 600 15px var(--sans); }
+  .route .path span { color: var(--brass-hi); }
+  .route .meta { grid-column: 1; font-size: 13px; color: var(--chalk-dim); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .route .meta em { font-style: normal; border: 1px solid currentColor; border-radius: 999px; padding: 0 7px; font-size: 12px; }
+  .route .meta em.warn { color: #ffb38a; } .route .meta em.ok { color: #9fe0b8; }
+  .route .btn { border-color: var(--brass); color: var(--cream); grid-row: 1 / span 2; grid-column: 2; }
+  .route .btn:hover { background: rgba(201,162,74,.2); }
+  .route.best .btn { background: var(--brass); color: #2b1d08; font-weight: 700; }
+  pre.sql { margin: 0; padding: 10px 12px; background: #1f2a24; color: #e8e1cf; border-radius: 6px; font: 13px/1.55 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; overflow-x: auto; white-space: pre; }
+  pre.sql .k { color: #e8c878; } pre.sql .t { color: #9fd2c0; } pre.sql .c { color: #8a8f86; }
+  .joins { display: grid; gap: 6px; margin: 8px 0 10px; }
+  .jrow { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; background: #fffdf7; border: 1px solid var(--paper-line); border-radius: 6px; padding: 5px 8px; font-size: 14px; }
+  .jrow code { font: 13px ui-monospace, Menlo, Consolas, monospace; color: var(--paper-ink); overflow-wrap: anywhere; }
+  .jrow select { background: #fffaf0; border: 1px solid var(--paper-line); border-radius: 6px; padding: 2px 4px; font: 600 12.5px var(--sans); color: var(--paper-ink); }
+  .jrow .st { font-size: 12.5px; color: var(--paper-muted); white-space: nowrap; text-align: right; }
+  .jrow .st b { color: var(--paper-ink); }
+  .jrow .st .bad { color: #a8321c; font-weight: 700; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; margin: 8px 0 12px; font: 13.5px ui-monospace, Menlo, Consolas, monospace; }
+  .cols span b { font: 700 10.5px var(--sans); letter-spacing: .06em; padding: 0 4px; border-radius: 3px; margin-left: 4px; vertical-align: 1px; }
+  .cols .pk b { background: #2b2118; color: var(--cream); } .cols .fk b { background: var(--brass); color: #2b1d08; }
+  .avail { display: grid; gap: 6px; }
+  .avail button { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; text-align: left; border: 1px solid var(--paper-line); background: #fffdf7; border-radius: 6px; padding: 6px 8px; }
+  .avail button:hover { border-color: var(--brass); }
+  .avail code { font: 13px ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+  .avail small { color: var(--paper-muted); font-size: 12.5px; white-space: nowrap; }
+  .section-h { margin: 14px 0 6px; font: 700 17px var(--display); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .section-h small { font: 500 13px var(--sans); color: var(--paper-muted); }
+
+  .grid > *, .pad, .cabinet, .sugg { min-width: 0; }
+  .ask > * { min-width: 0; }
+  @media (max-width: 560px) { .ask form { flex-wrap: wrap; padding: 6px; } .ask input { flex-basis: 100%; padding: 4px 6px; } .ask form .btn { flex: 1; } .ask { margin-inline: 0; } }
 </style>
 </head>
 <body>
@@ -197,7 +248,7 @@
   <header class="sign">
     <div class="brand">
       <h1>Patch <span>&amp;</span> Pint</h1>
-      <p>The operator's exchange: patch people to people, people to data, and pour out insight.</p>
+      <p>The join exchange: ask a question, patch the tables together, and pour out an answer.</p>
     </div>
     <div class="tabs" role="tablist" aria-label="View">
       <button class="tab" role="tab" id="tabBoard" aria-selected="true">Switchboard</button>
@@ -206,16 +257,33 @@
     <label class="agentPick" id="agentPick" hidden>Agent
       <select id="agentSel"><option value="builtin">House analyst (built-in)</option><option value="claude">Claude (uses your Claude usage)</option></select>
     </label>
-    <span class="mockTag" title="All figures are generated mock data for three sample pubs">Mock data</span>
+    <span class="mockTag" title="All tables hold generated mock data for three sample pubs">Mock data</span>
   </header>
 
-  <!-- ================= SWITCHBOARD ================= -->
   <section id="viewBoard" class="grid" role="tabpanel" aria-labelledby="tabBoard">
     <div>
       <div class="cabinet">
-        <div class="top"><h2>The Exchange</h2><span class="hint">drag a cord from one jack to another</span></div>
-        <svg id="board" viewBox="0 0 1000 600" role="group" aria-label="Switchboard. Each jack is a person or a data source. Select a jack, then another, to connect them."></svg>
+        <div class="top"><h2>The Join Exchange</h2><span class="hint">12 tables · <span id="edgeCount"></span> available joins</span></div>
+        <div class="ask">
+          <form id="askForm" role="search" autocomplete="off">
+            <label class="sr" for="q">Ask a question or search tables and columns</label>
+            <input id="q" placeholder="Ask a question, e.g. “which dishes get comped most at each pub?”" />
+            <button class="btn primary" type="submit">Find joins</button>
+            <button class="btn" type="button" id="clearQ" hidden>Clear</button>
+          </form>
+          <div class="chips" id="examples" aria-label="Example questions"></div>
+          <div class="filters" role="group" aria-label="Filter tables">
+            <span class="lbl">Show</span>
+            <button class="chip2" data-dom="all" aria-pressed="true">All tables</button>
+            <button class="chip2" data-dom="front" aria-pressed="false">Front of house</button>
+            <button class="chip2" data-dom="kitchen" aria-pressed="false">Kitchen &amp; bar</button>
+            <button class="chip2" data-dom="cellar" aria-pressed="false">Cellar &amp; staff</button>
+            <button class="chip2" id="wiringBtn" aria-pressed="true">Available joins</button>
+          </div>
+        </div>
+        <svg id="board" viewBox="0 0 1000 760" role="group" aria-label="Switchboard of SQL tables. Faint wires are available joins. Select a table, then another, to patch a join."></svg>
       </div>
+      <div class="sugg" id="sugg" hidden aria-live="polite"></div>
       <div class="log">
         <h3>Operator's log <small id="logCount"></small></h3>
         <ol id="logList"></ol>
@@ -224,18 +292,16 @@
     <aside class="pad" id="pad" aria-live="polite"></aside>
   </section>
 
-  <!-- ================= DASHBOARDS ================= -->
   <section id="viewDash" role="tabpanel" aria-labelledby="tabDash" hidden style="display:grid;gap:14px">
     <div class="dashbar" id="dashbar"></div>
-    <div class="dhead"><h2 id="dName" title="Rename">Dashboard</h2><p id="dMeta"></p></div>
+    <div class="dhead"><h2 id="dName" title="Double-click to rename">Dashboard</h2><p id="dMeta"></p></div>
     <div class="tiles" id="tiles"></div>
   </section>
 
-  <footer>Mock data for three sample pubs (The Crown, The Anchor, The Stag), generated in the page. Swap in real sources with <code>Switchboard.useAdapter(yourAdapter)</code>; see the README.</footer>
+  <footer>Twelve mock tables for three sample pubs (The Crown, The Anchor, The Stag), generated in the page. Swap in your database with <code>Switchboard.useAdapter(yourAdapter)</code>.</footer>
 </div>
 <div id="tip" role="tooltip"></div>
 <div id="toast" role="status"></div>
-
 <script type="module">
 /* =====================================================================
    0. Utilities
@@ -251,617 +317,752 @@ const pct = (v, d = 0) => `${(v * 100).toFixed(d)}%`;
 const num = (v, d = 0) => (+v).toLocaleString('en-GB', { maximumFractionDigits: d, minimumFractionDigits: d });
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const dowOf = d => new Date(d + 'T12:00:00Z').getUTCDay();
-const groupBy = (rows, key) => { const m = new Map(); for (const r of rows) { const k = typeof key === 'function' ? key(r) : r[key]; if (!m.has(k)) m.set(k, []); m.get(k).push(r); } return m; };
-const sum = (rows, f) => rows.reduce((a, r) => a + ((typeof f === 'function' ? f(r) : r[f]) || 0), 0);
-const avg = (rows, f) => rows.length ? sum(rows, f) / rows.length : 0;
 function pearson(xs, ys) { const n = xs.length; if (n < 3) return 0; const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n; let a = 0, b = 0, c = 0; for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; a += dx * dy; b += dx * dx; c += dy * dy; } return b && c ? a / Math.sqrt(b * c) : 0; }
 
 /* =====================================================================
-   1. MOCK DATA: three sample pubs, 90 days, six sources.
-      Patterns are baked in so the agent has something real to find.
+   1. MOCK DATABASE: twelve related tables for three sample pubs.
+      Real keys, real orphans, real fan-out, so joins behave like SQL.
    ===================================================================== */
-const SITES = ['The Crown', 'The Anchor', 'The Stag'];
-const TODAY = '2026-09-26';
-const DAYS = 90;
+const TODAY = '2026-09-26', DAYS = 90;
 const dates = Array.from({ length: DAYS }, (_, i) => { const d = new Date(TODAY + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (DAYS - 1 - i)); return d.toISOString().slice(0, 10); });
-const MOCK = (() => {
-  const r = mulberry32(1926);
+const DB = (() => {
+  const r = mulberry32(1926), ri = (a, b) => a + Math.floor(r() * (b - a + 1));
   const pick = (arr, w) => { let x = r() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < arr.length; i++) { x -= w[i]; if (x <= 0) return arr[i]; } return arr[arr.length - 1]; };
-  const siteMult = { 'The Crown': 1.0, 'The Anchor': 0.82, 'The Stag': 0.7 };
-  const trend = { 'The Crown': 0.13, 'The Anchor': 0.0, 'The Stag': -0.07 };
-  const dowF = [1.05, 0.7, 0.78, 0.85, 1.0, 1.45, 1.6];
-  const out = { sales: [], cellar: [], tickets: [], bookings: [], rota: [], reviews: [] };
-  const CATS = { Draught: 38, Wine: 20, Spirits: 16, Mains: 26, 'Small plates': 11, Desserts: 7, Soft: 5 };
-  const PRODUCTS = ['House IPA', 'Oat Stout', 'Pilsner', 'Dry Cider', 'Pale Ale', 'Guest Cask'];
-  const DISHES = [['Sunday roast', 'Grill'], ['Fish & chips', 'Fry'], ['Pie of the day', 'Oven'], ['Steak frites', 'Grill'], ['Mushroom Wellington', 'Oven'], ['Scotch egg', 'Fry'], ['Sticky toffee pudding', 'Pastry'], ['Burger', 'Grill']];
-  const SNIPS = {
-    Food: [['Roast was superb, proper gravy.', 5], ['Chips were soggy tonight.', 2], ['Wellington is the best veggie dish around.', 5], ['Pie was lukewarm.', 2]],
-    Service: [['Waited 40 minutes for mains.', 1], ['Staff were lovely and quick.', 5], ['Bar was slammed, hard to get served.', 2], ['Friendly, attentive team.', 5]],
-    Ale: [['Stout tasted a bit off.', 2], ['Great cask selection, well kept.', 5], ['IPA had run out again.', 2], ['Perfect pint of pilsner.', 5]],
-    Ambience: [['Cosy fire and good music.', 5], ['Too loud on a Friday.', 3], ['Lovely snug for a quiet pint.', 5]],
-    Price: [['Bit pricey for the portion.', 2], ['Fair prices for London.', 4], ['Happy hour is great value.', 5]],
+  const db = {};
+  db.sites = [{ site_id: 1, name: 'The Crown', city: 'Hackney' }, { site_id: 2, name: 'The Anchor', city: 'Bristol' }, { site_id: 3, name: 'The Stag', city: 'Leeds' }];
+  const mult = { 1: 1, 2: 0.82, 3: 0.7 }, trend = { 1: 0.12, 2: 0, 3: -0.07 }, dowF = [1.05, 0.7, 0.78, 0.85, 1.0, 1.45, 1.6];
+  const MENU = [['Sunday roast', 'Mains', 19.5, 6.8], ['Fish & chips', 'Mains', 16, 5.1], ['Pie of the day', 'Mains', 15, 4.2], ['Steak frites', 'Mains', 24, 10.5], ['Mushroom Wellington', 'Mains', 17, 5.6], ['Burger', 'Mains', 15.5, 5.4],
+    ['Scotch egg', 'Small plates', 7, 2.1], ['Whitebait', 'Small plates', 7.5, 2.4], ['Pork crackling', 'Small plates', 4.5, 0.9], ['Sticky toffee pudding', 'Desserts', 7.5, 1.8], ['Eton mess', 'Desserts', 7, 1.9],
+    ['House IPA (pint)', 'Draught', 6.2, 1.5], ['Oat Stout (pint)', 'Draught', 6.4, 1.6], ['Pilsner (pint)', 'Draught', 5.9, 1.4], ['Dry Cider (pint)', 'Draught', 5.6, 1.3], ['Guest Cask (pint)', 'Draught', 5.8, 1.7],
+    ['House red (175ml)', 'Wine', 7.2, 1.9], ['House white (175ml)', 'Wine', 7, 1.8], ['Prosecco (glass)', 'Wine', 8.5, 2.4], ['Gin & tonic', 'Spirits', 9, 2.2], ['Whisky (25ml)', 'Spirits', 6.5, 1.8], ['Negroni', 'Spirits', 10, 2.6],
+    ['Cola', 'Soft', 3.2, 0.6], ['Lime soda', 'Soft', 2.8, 0.4]];
+  db.menu_items = MENU.map(([name, category, price, cost], i) => ({ menu_item_id: i + 1, name, category, price, cost }));
+  db.products = ['House IPA', 'Oat Stout', 'Pilsner', 'Dry Cider', 'Pale Ale', 'Guest Cask', 'Porter', 'Wheat Beer'].map((name, i) => ({ product_id: i + 1, name, style: ['IPA', 'Stout', 'Lager', 'Cider', 'Pale', 'Cask', 'Porter', 'Wheat'][i] }));
+  const FIRST = ['Avery', 'Jordan', 'Riley', 'Quinn', 'Rowan', 'Sage', 'Harper', 'Kai', 'Reese', 'Morgan', 'Parker', 'Skyler', 'Dakota', 'Hayden', 'Finley', 'River', 'Blake', 'Casey', 'Ellis', 'Jules'];
+  const LAST = ['Okafor', 'Lindqvist', 'Moreau', 'Tanaka', 'Alvarez', 'Novak', 'Brennan', 'Castillo', 'Haddad', 'Ivanova', 'Mbeki', 'Sato', 'Delgado', 'Fischer', 'Nguyen', 'Petrov'];
+  db.staff = []; let sid = 1;
+  for (const s of db.sites) for (const [role, n] of [['Manager', 1], ['Bar', 4], ['Floor', 4], ['Kitchen', 4]]) for (let k = 0; k < n; k++) db.staff.push({ staff_id: sid++, site_id: s.site_id, name: `${FIRST[ri(0, 19)]} ${LAST[ri(0, 15)]}`, role });
+  db.customers = Array.from({ length: 900 }, (_, i) => ({ customer_id: i + 1, name: `${FIRST[ri(0, 19)]} ${LAST[ri(0, 15)]}`, home_site_id: pick([1, 2, 3], [40, 33, 27]), segment: pick(['Regular', 'Occasional', 'Tourist', 'Corporate'], [30, 42, 16, 12]), joined: dates[ri(0, 40)] }));
+  db.bookings = []; db.orders = []; db.order_items = []; db.kitchen_tickets = []; db.kegs = []; db.shifts = []; db.reviews = [];
+  let bid = 1, oid = 1, tid = 1, kid = 1, shid = 1, rvid = 1;
+  const catW = { Mains: 30, 'Small plates': 12, Desserts: 8, Draught: 34, Wine: 16, Spirits: 12, Soft: 6 };
+  const addOrder = (date, site, booking_id, daypart, dow, party) => {
+    const floor = db.staff.filter(s => s.site_id === site && (s.role === 'Floor' || s.role === 'Bar'));
+    const o = { order_id: oid++, site_id: site, booking_id, staff_id: r() < 0.05 ? null : floor[ri(0, floor.length - 1)].staff_id, date, daypart };
+    db.orders.push(o);
+    const lines = Math.max(1, Math.round((party || ri(1, 2)) * (1 + r())));
+    let food = false, slowDish = 0;
+    for (let k = 0; k < lines; k++) {
+      let cat = pick(Object.keys(catW), Object.values(catW).map((w, i) => (Object.keys(catW)[i] === 'Desserts' && site === 3 ? w * 0.35 : w) * (daypart === 'Late' && ['Mains', 'Small plates', 'Desserts'].includes(Object.keys(catW)[i]) ? 0.2 : 1)));
+      let items = db.menu_items.filter(m => m.category === cat);
+      let m = items[ri(0, items.length - 1)];
+      if (cat === 'Mains' && dow === 0 && daypart === 'Lunch' && r() < 0.6) m = db.menu_items[0];
+      if (['Mains', 'Small plates', 'Desserts'].includes(cat)) { food = true; if (m.name === 'Mushroom Wellington' || m.name === 'Steak frites') slowDish = 4; }
+      db.order_items.push({ order_id: o.order_id, menu_item_id: m.menu_item_id, qty: cat === 'Draught' ? ri(1, 3) : 1, price: m.price });
+    }
+    if (food) {
+      let t = 12 + r() * 8 + slowDish + (dow === 5 || dow === 6 ? 2 : 0);
+      if (site === 2 && dow === 6 && daypart === 'Dinner') t += 9 + r() * 6;
+      db.kitchen_tickets.push({ ticket_id: tid++, order_id: o.order_id, station: r() < 0.02 ? null : slowDish ? 'Grill' : pick(['Grill', 'Fry', 'Oven', 'Pastry'], [3, 3, 2, 1]), ticket_min: Math.round(t * 10) / 10, comped: r() < (t > 28 ? 0.16 : 0.02) });
+      return t;
+    }
+    return null;
   };
   dates.forEach((date, di) => {
     const dow = dowOf(date), prog = di / (DAYS - 1);
-    for (const site of SITES) {
-      const base = siteMult[site] * dowF[dow] * (1 + trend[site] * prog);
-      // sales: per daypart x category
-      for (const [dp, dpw] of [['Lunch', 0.32], ['Dinner', 0.5], ['Late', 0.18]]) {
-        for (const [cat, w] of Object.entries(CATS)) {
-          let f = base * dpw;
-          if (cat === 'Mains' && dow === 0 && dp === 'Lunch') f *= 2.3;              // Sunday roast
-          if (cat === 'Desserts' && site === 'The Stag') f *= 0.45;                 // weak dessert attach
-          if (['Mains', 'Small plates', 'Desserts'].includes(cat) && dp === 'Late') f *= 0.25;
-          const rev = w * 42 * f * (0.85 + r() * 0.3);
-          out.sales.push({ date, site, daypart: dp, category: cat, qty: Math.max(1, Math.round(rev / (cat === 'Draught' ? 5.6 : cat === 'Mains' ? 17 : 8))), revenue: Math.round(rev * 100) / 100 });
-        }
-      }
-      // cellar: per product
-      for (const p of PRODUCTS) {
-        const poured = (p === 'House IPA' ? 60 : p === 'Pilsner' ? 55 : 32) * base * (0.8 + r() * 0.4);
-        let waste = poured * (0.03 + r() * 0.02);
-        if (p === 'Oat Stout' && site === 'The Stag') waste *= 3.2;                    // stout going stale
-        if (p === 'Guest Cask') waste *= 1.6;
-        const level = p === 'House IPA' && site === 'The Stag' ? 8 + r() * 22 : 25 + r() * 70; // Stag IPA runs low
-        out.cellar.push({ date, site, product: p, level_pct: Math.round(level), delivered_l: di % 4 === 0 ? Math.round(poured * 4) : 0, poured_l: Math.round(poured * 10) / 10, waste_l: Math.round(waste * 10) / 10 });
-      }
-      // kitchen tickets: a sample of tickets per service
-      const nT = Math.round(18 * base);
-      let tSum = 0;
-      for (let k = 0; k < nT; k++) {
-        const [dish, station] = dow === 0 && r() < 0.45 ? DISHES[0] : DISHES[Math.floor(r() * DISHES.length)];
-        const dp = r() < 0.38 ? 'Lunch' : 'Dinner';
-        let t = 11 + r() * 8 + (station === 'Grill' ? 3 : 0) + (dish === 'Mushroom Wellington' ? 4 : 0);
-        if (site === 'The Anchor' && dow === 6 && dp === 'Dinner') t += 9 + r() * 6;  // Saturday dinner crunch
-        if (dow === 5 || dow === 6) t += 2;
-        out.tickets.push({ date, site, daypart: dp, dish, station: r() < 0.02 ? null : station, ticket_min: Math.round(t * 10) / 10, comped: r() < (t > 28 ? 0.14 : 0.02) });
-        tSum += t;
-      }
-      const tAvg = tSum / Math.max(1, nT);
-      // bookings
-      const nB = Math.round(14 * base);
+    for (const s of db.sites) {
+      const site = s.site_id, base = mult[site] * dowF[dow] * (1 + trend[site] * prog);
+      let tSum = 0, tN = 0;
+      const nB = Math.round(11 * base);
       for (let k = 0; k < nB; k++) {
-        const ch = pick(['Web', 'Phone', 'App', 'Walk-in'], [42, 22, 18, 18]);
+        const ch = pick(['Web', 'Phone', 'App'], [50, 28, 22]);
+        const cust = r() < 0.7 ? db.customers.filter(c => c.home_site_id === site)[ri(0, 250)] : db.customers[ri(0, 899)];
         const party = pick([2, 3, 4, 5, 6, 8], [40, 12, 26, 7, 10, 5]);
-        const noShow = ch !== 'Walk-in' && r() < ({ Web: 0.15, Phone: 0.05, App: 0.08 }[ch] || 0);
-        out.bookings.push({ date, site, channel: ch, party, covers: noShow ? 0 : party, lead_days: ch === 'Walk-in' ? 0 : Math.round(r() * (ch === 'Web' ? 16 : 6)), no_show: noShow, daypart: r() < 0.35 ? 'Lunch' : 'Dinner' });
+        const noShow = r() < ({ Web: 0.15, Phone: 0.05, App: 0.08 }[ch]);
+        const b = { booking_id: bid++, customer_id: cust ? cust.customer_id : ri(1, 900), site_id: site, date, party, channel: ch, no_show: noShow };
+        db.bookings.push(b);
+        if (!noShow) { const t = addOrder(date, site, b.booking_id, r() < 0.35 ? 'Lunch' : 'Dinner', dow, party); if (t) { tSum += t; tN++; } }
       }
-      // rota (lags two days: a freshness issue for the data steward)
-      if (di < DAYS - 2) for (const [role, h] of [['Bar', 26], ['Floor', 30], ['Kitchen', 34]]) {
-        let hours = h * siteMult[site] * (dow === 5 || dow === 6 ? 1.35 : 1) * (0.9 + r() * 0.2);
-        if (site === 'The Stag' && dow === 1) hours *= 1.45;                            // overstaffed Mondays
-        out.rota.push({ date, site, role, hours: Math.round(hours * 10) / 10, labour_cost: Math.round(hours * (role === 'Kitchen' ? 14.2 : 12.4) * 100) / 100 });
+      const nW = Math.round(18 * base);
+      for (let k = 0; k < nW; k++) { const t = addOrder(date, site, null, pick(['Lunch', 'Dinner', 'Late'], [30, 45, 25]), dow, 0); if (t) { tSum += t; tN++; } }
+      // kegs tapped every few days
+      for (const p of db.products) if ((di + p.product_id + site) % 3 === 0) {
+        const poured = (p.name === 'House IPA' || p.name === 'Pilsner' ? 150 : 90) * mult[site] * (0.8 + r() * 0.4);
+        let waste = poured * (0.03 + r() * 0.02);
+        if (p.name === 'Oat Stout' && site === 3) waste *= 3.2;
+        if (p.name === 'Guest Cask') waste *= 1.6;
+        db.kegs.push({ keg_id: kid++, product_id: p.product_id, site_id: site, date_tapped: date, poured_l: Math.round(poured * 10) / 10, waste_l: Math.round(waste * 10) / 10 });
       }
-      // reviews
-      const nR = Math.round(3 * base + r());
+      // shifts (rota lags two days: a freshness issue)
+      if (di < DAYS - 2) for (const st of db.staff.filter(x => x.site_id === site)) {
+        if (r() > (dow === 5 || dow === 6 ? 0.85 : 0.62)) continue;
+        let hours = (st.role === 'Kitchen' ? 9 : 7.5) * (0.85 + r() * 0.3);
+        if (site === 3 && dow === 1) hours *= 1.45;
+        db.shifts.push({ shift_id: shid++, staff_id: st.staff_id, site_id: site, date, hours: Math.round(hours * 10) / 10, cost: Math.round(hours * (st.role === 'Kitchen' ? 14.2 : st.role === 'Manager' ? 19 : 12.4) * 100) / 100 });
+      }
+      // reviews: slow kitchen days leak into service and food ratings
+      const tAvg = tN ? tSum / tN : 15;
+      const nR = Math.round(2.6 * base + r());
       for (let k = 0; k < nR; k++) {
-        let theme = pick(Object.keys(SNIPS), [30, 28, 20, 12, 10]);
-        if (site === 'The Anchor' && dow === 6 && r() < 0.5) theme = 'Service';
-        if (site === 'The Stag' && r() < 0.2) theme = 'Ale';
-        const options = SNIPS[theme];
-        let [snip, rating] = options[Math.floor(r() * options.length)];
-        if (site === 'The Anchor' && dow === 6 && theme === 'Service') [snip, rating] = SNIPS.Service[r() < 0.7 ? 0 : 2];
-        if (site === 'The Stag' && theme === 'Ale' && r() < 0.6) [snip, rating] = SNIPS.Ale[r() < 0.5 ? 0 : 2];
-        // slow kitchen days leak into service and food reviews
-        if ((theme === 'Service' || theme === 'Food') && tAvg > 18 && r() < Math.min(0.85, (tAvg - 18) / 8)) [snip, rating] = theme === 'Service' ? SNIPS.Service[r() < 0.6 ? 0 : 2] : SNIPS.Food[r() < 0.5 ? 1 : 3];
-        out.reviews.push({ date, site, platform: r() < 0.03 ? null : pick(['Google', 'TripAdvisor', 'OpenTable'], [55, 25, 20]), theme, rating, snippet: snip });
+        let theme = pick(['Food', 'Service', 'Ale', 'Ambience', 'Price'], [30, 28, 20, 12, 10]);
+        if (site === 3 && r() < 0.2) theme = 'Ale';
+        let rating = pick([5, 4, 3, 2, 1], [42, 30, 14, 9, 5]);
+        if ((theme === 'Service' || theme === 'Food') && tAvg > 17 && r() < Math.min(0.85, (tAvg - 17) / 7)) rating = pick([1, 2, 3], [40, 40, 20]);
+        if (site === 3 && theme === 'Ale' && r() < 0.6) rating = pick([1, 2], [1, 1]);
+        const TXT = { Food: ['Roast was superb.', 'Food came out cold.'], Service: ['Friendly and quick.', 'Waited ages for mains.'], Ale: ['Well-kept cask.', 'Stout tasted off.'], Ambience: ['Cosy fire, good music.', 'Too loud tonight.'], Price: ['Fair prices.', 'Pricey for the portion.'] };
+        db.reviews.push({ review_id: rvid++, site_id: site, customer_id: r() < 0.15 ? null : ri(1, 900), date, rating, theme, text: TXT[theme][rating >= 4 ? 0 : 1] });
       }
     }
   });
-  return out;
+  return db;
 })();
 
-/* =====================================================================
-   2. DATA ADAPTER: the seam where real databases plug in later.
-      An adapter answers three calls; swap MockAdapter for your own.
-   ===================================================================== */
-const SOURCE_META = {
-  sales:    { name: 'Sales Ledger', short: 'Sales', desc: 'POS takings by day, daypart and category', cols: ['date', 'site', 'daypart', 'category', 'qty', 'revenue'] },
-  cellar:   { name: 'Cellar Book', short: 'Cellar', desc: 'Keg levels, pours and waste by product', cols: ['date', 'site', 'product', 'level_pct', 'delivered_l', 'poured_l', 'waste_l'] },
-  tickets:  { name: 'Kitchen Tickets', short: 'Kitchen', desc: 'Ticket times, dishes, stations and comps', cols: ['date', 'site', 'daypart', 'dish', 'station', 'ticket_min', 'comped'] },
-  bookings: { name: 'Bookings Diary', short: 'Bookings', desc: 'Reservations, covers, channels and no-shows', cols: ['date', 'site', 'channel', 'party', 'covers', 'lead_days', 'no_show', 'daypart'] },
-  rota:     { name: 'Staff Rota', short: 'Rota', desc: 'Hours and labour cost by role', cols: ['date', 'site', 'role', 'hours', 'labour_cost'] },
-  reviews:  { name: 'Guest Reviews', short: 'Reviews', desc: 'Ratings, themes and comments', cols: ['date', 'site', 'platform', 'theme', 'rating', 'snippet'] },
+/* ---------- schema: tables, keys, domains, and every available join ---------- */
+const TABLES = {
+  sites:           { domain: 'front',   pk: 'site_id',      date: null,          desc: 'The three pubs', words: 'site pub location venue each pub by pub city' },
+  customers:       { domain: 'front',   pk: 'customer_id',  date: 'joined',      desc: 'Guests who book or review', words: 'customer guest regular segment loyal member' },
+  bookings:        { domain: 'front',   pk: 'booking_id',   date: 'date',        desc: 'Table reservations', words: 'booking reservation no-show noshow covers channel party web phone app' },
+  reviews:         { domain: 'front',   pk: 'review_id',    date: 'date',        desc: 'Guest ratings and comments', words: 'review rating star complaint feedback theme score' },
+  orders:          { domain: 'kitchen', pk: 'order_id',     date: 'date',        desc: 'One row per tab or table order', words: 'order tab check daypart lunch dinner late walk-in' },
+  order_items:     { domain: 'kitchen', pk: null,           date: null,          desc: 'Lines on each order', words: 'revenue sales takings spend sold units quantity line item basket' },
+  menu_items:      { domain: 'kitchen', pk: 'menu_item_id', date: null,          desc: 'Dishes and drinks with price and cost', words: 'menu dish food drink category price cost margin profit' },
+  kitchen_tickets: { domain: 'kitchen', pk: 'ticket_id',    date: null,          desc: 'Kitchen tickets per food order', words: 'ticket kitchen comp comped slow speed wait station pass' },
+  staff:           { domain: 'cellar',  pk: 'staff_id',     date: null,          desc: 'Team members and roles', words: 'staff server waiter team employee role who' },
+  shifts:          { domain: 'cellar',  pk: 'shift_id',     date: 'date',        desc: 'Worked shifts, hours and cost', words: 'shift hours labour labor rota wage staffing' },
+  products:        { domain: 'cellar',  pk: 'product_id',   date: null,          desc: 'Beers and ciders on draught', words: 'beer ale product style cider lager stout' },
+  kegs:            { domain: 'cellar',  pk: 'keg_id',       date: 'date_tapped', desc: 'Kegs tapped, poured and wasted', words: 'keg waste poured cellar spill litres line' },
 };
+for (const [t, m] of Object.entries(TABLES)) { m.cols = Object.keys(DB[t][0]); m.rows = DB[t].length; }
+// Joins: `many` side holds the foreign key. soft = not a key, matched on site + date.
+const EDGES = [
+  ['customers', 'home_site_id', 'sites', 'site_id'], ['bookings', 'customer_id', 'customers', 'customer_id'], ['bookings', 'site_id', 'sites', 'site_id'],
+  ['reviews', 'site_id', 'sites', 'site_id'], ['reviews', 'customer_id', 'customers', 'customer_id'],
+  ['orders', 'site_id', 'sites', 'site_id'], ['orders', 'booking_id', 'bookings', 'booking_id'], ['orders', 'staff_id', 'staff', 'staff_id'],
+  ['order_items', 'order_id', 'orders', 'order_id'], ['order_items', 'menu_item_id', 'menu_items', 'menu_item_id'], ['kitchen_tickets', 'order_id', 'orders', 'order_id'],
+  ['staff', 'site_id', 'sites', 'site_id'], ['shifts', 'staff_id', 'staff', 'staff_id'], ['shifts', 'site_id', 'sites', 'site_id'],
+  ['kegs', 'product_id', 'products', 'product_id'], ['kegs', 'site_id', 'sites', 'site_id'],
+].map(([many, mcol, one, ocol]) => ({ id: `${many}.${mcol}`, many, one, keys: [[mcol, ocol]], soft: false }));
+EDGES.push({ id: 'reviews~orders', many: 'reviews', one: 'orders', keys: [['site_id', 'site_id'], ['date', 'date']], soft: true },
+           { id: 'shifts~orders', many: 'shifts', one: 'orders', keys: [['site_id', 'site_id'], ['date', 'date']], soft: true });
+const edgeById = id => EDGES.find(e => e.id === id);
+const edgesOf = t => EDGES.filter(e => e.many === t || e.one === t);
+const other = (e, t) => e.many === t ? e.one : e.many;
+const edgeSQL = (e, alias) => e.keys.map(([mc, oc]) => `${alias[e.many]}.${mc} = ${alias[e.one]}.${oc}`).join(' AND ');
+
+/* =====================================================================
+   2. ADAPTER: the seam where a real database plugs in later.
+   ===================================================================== */
 const MockAdapter = {
-  name: 'Mock data (in page)',
-  async listSources() { return Object.entries(SOURCE_META).map(([id, m]) => ({ id, ...m, rows: MOCK[id].length })); },
-  async schema(id) { return SOURCE_META[id].cols; },
-  /** Filter to the last `days` and one site (or all), then take a random sample of `n` rows. */
-  async sample(id, { n = 500, days = 30, site = 'All', seed = 1 } = {}) {
-    const from = dates[Math.max(0, DAYS - days)];
-    const pool = MOCK[id].filter(r => r.date >= from && (site === 'All' || r.site === site));
-    const rnd = mulberry32(seed * 7919 + n + days);
-    const idx = pool.map((_, i) => i);
-    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
-    const rows = idx.slice(0, Math.min(n, pool.length)).map(i => pool[i]).sort((a, b) => a.date < b.date ? -1 : 1);
-    return { rows, population: pool.length, total: MOCK[id].length, from, to: dates[DAYS - 1] };
+  name: 'Mock pub database (in page)',
+  async tables() { return TABLES; },
+  async joins() { return EDGES; },
+  /** Rows of one table, optionally filtered by date window and site. */
+  async rows(table, { days = 90, site = 'All' } = {}) {
+    const m = TABLES[table], from = dates[Math.max(0, DAYS - days)];
+    const sid = site === 'All' ? null : DB.sites.find(s => s.name === site)?.site_id;
+    return DB[table].filter(r => (!m.date || r[m.date] >= from) && (!sid || !('site_id' in r) || r.site_id === sid));
   },
+  async all(table) { return DB[table]; },
 };
 let adapter = MockAdapter;
 
 /* =====================================================================
-   3. People on the exchange (mock directory)
+   3. Question → measure, dimension, tables → shortest join routes
    ===================================================================== */
-const PEOPLE = {
-  mara:  { name: 'Mara Quinn', role: 'General Manager', email: 'mara@patchandpint.example', loves: ['sales', 'bookings', 'rota'], lens: ['sales.days', 'sales.trend', 'rota.labour', 'bookings.covers', 'sales.sites'] },
-  theo:  { name: 'Theo Achebe', role: 'Head Chef', email: 'theo@patchandpint.example', loves: ['tickets', 'cellar', 'reviews'], lens: ['tickets.slot', 'tickets.dish', 'tickets.comp', 'reviews.theme', 'sales.mix'] },
-  priya: { name: 'Priya Raman', role: 'Finance Lead', email: 'priya@patchandpint.example', loves: ['sales', 'rota', 'cellar'], lens: ['sales.trend', 'rota.labour', 'cellar.cost', 'sales.sites', 'tickets.comp'] },
-  owen:  { name: 'Owen Hart', role: 'Marketing', email: 'owen@patchandpint.example', loves: ['bookings', 'reviews', 'sales'], lens: ['bookings.noshow', 'reviews.theme', 'reviews.quotes', 'bookings.lead', 'sales.days'] },
-  lena:  { name: 'Lena Brooks', role: 'Cellar Master', email: 'lena@patchandpint.example', loves: ['cellar', 'sales'], lens: ['cellar.waste', 'cellar.stock', 'cellar.cost', 'sales.mix'] },
-  sam:   { name: 'Sam Okoye', role: 'Data Steward', email: 'sam@patchandpint.example', loves: ['reviews', 'rota', 'tickets'], lens: ['quality', 'quality.fresh'] },
-};
+const MEASURES = [
+  { id: 'revenue', label: 'Revenue', t: 'order_items', re: /\b(revenue|sales|takings|spend|money|income|turnover)\b/, agg: 'sum', val: row => row['order_items.qty'] * row['order_items.price'], sql: a => `SUM(${a.order_items}.qty * ${a.order_items}.price)`, fmt: 'money' },
+  { id: 'margin', label: 'Gross margin', t: 'order_items', need: ['menu_items'], re: /\b(margin|profit|gp)\b/, agg: 'sum', val: row => row['order_items.qty'] * (row['order_items.price'] - row['menu_items.cost']), sql: a => `SUM(${a.order_items}.qty * (${a.order_items}.price - ${a.menu_items}.cost))`, fmt: 'money' },
+  { id: 'units', label: 'Units sold', t: 'order_items', re: /\b(units|sold|quantity|popular|best[- ]?sell\w*)\b/, agg: 'sum', val: row => row['order_items.qty'], sql: a => `SUM(${a.order_items}.qty)`, fmt: 'n' },
+  { id: 'comps', label: 'Comp rate', t: 'kitchen_tickets', re: /\b(comp|comps|comped|refund\w*|free)\b/, agg: 'rate', val: row => row['kitchen_tickets.comped'] ? 1 : 0, sql: a => `AVG(CASE WHEN ${a.kitchen_tickets}.comped THEN 1.0 ELSE 0 END)`, fmt: 'pct' },
+  { id: 'ticket', label: 'Ticket time', t: 'kitchen_tickets', re: /\b(slow\w*|ticket times?|speed|wait\w*|fast)\b/, agg: 'avg', val: row => row['kitchen_tickets.ticket_min'], sql: a => `AVG(${a.kitchen_tickets}.ticket_min)`, fmt: 'min' },
+  { id: 'noshow', label: 'No-show rate', t: 'bookings', re: /\b(no[- ]?shows?|noshow\w*|didn'?t show)\b/, agg: 'rate', val: row => row['bookings.no_show'] ? 1 : 0, sql: a => `AVG(CASE WHEN ${a.bookings}.no_show THEN 1.0 ELSE 0 END)`, fmt: 'pct' },
+  { id: 'covers', label: 'Covers booked', t: 'bookings', re: /\b(covers|guests booked|party size|bookings count)\b/, agg: 'sum', val: row => row['bookings.party'], sql: a => `SUM(${a.bookings}.party)`, fmt: 'n' },
+  { id: 'rating', label: 'Average rating', t: 'reviews', re: /\b(rating\w*|stars?|score|rated)\b/, agg: 'avg', val: row => row['reviews.rating'], sql: a => `AVG(${a.reviews}.rating)`, fmt: 'star' },
+  { id: 'waste', label: 'Beer waste (litres)', t: 'kegs', re: /\b(waste\w*|spill\w*|poured away)\b/, agg: 'sum', val: row => row['kegs.waste_l'], sql: a => `SUM(${a.kegs}.waste_l)`, fmt: 'l' },
+  { id: 'poured', label: 'Litres poured', t: 'kegs', re: /\b(poured|pints|volume)\b/, agg: 'sum', val: row => row['kegs.poured_l'], sql: a => `SUM(${a.kegs}.poured_l)`, fmt: 'l' },
+  { id: 'labour', label: 'Labour cost', t: 'shifts', re: /\b(labou?r|wages?|staff costs?|payroll)\b/, agg: 'sum', val: row => row['shifts.cost'], sql: a => `SUM(${a.shifts}.cost)`, fmt: 'money' },
+  { id: 'hours', label: 'Hours worked', t: 'shifts', re: /\b(hours|rota|staffing)\b/, agg: 'sum', val: row => row['shifts.hours'], sql: a => `SUM(${a.shifts}.hours)`, fmt: 'n' },
+];
+const DIMS = [
+  { id: 'site', label: 'Pub', t: 'sites', col: 'name', re: /\b(site|sites|pub|pubs|location|venue|each pub|by pub)\b/ },
+  { id: 'dish', label: 'Dish', t: 'menu_items', col: 'name', re: /\b(dish|dishes|items?|menu|food)\b/ },
+  { id: 'category', label: 'Category', t: 'menu_items', col: 'category', re: /\bcategor\w*\b/ },
+  { id: 'channel', label: 'Booking channel', t: 'bookings', col: 'channel', re: /\b(channel|web|online|phone|app)\b/ },
+  { id: 'beer', label: 'Beer', t: 'products', col: 'name', re: /\b(beers?|ales?|products?|kegs?)\b/ },
+  { id: 'style', label: 'Beer style', t: 'products', col: 'style', re: /\bstyles?\b/ },
+  { id: 'role', label: 'Staff role', t: 'staff', col: 'role', re: /\broles?\b/ },
+  { id: 'server', label: 'Server', t: 'staff', col: 'name', re: /\b(server|servers|waiter|staff member|who)\b/ },
+  { id: 'segment', label: 'Customer segment', t: 'customers', col: 'segment', re: /\b(segment\w*|regulars?|tourists?|corporate)\b/ },
+  { id: 'theme', label: 'Review theme', t: 'reviews', col: 'theme', re: /\b(theme|about|complain\w*)\b/ },
+  { id: 'daypart', label: 'Daypart', t: 'orders', col: 'daypart', re: /\b(daypart|lunch|dinner|late)\b/ },
+  { id: 'station', label: 'Kitchen station', t: 'kitchen_tickets', col: 'station', re: /\bstations?\b/ },
+  { id: 'weekday', label: 'Day of week', t: null, col: null, re: /\b(weekday|day of (the )?week|saturday|sunday|monday|weekend|each day|by day)\b/ },
+];
+function parseQuestion(q) {
+  const s = ' ' + q.toLowerCase().replace(/[’']/g, "'") + ' ';
+  const measures = MEASURES.filter(m => m.re.test(s));
+  if (measures.find(m => m.id === 'margin')) { const i = measures.findIndex(m => m.id === 'revenue'); if (i >= 0) measures.splice(i, 1); }
+  // rank dimensions: "by X" / "per X" / "each X" first, then whichever is mentioned earliest
+  const at = d => { const m = s.search(d.re); return /\b(by|per|each|every|across)\s*$/.test(s.slice(Math.max(0, m - 9), m)) ? m - 1e6 : m; };
+  const dims = DIMS.filter(d => d.re.test(s)).sort((a, b) => at(a) - at(b));
+  // "items" as a dimension only when not already captured as units
+  const dim = dims.find(d => d.id !== 'weekday' && !(measures[0] && d.t === measures[0].t && d.id !== 'station')) || dims[0] || null;
+  const words = s.match(/[a-z_-]{3,}/g) || [];
+  const keywordTables = Object.entries(TABLES).filter(([t, m]) => words.some(w => t.includes(w) || m.words.split(' ').includes(w) || m.cols.some(c => c === w))).map(([t]) => t);
+  const tables = new Set();
+  measures.slice(0, 2).forEach(m => { tables.add(m.t); (m.need || []).forEach(t => tables.add(t)); });
+  if (dim?.t) tables.add(dim.t);
+  if (!measures.length) keywordTables.forEach(t => tables.add(t));
+  return { q, measures: measures.slice(0, 2), dim, tables: [...tables], keywordTables };
+}
+function shortestPaths(from, weightOf) {
+  const dist = { [from]: 0 }, prev = {}, todo = new Set(Object.keys(TABLES));
+  while (todo.size) {
+    let u = null; for (const t of todo) if (dist[t] !== undefined && (u === null || dist[t] < dist[u])) u = t;
+    if (u === null) break; todo.delete(u);
+    for (const e of edgesOf(u)) { const v = other(e, u), w = dist[u] + weightOf(e); if (dist[v] === undefined || w < dist[v]) { dist[v] = w; prev[v] = { t: u, e: e.id }; } }
+  }
+  return { dist, prev };
+}
+function routeFor(terminals, weightOf) {
+  if (!terminals.length) return null;
+  const root = terminals[0], used = new Set([root]), edges = new Set();
+  for (const t of terminals.slice(1)) {
+    // connect t to the nearest table already in the tree
+    const sp = shortestPaths(t, weightOf);
+    let best = null; for (const u of used) if (sp.dist[u] !== undefined && (best === null || sp.dist[u] < sp.dist[best])) best = u;
+    if (best === null) return null;
+    let cur = best;
+    while (cur !== t) { const p = sp.prev[cur]; edges.add(p.e); used.add(cur); cur = p.t; }
+    used.add(t);
+  }
+  return { root, tables: [...used], edges: [...edges] };
+}
+function suggestRoutes(parsed) {
+  const terms = parsed.tables;
+  if (!terms.length) return [];
+  if (terms.length === 1) return [{ root: terms[0], tables: terms, edges: [], note: 'Single table: no join needed.' }];
+  const out = [], base = e => e.soft ? 3.2 : 1;
+  let penal = new Map();
+  for (let k = 0; k < 4 && out.length < 3; k++) {
+    const r = routeFor(terms, e => base(e) * (penal.get(e.id) || 1));
+    if (!r) break;
+    const sig = r.edges.slice().sort().join('|');
+    if (!out.some(o => o.edges.slice().sort().join('|') === sig)) out.push(r);
+    r.edges.forEach(id => penal.set(id, (penal.get(id) || 1) * 3.5));
+  }
+  return out.map(r => ({ ...r, warnings: routeWarnings(r) }));
+}
+function routeWarnings(r) {
+  const w = [];
+  if (r.edges.some(id => edgeById(id).soft)) w.push({ warn: true, t: 'soft join on site + date' });
+  // fan-out: walking from the root onto a table's "many" side multiplies rows
+  const seen = new Set([r.root]); let grew = [];
+  const walk = t => { for (const id of r.edges) { const e = edgeById(id); if (![e.many, e.one].includes(t)) continue; const u = other(e, t); if (seen.has(u)) continue; seen.add(u); if (e.one === t) grew.push(u); walk(u); } };
+  walk(r.root);
+  if (grew.length) w.push({ warn: true, t: `fans out onto ${grew.join(', ')}` });
+  if (!w.length) w.push({ ok: true, t: 'many-to-one all the way: no double counting' });
+  w.push({ t: `${r.edges.length} join${r.edges.length === 1 ? '' : 's'}` });
+  return w;
+}
 
 /* =====================================================================
-   4. The built-in analyst: deterministic insight recipes per source.
-      Each returns {id, title, text, value, unit, chart, confidence, why}.
+   4. Join engine: hash joins over sampled rows, with per-join health stats
    ===================================================================== */
-const conf = (n) => n >= 800 ? 'high' : n >= 250 ? 'medium' : 'low';
-const bars = (labels, values, fmt) => ({ type: 'bar', labels, series: [{ name: 'value', values }], fmt });
-const RECIPES = {
-  sales(rows) {
-    const out = [];
-    const byDate = groupBy(rows, 'date');
-    const dayRev = [...byDate].map(([d, rs]) => ({ d, dow: dowOf(d), rev: sum(rs, 'revenue') }));
-    const byDow = DOW.map((_, i) => avg(dayRev.filter(x => x.dow === i), 'rev'));
-    const typical = byDow.reduce((a, b) => a + b, 0) / 7, top = byDow.indexOf(Math.max(...byDow)), low = byDow.indexOf(Math.min(...byDow.filter(Boolean)));
-    out.push({ id: 'sales.days', title: `${DOW[top]} is the big night`, text: `In the sample, ${DOW[top]} takes ${pct(byDow[top] / typical - 1)} more than a typical day, while ${DOW[low]} runs ${pct(1 - byDow[low] / typical)} below it.`, value: money(byDow[top]), unit: `avg ${DOW[top]} takings (sample)`, chart: bars(DOW, byDow, 'money') });
-    const weeks = groupBy(dayRev, x => Math.floor((DAYS - 1 - dates.indexOf(x.d)) / 7));
-    const wk = [...weeks].filter(([, xs]) => xs.length >= 6).sort((a, b) => b[0] - a[0]).map(([w, xs]) => ({ w, rev: sum(xs, 'rev') / xs.length * 7 }));
-    if (wk.length >= 4) {
-      const first = avg(wk.slice(0, 2), 'rev'), last = avg(wk.slice(-2), 'rev'), g = last / first - 1;
-      out.push({ id: 'sales.trend', title: g >= 0 ? `Takings up ${pct(g)} across the period` : `Takings down ${pct(-g)} across the period`, text: `Comparing the first two weeks with the last two in the sampled window, weekly takings moved ${g >= 0 ? 'up' : 'down'} ${pct(Math.abs(g), 1)}.`, value: pct(g, 1), unit: 'change, first vs last fortnight', chart: { type: 'line', labels: wk.map((_, i) => `W${i + 1}`), series: [{ name: 'Weekly takings', values: wk.map(x => x.rev) }], fmt: 'money' } });
+async function runQuery(qy) {
+  const { root, edges } = qy, params = qy.params;
+  const rootRows = await adapter.rows(root, params);
+  const rnd = mulberry32((qy.seed || 1) * 7919 + params.n + params.days);
+  const idx = rootRows.map((_, i) => i); for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  const sample = idx.slice(0, Math.min(params.n, rootRows.length)).map(i => rootRows[i]);
+  let rows = sample.map(r => prefix(root, r));
+  const joined = new Set([root]), stats = [], CAP = 25000;
+  let truncated = false;
+  const pending = [...edges];
+  while (pending.length) {
+    const i = pending.findIndex(id => { const e = edgeById(id); return joined.has(e.many) !== joined.has(e.one); });
+    if (i < 0) break;
+    const e = edgeById(pending.splice(i, 1)[0]);
+    const from = joined.has(e.many) ? e.many : e.one, to = other(e, from);
+    const type = qy.joinTypes[e.id] || 'INNER';
+    const toRows = await adapter.all(to);
+    const keyFrom = r => e.keys.map(([mc, oc]) => r[`${from}.${from === e.many ? mc : oc}`]).join('|');
+    const keyTo = r => e.keys.map(([mc, oc]) => r[to === e.many ? mc : oc]).join('|');
+    const index = new Map(); for (const r of toRows) { const k = keyTo(r); if (!index.has(k)) index.set(k, []); index.get(k).push(r); }
+    const next = []; let matched = 0, unmatched = 0, nullKey = 0, out = 0;
+    for (const row of rows) {
+      const k = keyFrom(row);
+      const hits = k.split('|').some(x => x === 'null' || x === 'undefined') ? (nullKey++, []) : (index.get(k) || []);
+      if (hits.length) { matched++; for (const h of hits) { if (next.length >= CAP) { truncated = true; break; } next.push({ ...row, ...prefix(to, h) }); out++; } }
+      else { unmatched++; if (type === 'LEFT') next.push({ ...row, ...prefix(to, null) }); }
     }
-    const byCat = [...groupBy(rows, 'category')].map(([c, rs]) => [c, sum(rs, 'revenue')]).sort((a, b) => b[1] - a[1]);
-    const tot = byCat.reduce((a, b) => a + b[1], 0);
-    out.push({ id: 'sales.mix', title: `${byCat[0][0]} carries ${pct(byCat[0][1] / tot)} of takings`, text: `${byCat[0][0]} and ${byCat[1][0]} together are ${pct((byCat[0][1] + byCat[1][1]) / tot)} of sampled revenue. ${byCat.find(c => c[0] === 'Desserts') ? `Desserts are just ${pct(byCat.find(c => c[0] === 'Desserts')[1] / tot, 1)}.` : ''}`, value: pct(byCat[0][1] / tot), unit: `${byCat[0][0].toLowerCase()} share`, chart: bars(byCat.map(c => c[0]), byCat.map(c => c[1] / tot * 100), 'pct') });
-    const bySite = [...groupBy(rows, 'site')].map(([s, rs]) => [s, sum(rs, 'revenue') / new Set(rs.map(r => r.date)).size]);
-    if (bySite.length > 1) { bySite.sort((a, b) => b[1] - a[1]); out.push({ id: 'sales.sites', title: `${bySite[0][0]} out-earns ${bySite[bySite.length - 1][0]} by ${pct(bySite[0][1] / bySite[bySite.length - 1][1] - 1)}`, text: `Average daily takings in the sample: ${bySite.map(s => `${s[0]} ${money(s[1])}`).join(', ')}.`, value: money(bySite[0][1]), unit: `${bySite[0][0]} per day`, chart: bars(bySite.map(s => s[0]), bySite.map(s => s[1]), 'money') }); }
-    const sunLunchMains = rows.filter(r => r.category === 'Mains' && r.daypart === 'Lunch');
-    const sun = avg(sunLunchMains.filter(r => dowOf(r.date) === 0), 'revenue'), other = avg(sunLunchMains.filter(r => dowOf(r.date) !== 0), 'revenue');
-    if (sun && other) out.push({ id: 'sales.roast', title: `Sunday lunch mains sell ${num(sun / other, 1)}× a normal lunch`, text: 'The Sunday roast drives lunch. Plan prep and front-of-house cover around it.', value: `${num(sun / other, 1)}×`, unit: 'Sunday vs other lunch mains', chart: bars(['Other lunches', 'Sunday lunch'], [other, sun], 'money') });
-    return out;
-  },
-  cellar(rows) {
-    const out = [];
-    const byProd = [...groupBy(rows, 'product')].map(([p, rs]) => ({ p, waste: sum(rs, 'waste_l'), poured: sum(rs, 'poured_l') })).map(x => ({ ...x, rate: x.waste / Math.max(1, x.poured) })).sort((a, b) => b.rate - a.rate);
-    out.push({ id: 'cellar.waste', title: `${byProd[0].p} wastes ${pct(byProd[0].rate, 1)} of what's poured`, text: `Waste as a share of pours is highest for ${byProd[0].p}, against a ${pct(avg(byProd, 'rate'), 1)} average. Check line cleaning, keg rotation or keg size.`, value: pct(byProd[0].rate, 1), unit: 'waste rate', chart: bars(byProd.map(x => x.p), byProd.map(x => x.rate * 100), 'pct') });
-    const bySiteProd = [...groupBy(rows, r => r.site + '|' + r.product)].map(([k, rs]) => ({ k, lvl: avg(rs, 'level_pct') })).sort((a, b) => a.lvl - b.lvl);
-    const low = bySiteProd.filter(x => x.lvl < 30).slice(0, 5);
-    if (low.length) out.push({ id: 'cellar.stock', title: `${low[0].k.split('|')[1]} at ${low[0].k.split('|')[0]} keeps running low`, text: `Average keg level ${Math.round(low[0].lvl)}%. Guests notice when it runs out. Raise the par or add a delivery.`, value: `${Math.round(low[0].lvl)}%`, unit: 'average keg level', chart: bars(low.map(x => x.k.replace('|', ' · ')), low.map(x => x.lvl), 'pct') });
-    const cost = sum(rows, 'waste_l') * 4.2;
-    const bySite = [...groupBy(rows, 'site')].map(([s, rs]) => [s, sum(rs, 'waste_l') * 4.2]).sort((a, b) => b[1] - a[1]);
-    out.push({ id: 'cellar.cost', title: `${money(cost)} of beer poured away in the sample`, text: `Waste valued at £4.20/litre. ${bySite[0][0]} accounts for ${pct(bySite[0][1] / cost)}.`, value: money(cost), unit: 'waste at cost (sample)', chart: bars(bySite.map(s => s[0]), bySite.map(s => s[1]), 'money') });
-    return out;
-  },
-  tickets(rows) {
-    const out = [];
-    const slots = [...groupBy(rows, r => `${DOW[dowOf(r.date)]} ${r.daypart}`)].map(([k, rs]) => ({ k, t: avg(rs, 'ticket_min'), n: rs.length })).filter(x => x.n >= 3).sort((a, b) => b.t - a.t);
-    const overall = avg(rows, 'ticket_min');
-    if (slots.length) out.push({ id: 'tickets.slot', title: `${slots[0].k} tickets take ${num(slots[0].t, 1)} min`, text: `That's ${num(slots[0].t - overall, 1)} minutes over the ${num(overall, 1)}-minute average. Look at staffing and prep for this service.`, value: `${num(slots[0].t, 1)} min`, unit: 'avg ticket time, slowest slot', chart: bars(slots.slice(0, 6).map(s => s.k), slots.slice(0, 6).map(s => s.t), 'min') });
-    const dishes = [...groupBy(rows, 'dish')].map(([d, rs]) => ({ d, t: avg(rs, 'ticket_min') })).sort((a, b) => b.t - a.t);
-    out.push({ id: 'tickets.dish', title: `${dishes[0].d} is the slowest dish out of the pass`, text: `It averages ${num(dishes[0].t, 1)} min against ${num(dishes[dishes.length - 1].t, 1)} min for ${dishes[dishes.length - 1].d}.`, value: `${num(dishes[0].t, 1)} min`, unit: 'avg ticket time', chart: bars(dishes.map(x => x.d), dishes.map(x => x.t), 'min') });
-    const comp = rows.filter(r => r.comped).length / rows.length, slowComp = rows.filter(r => r.ticket_min > 28);
-    out.push({ id: 'tickets.comp', title: `${pct(comp, 1)} of tickets were comped`, text: `Comps jump to ${pct(slowComp.filter(r => r.comped).length / Math.max(1, slowComp.length), 1)} when a ticket takes over 28 minutes. Slow tickets cost money twice.`, value: pct(comp, 1), unit: 'comp rate', chart: bars(['≤ 28 min', '> 28 min'], [rows.filter(r => r.ticket_min <= 28 && r.comped).length / Math.max(1, rows.filter(r => r.ticket_min <= 28).length) * 100, slowComp.filter(r => r.comped).length / Math.max(1, slowComp.length) * 100], 'pct') });
-    return out;
-  },
-  bookings(rows) {
-    const out = [];
-    const ch = [...groupBy(rows.filter(r => r.channel !== 'Walk-in'), 'channel')].map(([c, rs]) => ({ c, ns: rs.filter(r => r.no_show).length / rs.length })).sort((a, b) => b.ns - a.ns);
-    out.push({ id: 'bookings.noshow', title: `${ch[0].c} bookings no-show ${pct(ch[0].ns)} of the time`, text: `${ch.map(x => `${x.c} ${pct(x.ns, 1)}`).join(', ')}. A card hold or reminder text on ${ch[0].c.toLowerCase()} bookings would protect busy nights.`, value: pct(ch[0].ns, 1), unit: `${ch[0].c.toLowerCase()} no-show rate`, chart: bars(ch.map(x => x.c), ch.map(x => x.ns * 100), 'pct') });
-    const cov = DOW.map((_, i) => { const rs = rows.filter(r => dowOf(r.date) === i); return sum(rs, 'covers') / Math.max(1, new Set(rs.map(r => r.date)).size); });
-    const top = cov.indexOf(Math.max(...cov));
-    out.push({ id: 'bookings.covers', title: `${DOW[top]} books the most covers`, text: `Average booked covers per ${DOW[top]}: ${num(cov[top])} (sample), against ${num(Math.min(...cov.filter(Boolean)))} on the quietest day.`, value: num(cov[top]), unit: `covers per ${DOW[top]} (sample)`, chart: bars(DOW, cov, 'n') });
-    const lead = [...groupBy(rows.filter(r => r.channel !== 'Walk-in'), 'channel')].map(([c, rs]) => ({ c, d: avg(rs, 'lead_days') })).sort((a, b) => b.d - a.d);
-    out.push({ id: 'bookings.lead', title: `${lead[0].c} guests book ${num(lead[0].d, 1)} days ahead`, text: 'Longer lead times mean more time to upsell and to remind guests. Aim campaigns at the channel that plans ahead.', value: `${num(lead[0].d, 1)} d`, unit: 'avg lead time', chart: bars(lead.map(x => x.c), lead.map(x => x.d), 'n') });
-    return out;
-  },
-  rota(rows) {
-    const out = [];
-    const perDay = DOW.map((_, i) => { const rs = rows.filter(r => dowOf(r.date) === i); return sum(rs, 'labour_cost') / Math.max(1, new Set(rs.map(r => r.date + r.site)).size); });
-    const hi = perDay.indexOf(Math.max(...perDay));
-    const bySiteMon = [...groupBy(rows.filter(r => dowOf(r.date) === 1), 'site')].map(([s, rs]) => ({ s, c: sum(rs, 'labour_cost') / Math.max(1, new Set(rs.map(r => r.date)).size) })).sort((a, b) => b.c - a.c);
-    out.push({ id: 'rota.labour', title: `Labour peaks on ${DOW[hi]} at ${money(perDay[hi])} per site`, text: bySiteMon.length > 1 ? `Watch Mondays: ${bySiteMon[0].s} spends ${money(bySiteMon[0].c)} on a Monday, the quietest trading day.` : 'Match hours to covers day by day.', value: money(perDay[hi]), unit: `labour per site, ${DOW[hi]}`, chart: bars(DOW, perDay, 'money') });
-    const roles = [...groupBy(rows, 'role')].map(([r, rs]) => [r, sum(rs, 'hours')]);
-    const th = roles.reduce((a, b) => a + b[1], 0);
-    out.push({ id: 'rota.roles', title: `Kitchen is ${pct(roles.find(r => r[0] === 'Kitchen')?.[1] / th || 0)} of rota hours`, text: roles.map(r => `${r[0]} ${num(r[1])} h`).join(', ') + ' in the sample.', value: `${num(th)} h`, unit: 'hours sampled', chart: bars(roles.map(r => r[0]), roles.map(r => r[1]), 'n') });
-    return out;
-  },
-  reviews(rows) {
-    const out = [];
-    const th = [...groupBy(rows, 'theme')].map(([t, rs]) => ({ t, r: avg(rs, 'rating'), n: rs.length })).sort((a, b) => a.r - b.r);
-    out.push({ id: 'reviews.theme', title: `${th[0].t} is the weakest-rated theme (${num(th[0].r, 1)}★)`, text: `Guests rate ${th[th.length - 1].t.toLowerCase()} highest (${num(th[th.length - 1].r, 1)}★). ${th[0].t} drags the average down across ${th[0].n} sampled reviews.`, value: `${num(th[0].r, 1)}★`, unit: `${th[0].t.toLowerCase()} rating`, chart: bars(th.map(x => x.t), th.map(x => x.r), 'star') });
-    const worst = [...groupBy(rows, r => r.site + ' · ' + r.theme)].map(([k, rs]) => ({ k, r: avg(rs, 'rating'), rs })).filter(x => x.rs.length >= 4).sort((a, b) => a.r - b.r)[0];
-    if (worst) { const quotes = [...new Set(worst.rs.filter(r => r.rating <= 2).map(r => r.snippet))].slice(0, 2); out.push({ id: 'reviews.quotes', title: `Guests at ${worst.k.split(' · ')[0]} complain about ${worst.k.split(' · ')[1].toLowerCase()}`, text: `${num(worst.r, 1)}★ average. What they say: ${quotes.map(q => `“${q}”`).join(' ') || 'mixed comments.'}`, value: `${num(worst.r, 1)}★`, unit: worst.k, chart: null }); }
-    const we = avg(rows.filter(r => [5, 6].includes(dowOf(r.date))), 'rating'), wd = avg(rows.filter(r => ![5, 6].includes(dowOf(r.date))), 'rating');
-    out.push({ id: 'reviews.weekend', title: we < wd ? `Weekend ratings dip to ${num(we, 2)}★` : `Weekends rate ${num(we, 2)}★`, text: `Weekdays average ${num(wd, 2)}★. ${we < wd ? 'Busier services cost goodwill.' : 'The team handles the rush well.'}`, value: `${num(we, 2)}★`, unit: 'Fri–Sat rating', chart: bars(['Weekdays', 'Fri–Sat'], [wd, we], 'star') });
-    return out;
-  },
-};
-function qualityInsights(id, sample) {
-  const rows = sample.rows, cols = SOURCE_META[id].cols;
-  const nulls = cols.map(c => [c, rows.filter(r => r[c] === null || r[c] === undefined || r[c] === '').length / Math.max(1, rows.length)]).filter(x => x[1] > 0);
-  const last = rows.reduce((m, r) => r.date > m ? r.date : m, '');
-  const lagDays = Math.round((new Date(TODAY) - new Date(last)) / 864e5);
+    stats.push({ edge: e.id, from, to, type, inRows: rows.length, outRows: next.length, matched, unmatched, nullKey, fanout: matched ? out / matched : 0 });
+    rows = next; joined.add(to);
+  }
+  return { rows, sample, rootPopulation: rootRows.length, stats, truncated };
+}
+function prefix(t, r) { const o = {}; for (const c of TABLES[t].cols) o[`${t}.${c}`] = r ? r[c] : null; return o; }
+
+/* ---------- SQL text ---------- */
+function aliases(tables) { const a = {}, used = new Set(); for (const t of tables) { let s = t.split('_').map(p => p[0]).join(''); while (used.has(s)) s += s.length; used.add(s); a[t] = s; } return a; }
+function buildSQL(qy) {
+  const a = aliases(qy.tables), m = qy.measure && MEASURES.find(x => x.id === qy.measure), d = qy.dim && DIMS.find(x => x.id === qy.dim);
+  const order = [qy.root]; const pend = [...qy.edges]; const joinsTxt = [];
+  while (pend.length) {
+    const i = pend.findIndex(id => { const e = edgeById(id); return order.includes(e.many) !== order.includes(e.one); });
+    if (i < 0) break;
+    const e = edgeById(pend.splice(i, 1)[0]), to = order.includes(e.many) ? e.one : e.many;
+    order.push(to);
+    joinsTxt.push(`${qy.joinTypes[e.id] === 'LEFT' ? 'LEFT JOIN' : 'JOIN'} ${to} ${a[to]} ON ${edgeSQL(e, a)}${e.soft ? '  -- soft join: not a key' : ''}`);
+  }
+  const dtT = qy.tables.find(t => TABLES[t].date), where = [];
+  if (dtT) where.push(`${a[dtT]}.${TABLES[dtT].date} >= DATE '${dates[Math.max(0, DAYS - qy.params.days)]}'`);
+  if (qy.params.site !== 'All') { const st = qy.tables.includes('sites') ? `${a.sites}.name = '${qy.params.site}'` : (() => { const t = qy.tables.find(x => TABLES[x].cols.includes('site_id')); return t ? `${a[t]}.site_id = ${DB.sites.find(s => s.name === qy.params.site).site_id}` : null; })(); if (st) where.push(st); }
+  let dimExpr = null;
+  if (d) dimExpr = d.id === 'weekday' ? `EXTRACT(DOW FROM ${a[dateTableFor(qy)] || a[qy.root]}.${TABLES[dateTableFor(qy)]?.date || 'date'})` : `${a[d.t]}.${d.col}`;
+  const sel = m ? [dimExpr ? `${dimExpr} AS ${d.id}` : null, `${m.sql(a)} AS ${m.id}`].filter(Boolean) : [`${a[qy.root]}.*`];
+  let sql = `SELECT ${sel.join(',\n       ')}\nFROM ${qy.root} ${a[qy.root]}\n${joinsTxt.join('\n')}`;
+  if (where.length) sql += `\nWHERE ${where.join('\n  AND ')}`;
+  if (m && dimExpr) sql += `\nGROUP BY ${dimExpr}\nORDER BY ${m.id} DESC`;
+  sql += `\n-- sampled: ${qy.params.n} rows of ${qy.root}`;
+  return sql;
+}
+const dateTableFor = qy => { const m = qy.measure && MEASURES.find(x => x.id === qy.measure); const cand = [m?.t, qy.root, ...qy.tables].filter(Boolean); return cand.find(t => TABLES[t].date) || cand.find(t => t === 'order_items' && qy.tables.includes('orders')) && 'orders'; };
+function highlightSQL(sql) {
+  return esc(sql).replace(/(--[^\n]*)/g, '<span class="c">$1</span>').replace(/\b(SELECT|FROM|LEFT JOIN|JOIN|ON|WHERE|AND|GROUP BY|ORDER BY|DESC|AS|SUM|AVG|CASE|WHEN|THEN|ELSE|END|DATE|EXTRACT|DOW)\b/g, '<span class="k">$1</span>');
+}
+
+/* =====================================================================
+   5. The house analyst: answers from the joined rows + join health
+   ===================================================================== */
+const fmtV = (v, f) => v == null || !isFinite(v) ? '—' : f === 'money' ? money(v) : f === 'pct' ? `${num(v * 100, 1)}%` : f === 'pctv' ? `${num(v, 1)}%` : f === 'min' ? `${num(v, 1)} min` : f === 'star' ? `${num(v, 2)}★` : f === 'l' ? `${num(v, 0)} L` : f === 'r' ? num(v, 2) : f === 'idx' ? num(v, 0) : num(v, v < 10 ? 1 : 0);
+const bars = (labels, values, fmt) => ({ type: 'bar', labels, series: [{ name: 'value', values }], fmt });
+async function analyse(qy, res) {
   const out = [];
-  out.push({ id: 'quality', title: nulls.length ? `${nulls.map(n => n[0]).join(', ')} has gaps` : 'No missing values in the sample', text: nulls.length ? `${nulls.map(n => `${n[0]} is ${pct(n[1], 1)} empty`).join('; ')}. Fix at source before this feeds reporting.` : `All ${cols.length} columns are complete across ${rows.length} sampled rows.`, value: nulls.length ? pct(Math.max(...nulls.map(n => n[1])), 1) : '0%', unit: 'worst column null rate', chart: nulls.length ? bars(nulls.map(n => n[0]), nulls.map(n => n[1] * 100), 'pct') : null, confidence: 'high' });
-  out.push({ id: 'quality.fresh', title: lagDays > 0 ? `${SOURCE_META[id].name} is ${lagDays} day${lagDays > 1 ? 's' : ''} behind` : `${SOURCE_META[id].name} is up to date`, text: `Latest row ${last}, and today is ${TODAY}. ${sample.population.toLocaleString()} rows in range, ${rows.length} sampled.`, value: `${lagDays} d`, unit: 'data lag', chart: null, confidence: 'high' });
+  const m = qy.measure && MEASURES.find(x => x.id === qy.measure), d = qy.dim && DIMS.find(x => x.id === qy.dim);
+  const rows = res.rows;
+  // 1. the answer: aggregate at the measure's own grain so fan-out can't double count
+  if (m && rows.length) {
+    const pkCol = TABLES[m.t].pk ? `${m.t}.${TABLES[m.t].pk}` : null;
+    const dtT = dateTableFor(qy), dtCol = dtT ? `${dtT}.${TABLES[dtT].date}` : null;
+    const keyOf = row => d ? (d.id === 'weekday' ? (row[dtCol] ? DOW[dowOf(row[dtCol])] : null) : row[`${d.t}.${d.col}`]) : 'All';
+    const seen = new Set(), groups = new Map();
+    let dup = 0;
+    for (const row of rows) {
+      const grain = pkCol ? row[pkCol] + '|' + keyOf(row) : null;
+      if (grain && seen.has(grain)) { dup++; continue; } if (grain) seen.add(grain);
+      const v = m.val(row); if (v == null || isNaN(v)) continue;
+      const k = keyOf(row) ?? '(no match)';
+      if (!groups.has(k)) groups.set(k, { s: 0, n: 0 });
+      const g = groups.get(k); g.s += v; g.n++;
+    }
+    let arr = [...groups].map(([k, g]) => [k, m.agg === 'sum' ? g.s : g.s / g.n, g.n]).filter(x => x[2] >= (m.agg === 'sum' ? 1 : 3));
+    if (d?.id === 'weekday') arr.sort((a, b) => DOW.indexOf(a[0]) - DOW.indexOf(b[0])); else arr.sort((a, b) => b[1] - a[1]);
+    const top = arr.slice(0, 10);
+    if (top.length) {
+      const best = [...top].sort((a, b) => b[1] - a[1])[0], worst = [...top].sort((a, b) => a[1] - b[1])[0];
+      const higherIsBad = ['comps', 'ticket', 'noshow', 'waste', 'labour'].includes(m.id);
+      const lead = best;
+      out.push({ id: 'answer', title: d ? `${lead[0]} ${higherIsBad ? 'is highest' : 'leads'} on ${m.label.toLowerCase()}: ${fmtV(lead[1], m.fmt)}` : `${m.label}: ${fmtV(lead[1], m.fmt)}`,
+        text: d && top.length > 1 ? `${top.length} ${d.label.toLowerCase()}${top.length > 1 ? 's' : ''} in the joined sample. Lowest: ${worst[0]} at ${fmtV(worst[1], m.fmt)}.${dup ? ` ${dup.toLocaleString()} duplicate rows from fan-out were ignored so nothing is double counted.` : ''}` : `Across ${res.sample.length.toLocaleString()} sampled ${qy.root} rows.`,
+        value: fmtV(lead[1], m.fmt), unit: `${m.label.toLowerCase()}${d ? ', ' + lead[0] : ''}`, confidence: res.sample.length >= 800 ? 'high' : res.sample.length >= 250 ? 'medium' : 'low',
+        chart: d && top.length > 1 ? bars(top.map(x => x[0]), top.map(x => x[1]), m.fmt) : null });
+    }
+  }
+  // 2. comparing two measures: daily totals per pub joined on site + date
+  if (qy.measure2) {
+    const m1 = MEASURES.find(x => x.id === qy.measure), m2 = MEASURES.find(x => x.id === qy.measure2);
+    const daily = async mm => { const t = mm.t, dt = TABLES[t].date ? t : (t === 'order_items' || t === 'kitchen_tickets') ? 'orders' : null; if (!dt) return new Map();
+      const base = await adapter.rows(dt, qy.params); const g = new Map();
+      let rowsM = base.map(r => prefix(dt, r));
+      if (dt !== t) { const idx = new Map(); for (const r of await adapter.all(t)) { const k = r.order_id; if (!idx.has(k)) idx.set(k, []); idx.get(k).push(r); } rowsM = rowsM.flatMap(r => (idx.get(r['orders.order_id']) || []).map(h => ({ ...r, ...prefix(t, h) }))); }
+      if (mm.need) for (const nt of mm.need) { const all = await adapter.all(nt); const byId = new Map(all.map(x => [x[TABLES[nt].pk], x])); rowsM = rowsM.map(r => ({ ...r, ...prefix(nt, byId.get(r[`${t}.${TABLES[nt].pk}`])) })); }
+      for (const r of rowsM) { const k = r[`${dt}.site_id`] + '|' + r[`${dt}.${TABLES[dt].date}`]; const v = mm.val(r); if (v == null || isNaN(v)) continue; if (!g.has(k)) g.set(k, { s: 0, n: 0 }); const x = g.get(k); x.s += v; x.n++; }
+      return new Map([...g].map(([k, x]) => [k, mm.agg === 'sum' ? x.s : x.s / x.n])); };
+    const [a1, a2] = [await daily(m1), await daily(m2)];
+    const keys = [...a1.keys()].filter(k => a2.has(k)).sort((x, y) => x.split('|')[1] < y.split('|')[1] ? -1 : 1);
+    const r = pearson(keys.map(k => a1.get(k)), keys.map(k => a2.get(k)));
+    const word = Math.abs(r) > 0.6 ? 'strongly' : Math.abs(r) > 0.35 ? 'moderately' : Math.abs(r) > 0.15 ? 'weakly' : null;
+    const byDay = new Map(); keys.forEach(k => { const d = k.split('|')[1]; if (!byDay.has(d)) byDay.set(d, [0, 0, 0]); const x = byDay.get(d); x[0] += a1.get(k); x[1] += a2.get(k); x[2]++; });
+    const dl = [...byDay.keys()].sort(), s1 = dl.map(d => byDay.get(d)[0] / byDay.get(d)[2]), s2 = dl.map(d => byDay.get(d)[1] / byDay.get(d)[2]);
+    const norm = arr => { const mn = Math.min(...arr), mx = Math.max(...arr); return arr.map(v => mx > mn ? (v - mn) / (mx - mn) * 100 : 50); };
+    out.unshift({ id: 'compare', title: word ? `${m1.label} and ${m2.label.toLowerCase()} move ${word} ${r >= 0 ? 'together' : 'in opposite directions'}` : `${m1.label} and ${m2.label.toLowerCase()} barely move together`,
+      text: `Daily figures per pub, matched on site and date across ${keys.length} pub-days: r = ${num(r, 2)}. This is a soft join (no shared key), so read it as a lead, not proof.`,
+      value: `r = ${num(r, 2)}`, unit: `${keys.length} pub-days`, confidence: keys.length > 60 ? 'high' : 'medium',
+      chart: { type: 'line', labels: dl.map(d => d.slice(5)), series: [{ name: m1.label, values: norm(s1) }, { name: m2.label, values: norm(s2) }], fmt: 'idx' } });
+  }
+  // 3. join health
+  if (res.stats.length) {
+    const worst = [...res.stats].sort((a, b) => (b.unmatched + b.nullKey) / Math.max(1, b.inRows) - (a.unmatched + a.nullKey) / Math.max(1, a.inRows))[0];
+    const miss = (worst.unmatched) / Math.max(1, worst.inRows);
+    const fan = res.stats.filter(s => s.fanout > 1.05);
+    out.push({ id: 'health', title: miss > 0.005 ? `${pct(miss, 1)} of rows find no match joining ${worst.to}` : 'Every join matched cleanly',
+      text: `${res.stats.map(s => `${s.from} → ${s.to}: ${pct(s.matched / Math.max(1, s.inRows), 1)} matched${s.nullKey ? ` (${s.nullKey} null keys)` : ''}${s.fanout > 1.05 ? `, ×${num(s.fanout, 1)} rows` : ''}`).join('; ')}.${miss > 0.005 && worst.type === 'INNER' ? ` Switch that join to LEFT to keep the unmatched ${worst.from} rows.` : ''}${fan.length ? ' Fan-out is expected here; totals are taken at the measure\'s own grain.' : ''}`,
+      value: pct(1 - miss, 1), unit: 'worst join match rate', confidence: 'high',
+      chart: bars(res.stats.map(s => `${s.from}→${s.to}`), res.stats.map(s => s.matched / Math.max(1, s.inRows) * 100), 'pctv') });
+  }
+  // 4. a second angle when there is a measure and a dimension: by day of week
+  if (m && d && d.id !== 'weekday' && rows.length) {
+    const dtT = dateTableFor(qy), dtCol = dtT ? `${dtT}.${TABLES[dtT].date}` : null;
+    if (dtCol && rows[0][dtCol] !== undefined) {
+      const pkCol = TABLES[m.t].pk ? `${m.t}.${TABLES[m.t].pk}` : null, seen = new Set(), g = DOW.map(() => ({ s: 0, n: 0 }));
+      for (const row of rows) { if (pkCol) { if (seen.has(row[pkCol])) continue; seen.add(row[pkCol]); } const v = m.val(row); if (v == null || isNaN(v) || !row[dtCol]) continue; const x = g[dowOf(row[dtCol])]; x.s += v; x.n++; }
+      const vals = g.map(x => m.agg === 'sum' ? x.s : x.n ? x.s / x.n : 0), hi = vals.indexOf(Math.max(...vals));
+      out.push({ id: 'weekday', title: `${m.label} peaks on ${DOW[hi]}`, text: `Same question, cut by day of week instead of ${d.label.toLowerCase()}.`, value: fmtV(vals[hi], m.fmt), unit: `${DOW[hi]}`, confidence: 'medium', chart: bars(DOW, vals, m.fmt) });
+    }
+  }
+  if (!m && !qy.measure2) {
+    out.push({ id: 'shape', title: `${res.rows.length.toLocaleString()} rows after ${qy.edges.length} join${qy.edges.length === 1 ? '' : 's'}`, text: `Started from ${res.sample.length.toLocaleString()} sampled ${qy.root} rows (of ${res.rootPopulation.toLocaleString()} in range). Ask a question with a measure, like revenue, rating, waste, comps or no-shows, to get an answer, not just the joined rows.`, value: res.rows.length.toLocaleString(), unit: 'joined rows', confidence: 'high', chart: null });
+  }
+  if (res.truncated) out.push({ id: 'trunc', title: 'Join capped at 25,000 rows', text: 'Fan-out made the result too big to hold in the page. Lower the sample size or start from a smaller table.', value: '25,000', unit: 'row cap', confidence: 'high', chart: null });
   return out;
 }
-const LENS_WHY = {
-  mara: 'Shapes rotas, targets and the weekly briefing.', theo: 'Affects the pass, prep lists and guest experience.', priya: 'Moves margin and the monthly P&L.',
-  owen: 'Shapes campaigns, reminders and reputation.', lena: 'Keeps lines fresh and stops money going down the drain.', sam: 'Decides whether anyone can trust the numbers.',
-};
 
-const BuiltInAgent = {
-  name: 'House analyst',
-  async personData(person, srcId, params) {
-    const s = await adapter.sample(srcId, params);
-    let ins = RECIPES[srcId](s.rows);
-    if (person === 'sam') ins = [...qualityInsights(srcId, s), ...ins];
-    const lens = PEOPLE[person].lens;
-    ins.forEach((x, i) => { x.score = (lens.indexOf(x.id) >= 0 ? 100 - lens.indexOf(x.id) * 10 : 0) + (lens.some(l => l.startsWith(srcId)) ? 5 : 0) - i; x.confidence = x.confidence || conf(s.rows.length); x.why = LENS_WHY[person]; });
-    ins.sort((a, b) => b.score - a.score);
-    const summary = `Sampled ${s.rows.length.toLocaleString()} of ${s.population.toLocaleString()} rows from ${SOURCE_META[srcId].name} (${params.site === 'All' ? 'all pubs' : params.site}, last ${params.days} days), read through ${PEOPLE[person].name.split(' ')[0]}'s lens as ${PEOPLE[person].role}.`;
-    return { summary, insights: ins.slice(0, 5), samples: { [srcId]: s } };
-  },
-  async dataData(a, b, params) {
-    const [sa, sb] = await Promise.all([adapter.sample(a, params), adapter.sample(b, params)]);
-    const daily = (id, rows) => { const m = new Map(); for (const [d, rs] of groupBy(rows, 'date')) m.set(d, DAILY[id](rs)); return m; };
-    const ma = daily(a, sa.rows), mb = daily(b, sb.rows);
-    const common = [...ma.keys()].filter(d => mb.has(d)).sort();
-    const xs = common.map(d => ma.get(d)), ys = common.map(d => mb.get(d));
-    const r = pearson(xs, ys);
-    const words = Math.abs(r) > 0.6 ? 'strongly' : Math.abs(r) > 0.35 ? 'moderately' : Math.abs(r) > 0.15 ? 'weakly' : 'barely';
-    const idx = arr => { const mn = Math.min(...arr), mx = Math.max(...arr); return arr.map(v => mx > mn ? (v - mn) / (mx - mn) * 100 : 50); };
-    const story = PAIR_STORY[[a, b].sort().join('+')];
-    const ins = [{ id: 'join.corr', title: words === 'barely' ? `${DAILY_NAME[a]} and ${DAILY_NAME[b]} barely move together` : `${DAILY_NAME[a]} and ${DAILY_NAME[b]} move ${words} ${r >= 0 ? 'together' : 'in opposite directions'}`, text: `Across ${common.length} matched days the correlation is r = ${num(r, 2)}. ${story ? story(r) : 'Treat this as a lead to investigate, not proof of cause.'}`, value: `r = ${num(r, 2)}`, unit: `${common.length} days joined on date`, confidence: common.length > 40 ? 'high' : common.length > 15 ? 'medium' : 'low',
-      chart: { type: 'line', labels: common.map(d => d.slice(5)), series: [{ name: DAILY_NAME[a], values: idx(xs) }, { name: DAILY_NAME[b], values: idx(ys) }], fmt: 'idx' } }];
-    const bySite = SITES.map(site => { const fa = sa.rows.filter(x => x.site === site), fb = sb.rows.filter(x => x.site === site); const da = daily(a, fa), db = daily(b, fb); const cm = [...da.keys()].filter(d => db.has(d)); return { site, r: pearson(cm.map(d => da.get(d)), cm.map(d => db.get(d))), n: cm.length }; }).filter(x => x.n >= 5);
-    if (bySite.length > 1) { bySite.sort((p, q) => Math.abs(q.r) - Math.abs(p.r)); ins.push({ id: 'join.sites', title: `The link is clearest at ${bySite[0].site}`, text: bySite.map(x => `${x.site} r = ${num(x.r, 2)}`).join(', ') + '.', value: `r = ${num(bySite[0].r, 2)}`, unit: bySite[0].site, confidence: 'medium', chart: bars(bySite.map(x => x.site), bySite.map(x => x.r), 'r') }); }
-    const summary = `Joined ${SOURCE_META[a].name} with ${SOURCE_META[b].name} by date: ${sa.rows.length.toLocaleString()} + ${sb.rows.length.toLocaleString()} sampled rows, ${params.site === 'All' ? 'all pubs' : params.site}, last ${params.days} days.`;
-    return { summary, insights: ins, samples: { [a]: sa, [b]: sb } };
-  },
-  async personPerson(p, q, params) {
-    const A = PEOPLE[p], B = PEOPLE[q];
-    const shared = A.loves.filter(s => B.loves.includes(s));
-    const topFor = async (who, src) => (await BuiltInAgent.personData(who, src, params)).insights[0];
-    const aTop = await topFor(p, A.loves[0]), bTop = await topFor(q, B.loves[0]);
-    const agenda = [
-      `${A.name.split(' ')[0]} brings: ${aTop.title.toLowerCase()}.`,
-      `${B.name.split(' ')[0]} brings: ${bTop.title.toLowerCase()}.`,
-      shared.length ? `Both of you watch ${shared.map(s => SOURCE_META[s].name).join(' and ')}. Agree one number you'll both track weekly.` : `You don't share a data source yet. Patch ${SOURCE_META[A.loves[0]].name} into ${SOURCE_META[B.loves[0]].name} on the board to find common ground.`,
-    ];
-    const ins = [
-      { ...aTop, id: 'intro.a', why: `From ${A.name.split(' ')[0]}'s desk` },
-      { ...bTop, id: 'intro.b', why: `From ${B.name.split(' ')[0]}'s desk` },
-    ];
-    const summary = `${A.name} (${A.role}) is patched through to ${B.name} (${B.role}). ${shared.length ? `Shared ground: ${shared.map(s => SOURCE_META[s].name).join(', ')}.` : 'No shared data sources yet.'}`;
-    return { summary, insights: ins, agenda, shared, samples: {} };
-  },
-};
-const DAILY = { sales: rs => sum(rs, 'revenue'), cellar: rs => sum(rs, 'waste_l'), tickets: rs => avg(rs, 'ticket_min'), bookings: rs => sum(rs, 'covers'), rota: rs => sum(rs, 'labour_cost'), reviews: rs => avg(rs, 'rating') };
-const DAILY_NAME = { sales: 'Takings', cellar: 'Beer waste', tickets: 'Ticket time', bookings: 'Booked covers', rota: 'Labour cost', reviews: 'Guest rating' };
-const PAIR_STORY = {
-  'reviews+tickets': r => r < 0 ? 'Slower kitchens, lower ratings: speed on busy services is a reputation issue, not just an ops one.' : 'Ticket time is not what drives ratings here. Look at service and ale quality.',
-  'bookings+rota': r => r > 0.3 ? 'Hours broadly follow covers. Check the days that break the pattern, like Mondays at The Stag.' : 'Hours barely track covers. The rota is set by habit, not by demand.',
-  'bookings+sales': r => r > 0.3 ? 'More covers, more takings, as expected. Spend per cover is the lever to watch.' : 'Takings do not track bookings closely. Walk-ins and the late trade matter.',
-  'cellar+sales': r => 'Busy days pour more, so they waste more in absolute terms. Track waste as a share of pours.',
-  'rota+sales': r => r > 0.3 ? 'Labour scales with trade. Compare labour as a percentage of takings by site.' : 'Labour and takings drift apart, a margin risk.',
-};
-
-/* ---------- optional: Claude as the agent (hosted artifact only) ---------- */
+/* ---------- optional Claude agent (hosted artifact only) ---------- */
 let sampleFn = null;
-const ClaudeAgent = {
-  name: 'Claude',
-  async run(kind, a, b, params, onText) {
-    const base = kind === 'pp' ? await BuiltInAgent.personPerson(a, b, params) : kind === 'dd' ? await BuiltInAgent.dataData(a, b, params) : await BuiltInAgent.personData(a, b, params);
-    const srcs = Object.entries(base.samples);
-    const ctx = srcs.map(([id, s]) => `## ${SOURCE_META[id].name} (${s.rows.length} of ${s.population} rows sampled)\ncolumns: ${SOURCE_META[id].cols.join(', ')}\n` + toCSV(s.rows.slice(0, 60), SOURCE_META[id].cols)).join('\n\n');
-    const who = kind === 'pd' ? `${PEOPLE[a].name}, ${PEOPLE[a].role}` : kind === 'pp' ? `${PEOPLE[a].name} (${PEOPLE[a].role}) and ${PEOPLE[b].name} (${PEOPLE[b].role})` : 'the pub group leadership';
-    const prompt = `You are the house data analyst for a small group of gastropubs (mock data). Write insights for ${who}.
-Context from the built-in analyst: ${base.summary}
-Its findings: ${base.insights.map(i => `- ${i.title}: ${i.text}`).join('\n')}
-${ctx ? 'Sample rows (CSV):\n' + ctx : ''}
-Reply with only a JSON array of 3 to 5 objects: {"title": short headline with a number, "text": 1-2 plain sentences with the evidence and a practical next step, "value": the key figure as a short string, "unit": what the figure measures, "confidence": "high"|"medium"|"low"}.`;
-    const json = await sampleFn.json(prompt, { modelTier: 'default', onText });
-    const ins = (Array.isArray(json) ? json : []).slice(0, 5).map((x, i) => ({ id: 'claude.' + i, title: String(x.title || ''), text: String(x.text || ''), value: String(x.value || ''), unit: String(x.unit || ''), confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium', chart: null, ai: true }));
-    return { ...base, summary: base.summary + ' Insights written by Claude from the sample.', insights: ins.length ? ins : base.insights };
-  },
-};
+async function claudeInsights(qy, res, base) {
+  const cols = Object.keys(res.rows[0] || {}).slice(0, 18);
+  const csv = [cols.join(','), ...res.rows.slice(0, 50).map(r => cols.map(c => r[c]).join(','))].join('\n');
+  const prompt = `You are the data analyst for a small gastropub group (mock data). The user asked: "${qy.question || '(no question: they patched tables by hand)'}".
+The query joined ${qy.tables.join(', ')}:
+${buildSQL(qy)}
+Join health: ${res.stats.map(s => `${s.from}->${s.to} ${s.type} matched ${s.matched}/${s.inRows}, fan-out x${s.fanout.toFixed(2)}`).join('; ') || 'single table'}.
+The built-in analyst found: ${base.map(b => `${b.title} (${b.text})`).join(' | ')}
+First 50 joined rows (CSV):\n${csv}
+Reply with only a JSON array of 3-4 objects {"title": headline with a number, "text": 1-2 sentences with evidence and a next step, including any join caveat, "value": key figure, "unit": what it measures, "confidence": "high"|"medium"|"low"}.`;
+  const json = await sampleFn.json(prompt, { modelTier: 'default' });
+  return (Array.isArray(json) ? json : []).slice(0, 4).map((x, i) => ({ id: 'claude' + i, title: String(x.title || ''), text: String(x.text || ''), value: String(x.value || ''), unit: String(x.unit || ''), confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium', chart: null, ai: true }));
+}
 
 /* =====================================================================
-   5. State: jacks, lines (patched connections), dashboards
+   6. State
    ===================================================================== */
-const JACKS = [
-  ...Object.entries(PEOPLE).map(([id, p]) => ({ id, kind: 'person', label: p.name.split(' ')[0], sub: p.role })),
-  ...Object.entries(SOURCE_META).map(([id, s]) => ({ id, kind: 'data', label: s.short, sub: s.name })),
-];
 const CORD_COLORS = ['#9c2f2f', '#2e6b47', '#c99a2e', '#2f4a7a', '#e8dcc0', '#6d3f6b', '#b5602a'];
 const DEFAULT_PARAMS = { n: 500, days: 30, site: 'All' };
-let lines = store.get('pp-lines', null);
-let dashboards = store.get('pp-dash', null);
-let selected = null;
-let agentKind = 'builtin';
-const results = new Map(); // lineId -> result (not persisted; regenerated)
+let queries = store.get('pj-queries', null);
+let dashboards = store.get('pj-dash', null);
+let selected = null, focusTable = null, domain = 'all', showWiring = true, agentKind = 'builtin';
+let parsed = null, routes = [], previewRoute = 0;
+const results = new Map();
+const saveState = () => { store.set('pj-queries', queries.map(({ id, root, tables, edges, joinTypes, params, question, measure, measure2, dim, color, seed }) => ({ id, root, tables, edges, joinTypes, params, question, measure, measure2, dim, color, seed }))); store.set('pj-dash', dashboards); };
+const qLabel = qy => qy.question ? `“${qy.question.length > 48 ? qy.question.slice(0, 47) + '…' : qy.question}”` : qy.tables.join(' ⋈ ');
 
-function lineKind(l) { const ka = jackById(l.a).kind, kb = jackById(l.b).kind; return ka === 'person' && kb === 'person' ? 'pp' : ka === 'data' && kb === 'data' ? 'dd' : 'pd'; }
-function jackById(id) { return JACKS.find(j => j.id === id); }
-function lineLabel(l) { return `${jackById(l.a).label} ⇄ ${jackById(l.b).label}`; }
-function saveState() { store.set('pp-lines', lines.map(({ id, a, b, color, params }) => ({ id, a, b, color, params }))); store.set('pp-dash', dashboards); }
-
-async function runLine(l) {
-  l.status = 'busy'; renderBoard(); renderLog(); if (selected === l.id) renderPad();
-  const k = lineKind(l);
-  // normalise: person first for person-data lines
-  let a = l.a, b = l.b;
-  if (k === 'pd' && jackById(a).kind === 'data') [a, b] = [b, a];
-  const params = { ...l.params, seed: l.seed || 1 };
+function newQuery({ root, tables, edges, question = '', measure = null, measure2 = null, dim = null }) {
+  const used = new Set(queries.map(q => q.color));
+  const qy = { id: uid(), root, tables: [...tables], edges: [...edges], joinTypes: {}, params: { ...DEFAULT_PARAMS }, question, measure, measure2, dim, color: CORD_COLORS.find(c => !used.has(c)) || CORD_COLORS[queries.length % CORD_COLORS.length] };
+  queries.push(qy); saveState(); sfx.plug(); selected = qy.id; focusTable = null;
+  run(qy); return qy;
+}
+async function run(qy) {
+  qy.status = 'busy'; renderBoard(); renderLog(); if (selected === qy.id) renderPad();
+  const started = performance.now();
   try {
-    const started = performance.now();
-    let res;
-    if (agentKind === 'claude' && sampleFn) res = await ClaudeAgent.run(k, a, b, params, () => {});
-    else res = k === 'pp' ? await BuiltInAgent.personPerson(a, b, params) : k === 'dd' ? await BuiltInAgent.dataData(a, b, params) : await BuiltInAgent.personData(a, b, params);
-    const wait = 900 - (performance.now() - started); if (wait > 0) await sleep(wait); // let the pint pour
-    res.insights.forEach(x => { x.uid = uid(); x.chartType = x.chart ? x.chart.type : 'none'; });
-    res.agent = agentKind === 'claude' && sampleFn ? 'Claude' : 'House analyst';
-    results.set(l.id, res);
-    l.status = 'on';
-  } catch (e) {
-    results.set(l.id, { error: e?.code === 'not_granted' ? 'Claude was not allowed to run. Switch the agent back to the house analyst.' : `The agent couldn't finish: ${e?.message || e}` });
-    l.status = 'on';
-  }
-  renderBoard(); renderLog(); if (selected === l.id) renderPad();
+    const res = await runQuery(qy);
+    let ins = await analyse(qy, res);
+    let agent = 'House analyst';
+    if (agentKind === 'claude' && sampleFn) { const c = await claudeInsights(qy, res, ins); if (c.length) { ins = [...c, ...ins.filter(i => i.id === 'health')]; agent = 'Claude'; } }
+    ins.forEach(x => { x.uid = uid(); x.chartType = x.chart ? x.chart.type : 'none'; });
+    const wait = 700 - (performance.now() - started); if (wait > 0) await sleep(wait);
+    results.set(qy.id, { ...res, insights: ins, sql: buildSQL(qy), agent });
+  } catch (e) { results.set(qy.id, { error: e?.code === 'not_granted' ? 'Claude was not allowed to run. Switch back to the house analyst.' : `The query failed: ${e?.message || e}` }); }
+  qy.status = 'on';
+  renderBoard(); renderLog(); if (selected === qy.id) renderPad();
 }
-function connect(a, b) {
+function hangUp(id) { queries = queries.filter(q => q.id !== id); results.delete(id); if (selected === id) selected = queries[queries.length - 1]?.id ?? null; saveState(); sfx.unplug(); renderAll(); }
+function select(id) { selected = id; focusTable = null; renderBoard(); renderLog(); renderPad(); }
+
+/* patching by hand: join two tables (routing through others when no direct key) */
+function patch(a, b) {
   if (a === b) return;
-  const ex = lines.find(l => (l.a === a && l.b === b) || (l.a === b && l.b === a));
-  if (ex) { select(ex.id); return; }
-  const used = new Set(lines.map(l => l.color));
-  const l = { id: uid(), a, b, color: CORD_COLORS.find(c => !used.has(c)) || CORD_COLORS[lines.length % CORD_COLORS.length], params: { ...DEFAULT_PARAMS }, status: 'busy' };
-  lines.push(l); saveState();
-  sfx.plug();
-  toast(`Patched: ${lineLabel(l)}`);
-  select(l.id);
-  runLine(l);
+  let path = routeFor([a, b], e => e.soft ? 3.2 : 1);
+  if (!path) { toast('No way to join those tables'); return; }
+  const direct = path.edges.length === 1;
+  const cur = queries.find(q => q.id === selected);
+  if (cur && (cur.tables.includes(a) || cur.tables.includes(b))) {
+    path.edges.forEach(e => { if (!cur.edges.includes(e)) cur.edges.push(e); });
+    path.tables.forEach(t => { if (!cur.tables.includes(t)) cur.tables.push(t); });
+    saveState(); sfx.plug(); run(cur);
+  } else newQuery({ root: a, tables: path.tables, edges: path.edges });
+  toast(direct ? `Joined ${a} ⋈ ${b}` : `No direct key, so I routed via ${path.tables.filter(t => t !== a && t !== b).join(', ')}`);
 }
-function hangUp(id) { lines = lines.filter(l => l.id !== id); results.delete(id); if (selected === id) selected = lines[lines.length - 1]?.id ?? null; saveState(); sfx.unplug(); renderAll(); }
-function select(id) { selected = id; renderBoard(); renderLog(); renderPad(); }
 
 /* =====================================================================
-   6. The switchboard (SVG): jacks, lamps, cords with gravity sag
+   7. The switchboard: table jacks, pre-wired joins, route previews, cords
    ===================================================================== */
-const svg = $('board');
-const NS = 'http://www.w3.org/2000/svg';
+const svg = $('board'), NS = 'http://www.w3.org/2000/svg';
 const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
-const POS = {};
-let VB = { w: 1000, h: 600, plates: [42, 312] };
+const ROWS = [['front', 'FRONT OF HOUSE', ['sites', 'customers', 'bookings', 'reviews']], ['kitchen', 'KITCHEN & BAR', ['orders', 'order_items', 'menu_items', 'kitchen_tickets']], ['cellar', 'CELLAR & STAFF', ['staff', 'shifts', 'products', 'kegs']]];
+const POS = {}; let VB = { w: 1000, h: 760, plates: [] };
 function layout() {
   const narrow = (svg.parentElement.clientWidth || innerWidth) < 640;
-  const ppl = JACKS.filter(j => j.kind === 'person'), dat = JACKS.filter(j => j.kind === 'data');
   if (narrow) {
-    VB = { w: 600, h: 920, plates: [42, 470] };
-    ppl.forEach((j, i) => { POS[j.id] = { x: 100 + (i % 3) * 200, y: 170 + Math.floor(i / 3) * 170 }; });
-    dat.forEach((j, i) => { POS[j.id] = { x: 100 + (i % 3) * 200, y: 598 + Math.floor(i / 3) * 170 }; });
+    VB = { w: 600, h: 1170, plates: [] };
+    ROWS.forEach(([, , ts], ri) => { const py = 36 + ri * 380; VB.plates.push(py); ts.forEach((t, i) => { POS[t] = { x: 150 + (i % 2) * 300, y: py + 110 + Math.floor(i / 2) * 170 }; }); });
   } else {
-    VB = { w: 1000, h: 600, plates: [42, 312] };
-    ppl.forEach((j, i) => { POS[j.id] = { x: 105 + i * 158, y: 170 }; });
-    dat.forEach((j, i) => { POS[j.id] = { x: 105 + i * 158, y: 440 }; });
+    VB = { w: 1000, h: 760, plates: [] };
+    ROWS.forEach(([, , ts], ri) => { const py = 36 + ri * 240; VB.plates.push(py); ts.forEach((t, i) => { POS[t] = { x: 140 + i * 240, y: py + 100 }; }); });
   }
   svg.setAttribute('viewBox', `0 0 ${VB.w} ${VB.h}`);
 }
 layout();
-addEventListener('resize', () => { const before = VB.w; layout(); if (VB.w !== before) renderBoard(); });
+addEventListener('resize', () => { const w = VB.w; layout(); if (VB.w !== w) renderBoard(); });
 let drag = null, armed = null;
-function cordPath(p, q, extra = 0) {
-  const dx = Math.abs(q.x - p.x), sag = 60 + dx * 0.22 + extra;
-  const low = Math.max(p.y, q.y) + sag;
-  return `M${p.x},${p.y} C${p.x},${low} ${q.x},${low} ${q.x},${q.y}`;
+const sagPath = (p, q, extra = 0) => { const dx = Math.abs(q.x - p.x), low = Math.max(p.y, q.y) + 50 + dx * 0.18 + extra; return `M${p.x},${p.y} C${p.x},${low} ${q.x},${low} ${q.x},${q.y}`; };
+const archPath = (p, q) => { const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2, dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1, bend = 26 + len * 0.08; return `M${p.x},${p.y} Q${mx - dy / len * bend},${my + dx / len * bend} ${q.x},${q.y}`; };
+function relevantSet() {
+  const rel = new Set();
+  if (parsed) { (routes[previewRoute]?.tables || parsed.tables).forEach(t => rel.add(t)); parsed.keywordTables.forEach(t => rel.add(t)); }
+  return rel;
 }
 function renderBoard() {
   svg.innerHTML = '';
   const defs = el('defs', {}, svg);
   defs.innerHTML = `
     <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3820"/><stop offset="1" stop-color="#3a2212"/></linearGradient>
-    <pattern id="grain" width="140" height="12" patternUnits="userSpaceOnUse"><path d="M0 6 Q35 2 70 6 T140 6" stroke="rgba(0,0,0,.14)" fill="none"/><path d="M0 10 Q40 8 80 11 T140 9" stroke="rgba(255,220,170,.05)" fill="none"/></pattern>
+    <pattern id="grain" width="140" height="12" patternUnits="userSpaceOnUse"><path d="M0 6 Q35 2 70 6 T140 6" stroke="rgba(0,0,0,.14)" fill="none"/></pattern>
     <radialGradient id="brass" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#f3dc9a"/><stop offset=".45" stop-color="#c9a24a"/><stop offset="1" stop-color="#6b4f1a"/></radialGradient>
     <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2c577"/><stop offset="1" stop-color="#9c7a2e"/></linearGradient>
     <radialGradient id="lampOn" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffb347"/><stop offset="1" stop-color="#b86a10"/></radialGradient>
     <filter id="glow" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="6"/></filter>`;
   el('rect', { x: 0, y: 0, width: VB.w, height: VB.h, rx: 10, fill: 'url(#panel)' }, svg);
   el('rect', { x: 0, y: 0, width: VB.w, height: VB.h, rx: 10, fill: 'url(#grain)' }, svg);
-  // brass plates
-  for (const [y, t] of [[VB.plates[0], 'PATRONS · PEOPLE'], [VB.plates[1], 'CELLAR · DATA SOURCES']]) {
-    const cx = VB.w / 2;
-    el('rect', { x: cx - 170, y: y - 18, width: 340, height: 34, rx: 4, fill: 'url(#plate)', stroke: '#5c4415' }, svg);
-    const tx = el('text', { x: cx, y: y + 5, 'text-anchor': 'middle', 'font-family': 'Fraunces, Georgia, serif', 'font-weight': 700, 'font-size': 17, 'letter-spacing': 3, fill: '#2b1d08' }, svg); tx.textContent = t;
-    for (const sx of [cx - 160, cx + 160]) el('circle', { cx: sx, cy: y - 1, r: 3, fill: '#5c4415' }, svg);
-  }
-  const active = new Map(); lines.forEach(l => { for (const j of [l.a, l.b]) { if (!active.has(j) || l.status === 'busy') active.set(j, l.status); } });
-  // jacks
-  for (const j of JACKS) {
-    const p = POS[j.id], g = el('g', { class: 'jack' + (armed === j.id ? ' armed' : ''), tabindex: 0, role: 'button', 'data-id': j.id, 'aria-label': `${j.kind === 'person' ? 'Person' : 'Data source'}: ${j.label}, ${j.sub}. ${armed ? 'Press Enter to connect.' : 'Press Enter to pick up a cord.'}` }, svg);
-    const st = active.get(j.id);
-    // lamp
-    if (st) el('circle', { cx: p.x, cy: p.y - 62, r: 18, fill: '#ffb347', opacity: 0.55, filter: 'url(#glow)', class: st === 'busy' ? 'lampBlink' : '' }, g);
-    el('circle', { cx: p.x, cy: p.y - 62, r: 10, fill: st ? 'url(#lampOn)' : '#4a3a24', stroke: '#1a1008', 'stroke-width': 2 }, g);
-    if (st === 'busy') { const a = el('animate', { attributeName: 'opacity', values: '1;.3;1', dur: '0.7s', repeatCount: 'indefinite' }, g.lastChild); }
-    // jack socket
-    el('circle', { cx: p.x, cy: p.y, r: 24, fill: 'url(#brass)', stroke: '#3a2a0c', 'stroke-width': 2, class: 'ring' }, g);
-    el('circle', { cx: p.x, cy: p.y, r: 10, fill: '#120a05' }, g);
-    el('circle', { cx: p.x, cy: p.y, r: 36, fill: 'transparent' }, g); // bigger hit target
-  }
-  // cords (drawn after jacks so plugs sit on top)
-  lines.forEach((l, i) => {
-    const p = POS[l.a], q = POS[l.b], sel = l.id === selected;
-    const g = el('g', { class: 'cord', 'data-line': l.id }, svg);
-    const d = cordPath(p, q, (i % 3) * 16);
-    el('path', { d, fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-width': 9, transform: 'translate(3,5)' }, g);
-    el('path', { d, fill: 'none', stroke: l.color, 'stroke-width': sel ? 8 : 6, 'stroke-linecap': 'round' }, g);
-    el('path', { d, fill: 'none', stroke: 'rgba(255,255,255,.25)', 'stroke-width': 1.5, transform: 'translate(-1,-1.5)' }, g);
-    el('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 22 }, g); // easy to click
-    for (const pt of [p, q]) {
-      el('rect', { x: pt.x - 9, y: pt.y - 6, width: 18, height: 30, rx: 4, fill: l.color, stroke: '#1a1008', 'stroke-width': 1.5 }, g);
-      el('rect', { x: pt.x - 7, y: pt.y - 10, width: 14, height: 8, rx: 2, fill: 'url(#brass)', stroke: '#3a2a0c' }, g);
-    }
-    if (sel) el('path', { d, fill: 'none', stroke: '#ffb347', 'stroke-width': 2, 'stroke-dasharray': '6 8', opacity: 0.9 }, g);
+  ROWS.forEach(([dom, title], i) => {
+    const y = VB.plates[i], cx = VB.w / 2, dim = domain !== 'all' && domain !== dom;
+    const g = el('g', { opacity: dim ? 0.35 : 1 }, svg);
+    el('rect', { x: cx - 150, y: y - 17, width: 300, height: 32, rx: 4, fill: 'url(#plate)', stroke: '#5c4415' }, g);
+    const tx = el('text', { x: cx, y: y + 5, 'text-anchor': 'middle', 'font-family': 'Fraunces, Georgia, serif', 'font-weight': 700, 'font-size': 16, 'letter-spacing': 3, fill: '#2b1d08' }, g); tx.textContent = title;
   });
-  // name cards sit above the cords so they stay readable
-  for (const j of JACKS) {
-    const p = POS[j.id], g = el('g', { 'pointer-events': 'none' }, svg);
-    el('rect', { x: p.x - 66, y: p.y + 34, width: 132, height: 50, rx: 3, fill: '#f7f0e1', stroke: '#9c7a2e', 'stroke-width': 1.5 }, g);
-    const t1 = el('text', { x: p.x, y: p.y + 55, 'text-anchor': 'middle', 'font-family': 'Fraunces, Georgia, serif', 'font-weight': 700, 'font-size': 17, fill: '#2b2118' }, g); t1.textContent = j.label;
-    const t2 = el('text', { x: p.x, y: p.y + 74, 'text-anchor': 'middle', 'font-family': 'Source Sans 3, sans-serif', 'font-size': 12.5, fill: '#6a5a47' }, g); t2.textContent = j.sub.length > 20 ? j.sub.slice(0, 19) + '…' : j.sub;
+  const rel = relevantSet(), hasQ = !!parsed && rel.size;
+  const visible = t => (domain === 'all' || TABLES[t].domain === domain) && (!hasQ || rel.has(t));
+  const route = parsed ? routes[previewRoute] : null;
+  // pre-wired available joins
+  if (showWiring) for (const e of EDGES) {
+    const onRoute = route?.edges.includes(e.id), on = visible(e.many) && visible(e.one);
+    const fromFocus = focusTable && (e.many === focusTable || e.one === focusTable);
+    const p = el('path', { d: archPath(POS[e.many], POS[e.one]), fill: 'none', stroke: fromFocus ? '#ffd27a' : e.soft ? '#b48a8a' : '#e2c577', 'stroke-width': fromFocus ? 2.4 : 1.4, 'stroke-dasharray': e.soft ? '3 6' : '2 5', opacity: onRoute ? 0 : fromFocus ? 0.95 : on ? 0.5 : 0.1, 'data-edge': e.id, class: 'wire' }, svg);
+    const hit = el('path', { d: archPath(POS[e.many], POS[e.one]), fill: 'none', stroke: 'transparent', 'stroke-width': 12, 'data-edge': e.id }, svg);
+    hit.addEventListener('pointermove', ev => tipShow(ev, `${e.soft ? 'Soft join' : 'Join'}: ${e.keys.map(([mc, oc]) => `${e.many}.${mc} = ${e.one}.${oc}`).join(' AND ')}`));
+    hit.addEventListener('pointerleave', tipHide);
+  }
+  // jacks
+  const lit = new Map(); queries.forEach(q => q.tables.forEach(t => { if (!lit.has(t) || q.status === 'busy') lit.set(t, q.status); }));
+  for (const [t, m] of Object.entries(TABLES)) {
+    const p = POS[t], vis = visible(t), g = el('g', { class: 'jack' + (armed === t ? ' armed' : ''), tabindex: 0, role: 'button', 'data-id': t, opacity: vis ? 1 : 0.28, 'aria-label': `Table ${t}, ${m.rows.toLocaleString()} rows. ${armed ? 'Press Enter to join.' : 'Press Enter to open or pick up a cord.'}` }, svg);
+    const st = lit.get(t), onRoute = route?.tables.includes(t);
+    if (st || onRoute) el('circle', { cx: p.x, cy: p.y - 52, r: 17, fill: onRoute && !st ? '#ffd27a' : '#ffb347', opacity: 0.5, filter: 'url(#glow)' }, g);
+    const lamp = el('circle', { cx: p.x, cy: p.y - 52, r: 9, fill: st || onRoute ? 'url(#lampOn)' : '#4a3a24', stroke: '#1a1008', 'stroke-width': 2 }, g);
+    if (st === 'busy' || (onRoute && !st)) el('animate', { attributeName: 'opacity', values: '1;.35;1', dur: st === 'busy' ? '0.6s' : '1.4s', repeatCount: 'indefinite' }, lamp);
+    el('circle', { cx: p.x, cy: p.y, r: 23, fill: 'url(#brass)', stroke: focusTable === t ? '#ffb347' : '#3a2a0c', 'stroke-width': focusTable === t ? 4 : 2, class: 'ring' }, g);
+    el('circle', { cx: p.x, cy: p.y, r: 9.5, fill: '#120a05' }, g);
+    el('circle', { cx: p.x, cy: p.y, r: 36, fill: 'transparent' }, g);
+  }
+  // route preview: glowing dashed pre-connections for the suggested join path
+  if (route) route.edges.forEach((id, i) => {
+    const e = edgeById(id), d = sagPath(POS[e.many], POS[e.one], i * 10);
+    el('path', { d, fill: 'none', stroke: '#ffd27a', 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-dasharray': '10 9', opacity: 0.9 }, svg).appendChild(el('animate', { attributeName: 'stroke-dashoffset', values: '38;0', dur: '1s', repeatCount: 'indefinite' }));
+  });
+  // plugged query cords
+  queries.forEach((qy, qi) => qy.edges.forEach((id, i) => {
+    const e = edgeById(id), p = POS[e.many], q = POS[e.one], sel = qy.id === selected;
+    const g = el('g', { class: 'cord', 'data-q': qy.id, opacity: selected && !sel ? 0.45 : 1 }, svg);
+    const d = sagPath(p, q, (qi % 3) * 14 + i * 6);
+    el('path', { d, fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-width': 9, transform: 'translate(3,5)' }, g);
+    el('path', { d, fill: 'none', stroke: qy.color, 'stroke-width': sel ? 8 : 6, 'stroke-linecap': 'round', 'stroke-dasharray': qy.joinTypes[id] === 'LEFT' ? '14 5' : 'none' }, g);
+    el('path', { d, fill: 'none', stroke: 'rgba(255,255,255,.22)', 'stroke-width': 1.5, transform: 'translate(-1,-1.5)' }, g);
+    el('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 20 }, g);
+    for (const pt of [p, q]) { el('rect', { x: pt.x - 9, y: pt.y - 6, width: 18, height: 28, rx: 4, fill: qy.color, stroke: '#1a1008', 'stroke-width': 1.5 }, g); el('rect', { x: pt.x - 7, y: pt.y - 10, width: 14, height: 8, rx: 2, fill: 'url(#brass)', stroke: '#3a2a0c' }, g); }
+  }));
+  // name cards on top
+  for (const [t, m] of Object.entries(TABLES)) {
+    const p = POS[t], g = el('g', { 'pointer-events': 'none', opacity: visible(t) ? 1 : 0.35 }, svg);
+    const w = 164;
+    el('rect', { x: p.x - w / 2, y: p.y + 32, width: w, height: 48, rx: 3, fill: '#f7f0e1', stroke: routes[previewRoute]?.tables.includes(t) && parsed ? '#e8a23a' : '#9c7a2e', 'stroke-width': routes[previewRoute]?.tables.includes(t) && parsed ? 3 : 1.5 }, g);
+    const t1 = el('text', { x: p.x, y: p.y + 52, 'text-anchor': 'middle', 'font-family': 'ui-monospace, Menlo, Consolas, monospace', 'font-weight': 700, 'font-size': 15, fill: '#2b2118' }, g); t1.textContent = t;
+    const t2 = el('text', { x: p.x, y: p.y + 71, 'text-anchor': 'middle', 'font-family': 'Source Sans 3, sans-serif', 'font-size': 12.5, fill: '#6a5a47' }, g); t2.textContent = `${m.rows.toLocaleString()} rows · ${edgesOf(t).length} joins`;
   }
   if (drag && drag.moved) {
     const p = POS[drag.from];
-    el('path', { d: cordPath(p, drag.pt, 0), fill: 'none', stroke: drag.color, 'stroke-width': 6, 'stroke-linecap': 'round', opacity: 0.9 }, svg);
-    el('rect', { x: drag.pt.x - 9, y: drag.pt.y - 15, width: 18, height: 30, rx: 4, fill: drag.color, stroke: '#1a1008' }, svg);
+    el('path', { d: sagPath(p, drag.pt), fill: 'none', stroke: drag.color, 'stroke-width': 6, 'stroke-linecap': 'round', opacity: 0.9 }, svg);
+    el('rect', { x: drag.pt.x - 9, y: drag.pt.y - 14, width: 18, height: 28, rx: 4, fill: drag.color, stroke: '#1a1008' }, svg);
   }
+  $('edgeCount').textContent = EDGES.length;
 }
 function svgPoint(e) { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
-function jackAt(pt, r = 44) { let best = null, bd = r * r; for (const j of JACKS) { const p = POS[j.id], d = (p.x - pt.x) ** 2 + (p.y - pt.y) ** 2; if (d < bd) { bd = d; best = j.id; } } return best; }
+function jackAt(pt, r = 44) { let best = null, bd = r * r; for (const t in POS) { const p = POS[t], d = (p.x - pt.x) ** 2 + (p.y - pt.y) ** 2; if (d < bd) { bd = d; best = t; } } return best; }
 svg.addEventListener('pointerdown', e => {
-  // a jack always wins over the plug sitting in it, so busy jacks can take more cords
-  const near = jackAt(svgPoint(e), 30), jackId = e.target.closest('.jack')?.dataset.id || near;
-  const cg = e.target.closest('.cord');
-  if (!jackId) { if (cg) select(cg.dataset.line); return; }
-  e.preventDefault(); sfx.init();
-  svg.setPointerCapture(e.pointerId);
-  const used = new Set(lines.map(l => l.color));
-  drag = { from: jackId, pt: svgPoint(e), moved: false, color: CORD_COLORS.find(c => !used.has(c)) || CORD_COLORS[0], x0: e.clientX, y0: e.clientY };
+  const t = e.target.closest('.jack')?.dataset.id || jackAt(svgPoint(e), 30), cg = e.target.closest('.cord');
+  if (!t) { if (cg) select(cg.dataset.q); return; }
+  e.preventDefault(); sfx.init(); svg.setPointerCapture(e.pointerId);
+  const used = new Set(queries.map(q => q.color));
+  drag = { from: t, pt: svgPoint(e), moved: false, color: CORD_COLORS.find(c => !used.has(c)) || CORD_COLORS[0], x0: e.clientX, y0: e.clientY };
 });
 svg.addEventListener('pointermove', e => {
-  if (!drag) { const j = e.target.closest('.jack'); if (j) { const J = jackById(j.dataset.id); tipShow(e, `${J.label}: ${J.sub}`); } else tipHide(); return; }
-  drag.pt = svgPoint(e);
-  if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6) drag.moved = true;
-  renderBoard();
+  if (!drag) { const j = e.target.closest('.jack'); if (j) { const t = j.dataset.id; tipShow(e, `${t}: ${TABLES[t].desc}`); } else if (!e.target.dataset.edge) tipHide(); return; }
+  drag.pt = svgPoint(e); if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6) drag.moved = true; renderBoard();
 });
 svg.addEventListener('pointerup', e => {
   if (!drag) return;
-  const from = drag.from, moved = drag.moved, to = jackAt(svgPoint(e));
-  drag = null;
-  if (moved) { armed = null; if (to && to !== from) connect(from, to); else renderBoard(); }
-  else { // tap: pick up, then tap another jack to connect
-    if (armed && armed !== from) { const a = armed; armed = null; connect(a, from); }
-    else { armed = armed === from ? null : from; renderBoard(); if (armed) toast(`Holding ${jackById(from).label}'s cord. Tap another jack.`); }
-  }
+  const from = drag.from, moved = drag.moved, to = jackAt(svgPoint(e)); drag = null;
+  if (moved) { armed = null; if (to && to !== from) patch(from, to); else renderBoard(); }
+  else if (armed && armed !== from) { const a = armed; armed = null; patch(a, from); }
+  else { armed = armed === from ? null : from; focusTable = from; selected = null; renderBoard(); renderLog(); renderPad(); if (armed) toast(`Holding ${from}. Tap another table to join it.`); }
 });
 svg.addEventListener('pointerleave', tipHide);
-svg.addEventListener('dblclick', e => { const cg = e.target.closest('.cord'); if (cg) hangUp(cg.dataset.line); });
+svg.addEventListener('dblclick', e => { const cg = e.target.closest('.cord'); if (cg) hangUp(cg.dataset.q); });
 svg.addEventListener('keydown', e => {
   const jg = e.target.closest('.jack'); if (!jg || (e.key !== 'Enter' && e.key !== ' ')) return;
-  e.preventDefault(); sfx.init();
-  const id = jg.dataset.id;
-  if (armed && armed !== id) { const a = armed; armed = null; connect(a, id); }
-  else { armed = armed === id ? null : id; renderBoard(); svg.querySelector(`.jack[data-id="${id}"]`)?.focus(); if (armed) toast(`Holding ${jackById(id).label}'s cord. Pick another jack.`); }
+  e.preventDefault(); sfx.init(); const t = jg.dataset.id;
+  if (armed && armed !== t) { const a = armed; armed = null; patch(a, t); }
+  else { armed = armed === t ? null : t; focusTable = t; selected = null; renderBoard(); renderLog(); renderPad(); svg.querySelector(`.jack[data-id="${t}"]`)?.focus(); }
 });
 
 /* =====================================================================
-   7. Operator's log + order pad (line detail)
+   8. Question bar, filters and route suggestions
+   ===================================================================== */
+const EXAMPLES = ['Which dishes get comped most at each pub?', 'Do web bookings no-show more?', 'Which beers waste the most at each pub?', 'Revenue by staff role', 'Gross margin by menu category', 'Ratings vs ticket times', 'Which customer segment spends most?'];
+$('examples').innerHTML = EXAMPLES.map(x => `<button class="chip2" type="button">${esc(x)}</button>`).join('');
+$('examples').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { $('q').value = b.textContent; ask(b.textContent); } });
+let typeT;
+$('q').addEventListener('input', () => { clearTimeout(typeT); typeT = setTimeout(() => ask($('q').value, true), 250); });
+$('askForm').addEventListener('submit', e => { e.preventDefault(); ask($('q').value); });
+$('clearQ').onclick = () => { $('q').value = ''; ask(''); $('q').focus(); };
+function ask(text, live = false) {
+  text = text.trim();
+  $('clearQ').hidden = !text;
+  if (!text) { parsed = null; routes = []; $('sugg').hidden = true; renderBoard(); return; }
+  parsed = parseQuestion(text); routes = suggestRoutes(parsed); previewRoute = 0;
+  renderSugg(); renderBoard();
+}
+function renderSugg() {
+  const box = $('sugg');
+  if (!parsed) { box.hidden = true; return; }
+  box.hidden = false;
+  const m = parsed.measures, d = parsed.dim;
+  const understood = [m[0] && `measure <b>${esc(m[0].label.toLowerCase())}</b>`, m[1] && `compared with <b>${esc(m[1].label.toLowerCase())}</b>`, d && `broken down by <b>${esc(d.label.toLowerCase())}</b>`].filter(Boolean).join(', ');
+  if (!routes.length) { box.innerHTML = `<h3>The operator is stumped</h3><p class="why">I couldn't match that to a table or measure. Try naming a measure (revenue, margin, comps, ticket time, no-shows, rating, waste, labour) or a table name.</p>`; return; }
+  box.innerHTML = `<h3>${routes.length > 1 ? `${routes.length} ways to patch it` : 'One way to patch it'}</h3>
+    <p class="why">${understood ? `I read ${understood}. ` : `Matching tables: <b>${esc(parsed.tables.join(', '))}</b>. `}Tables outside the route are dimmed; hover a route to preview it on the board.</p>
+    ${routes.map((r, i) => `<div class="route ${i === 0 ? 'best' : ''}" data-r="${i}">
+      <div class="path">${r.tables.length === 1 ? esc(r.root) : routeText(r)}</div>
+      <div class="meta">${i === 0 ? '<em class="ok">shortest</em>' : ''}${r.warnings.map(w => `<em class="${w.warn ? 'warn' : w.ok ? 'ok' : ''}">${esc(w.t)}</em>`).join('')}</div>
+      <button class="btn" data-patch="${i}">${i === 0 ? 'Patch it in' : 'Use this route'}</button>
+    </div>`).join('')}`;
+}
+function routeText(r) { const seen = [r.root], parts = [esc(r.root)], pend = [...r.edges]; while (pend.length) { const i = pend.findIndex(id => { const e = edgeById(id); return seen.includes(e.many) !== seen.includes(e.one); }); if (i < 0) break; const e = edgeById(pend.splice(i, 1)[0]); const to = seen.includes(e.many) ? e.one : e.many; seen.push(to); parts.push(`<span>${e.soft ? '≈' : '⋈'}</span> ${esc(to)}`); } return parts.join(' '); }
+$('sugg').addEventListener('pointerover', e => { const r = e.target.closest('[data-r]'); if (r && +r.dataset.r !== previewRoute) { previewRoute = +r.dataset.r; renderBoard(); } });
+$('sugg').addEventListener('focusin', e => { const r = e.target.closest('[data-r]'); if (r) { previewRoute = +r.dataset.r; renderBoard(); } });
+$('sugg').addEventListener('click', e => {
+  const b = e.target.closest('[data-patch]'); if (!b) return;
+  const r = routes[+b.dataset.patch], m = parsed.measures;
+  // start from the measure's table so joins run many-to-one
+  newQuery({ root: m[0]?.t && r.tables.includes(m[0].t) ? m[0].t : r.root, tables: r.tables, edges: r.edges, question: parsed.q, measure: m[0]?.id || null, measure2: m[1]?.id || null, dim: parsed.dim?.id || null });
+  toast('Patched. Pouring the answer…');
+  document.querySelector('#pad')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+});
+document.querySelectorAll('[data-dom]').forEach(b => b.onclick = () => { domain = b.dataset.dom; document.querySelectorAll('[data-dom]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderBoard(); });
+$('wiringBtn').onclick = () => { showWiring = !showWiring; $('wiringBtn').setAttribute('aria-pressed', showWiring); renderBoard(); };
+
+/* =====================================================================
+   9. Log + pad
    ===================================================================== */
 function renderLog() {
-  $('logCount').textContent = lines.length ? `${lines.length} line${lines.length > 1 ? 's' : ''} open` : '';
-  $('logList').innerHTML = lines.length ? lines.map((l, i) => {
-    const r = results.get(l.id), k = lineKind(l);
-    return `<li><button data-line="${l.id}" aria-current="${l.id === selected}"><span class="lamp ${l.status === 'busy' ? 'on busy' : 'on'}" style="background:${l.status === 'busy' ? '' : l.color}"></span><span class="lk">Line ${i + 1}: ${esc(lineLabel(l))} <em>· ${k === 'pp' ? 'people' : k === 'dd' ? 'data join' : 'insight'}</em></span><span class="ct">${l.status === 'busy' ? 'pouring…' : r?.insights ? `${r.insights.length} insights` : ''}</span></button></li>`;
-  }).join('') : '<li class="empty">No lines open. Drag a cord between two jacks.</li>';
+  $('logCount').textContent = queries.length ? `${queries.length} line${queries.length > 1 ? 's' : ''} open` : '';
+  $('logList').innerHTML = queries.length ? queries.map((q, i) => { const r = results.get(q.id); return `<li><button data-q="${q.id}" aria-current="${q.id === selected}"><span class="lamp ${q.status === 'busy' ? 'on busy' : 'on'}" style="background:${q.status === 'busy' ? '' : q.color}"></span><span class="lk">Line ${i + 1}: ${esc(qLabel(q))} <em>· ${q.tables.length} table${q.tables.length > 1 ? 's' : ''}</em></span><span class="ct">${q.status === 'busy' ? 'pouring…' : r?.rows ? `${r.rows.length.toLocaleString()} rows` : ''}</span></button></li>`; }).join('')
+    : '<li class="empty">No lines open. Ask a question above, or drag a cord between two tables.</li>';
 }
-$('logList').addEventListener('click', e => { const b = e.target.closest('[data-line]'); if (b) select(b.dataset.line); });
-
-const pint = `<svg viewBox="0 0 34 46" aria-hidden="true"><defs><clipPath id="glass"><path d="M4 4 L30 4 L27 44 L7 44 Z"/></clipPath></defs>
-  <g clip-path="url(#glass)"><rect x="0" y="46" width="34" height="46" fill="#c98a1c"><animate attributeName="y" values="46;12;12" keyTimes="0;.85;1" dur="1.1s" repeatCount="indefinite"/></rect>
-  <rect x="0" y="46" width="34" height="7" fill="#fff4dc"><animate attributeName="y" values="46;6;6" keyTimes="0;.85;1" dur="1.1s" repeatCount="indefinite"/></rect></g>
-  <path d="M4 4 L30 4 L27 44 L7 44 Z" fill="none" stroke="#2b2118" stroke-width="2"/></svg>`;
-function paramsControls(l, k) {
+$('logList').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (b) select(b.dataset.q); });
+const pint = `<svg viewBox="0 0 34 46" aria-hidden="true"><defs><clipPath id="glass"><path d="M4 4 L30 4 L27 44 L7 44 Z"/></clipPath></defs><g clip-path="url(#glass)"><rect x="0" y="46" width="34" height="46" fill="#c98a1c"><animate attributeName="y" values="46;12;12" keyTimes="0;.85;1" dur="1.1s" repeatCount="indefinite"/></rect><rect x="0" y="46" width="34" height="7" fill="#fff4dc"><animate attributeName="y" values="46;6;6" keyTimes="0;.85;1" dur="1.1s" repeatCount="indefinite"/></rect></g><path d="M4 4 L30 4 L27 44 L7 44 Z" fill="none" stroke="#2b2118" stroke-width="2"/></svg>`;
+function tablePad(t) {
+  const m = TABLES[t], fks = new Set(EDGES.filter(e => e.many === t).flatMap(e => e.keys.map(k => k[0])));
+  return `<div class="kind">Table · ${esc({ front: 'Front of house', kitchen: 'Kitchen & bar', cellar: 'Cellar & staff' }[m.domain])}</div>
+    <h2><code>${esc(t)}</code></h2><div class="who">${esc(m.desc)} · ${m.rows.toLocaleString()} rows${m.date ? ` · dated by <code>${m.date}</code>` : ''}</div>
+    <div class="cols">${m.cols.map(c => `<span class="${c === m.pk ? 'pk' : fks.has(c) ? 'fk' : ''}">${esc(c)}${c === m.pk ? '<b>PK</b>' : fks.has(c) ? '<b>FK</b>' : ''}</span>`).join('')}</div>
+    <div class="section-h">Available joins from here <small>${edgesOf(t).length} · click to patch</small></div>
+    <div class="avail">${edgesOf(t).map(e => `<button data-join="${e.id}"><code>${esc(e.keys.map(([mc, oc]) => `${e.many}.${mc} = ${e.one}.${oc}`).join(' AND '))}</code><small>${e.soft ? 'soft · many-to-many' : e.many === t ? 'many → one' : 'one → many'}</small></button>`).join('')}</div>
+    <div class="section-h">Sample rows <small>first 25</small></div><div class="tablewrap">${tableHTML(DB[t].slice(0, 25), m.cols)}</div>`;
+}
+function renderPad() {
+  const pad = $('pad');
+  if (focusTable && !selected) { pad.innerHTML = tablePad(focusTable); return; }
+  const qy = queries.find(x => x.id === selected);
+  if (!qy) { pad.innerHTML = `<div class="emptyPad"><p>Nothing on the pad yet.</p>Ask a question to get suggested joins, click a table to see its keys and available joins, or drag a cord between two tables.</div>`; return; }
+  const r = results.get(qy.id), idx = queries.indexOf(qy) + 1;
   const sel = (id, label, opts, val) => `<label>${label}<select data-p="${id}">${opts.map(([v, t]) => `<option value="${v}" ${String(v) === String(val) ? 'selected' : ''}>${t}</option>`).join('')}</select></label>`;
-  return `<div class="controls">
-    ${k !== 'pp' ? sel('n', 'Sample size', [[100, '100 rows'], [250, '250 rows'], [500, '500 rows'], [1000, '1,000 rows'], [2000, '2,000 rows']], l.params.n) : ''}
-    ${sel('days', 'Date range', [[7, 'Last 7 days'], [30, 'Last 30 days'], [90, 'Last 90 days']], l.params.days)}
-    ${sel('site', 'Pub', [['All', 'All pubs'], ...SITES.map(s => [s, s])], l.params.site)}
-  </div>`;
+  let body = '';
+  if (qy.status === 'busy') body = `<div class="pour">${pint}<span>${agentKind === 'claude' && sampleFn ? 'Claude is tasting the join…' : 'Running the join and pouring the answer…'}</span></div>`;
+  else if (r?.error) body = `<p class="summary">${esc(r.error)}</p>`;
+  else if (r) {
+    const stats = new Map(r.stats.map(s => [s.edge, s]));
+    body += `<div class="summary">${r.sample.length.toLocaleString()} of ${r.rootPopulation.toLocaleString()} <code>${esc(qy.root)}</code> rows sampled → ${r.rows.length.toLocaleString()} rows after ${qy.edges.length} join${qy.edges.length === 1 ? '' : 's'}. <em>(${esc(r.agent)})</em></div>`;
+    if (qy.edges.length) body += `<div class="section-h">Joins <small>switch INNER / LEFT to keep unmatched rows</small></div><div class="joins">${qy.edges.map(id => { const e = edgeById(id), s = stats.get(id); const miss = s ? (s.unmatched) / Math.max(1, s.inRows) : 0; return `<div class="jrow"><select data-jt="${id}" aria-label="Join type"><option ${qy.joinTypes[id] !== 'LEFT' ? 'selected' : ''}>INNER</option><option ${qy.joinTypes[id] === 'LEFT' ? 'selected' : ''}>LEFT</option></select><code>${esc(e.keys.map(([mc, oc]) => `${e.many}.${mc} = ${e.one}.${oc}`).join(' AND '))}</code><span class="st">${s ? `<b>${pct(s.matched / Math.max(1, s.inRows), 1)}</b> matched${miss > 0.005 ? ` · <span class="bad">${s.unmatched.toLocaleString()} orphans</span>` : ''}${s.fanout > 1.05 ? ` · ×${num(s.fanout, 1)}` : ''}` : ''}</span></div>`; }).join('')}</div>`;
+    body += `<div class="section-h">SQL <small><button class="btn small" data-act="copy">Copy</button> <button class="btn small" data-dl="sql">Download .sql</button></small></div><pre class="sql">${highlightSQL(r.sql)}</pre>`;
+    body += `<div class="section-h">Answer and insights</div><div class="insights">${r.insights.map(insightCard).join('') || '<p>No insights. Widen the sample.</p>'}</div>`;
+    const cols = Object.keys(r.rows[0] || {});
+    if (cols.length) body += `<details class="sample"><summary>Taste the joined rows <span>${r.rows.length.toLocaleString()} rows · ${cols.length} columns</span></summary><div class="tablewrap">${tableHTML(r.rows.slice(0, 50).map(x => x), cols)}</div><div class="btnrow" style="margin-top:6px"><button class="btn small" data-dl="csv">Download joined sample (CSV)</button></div></details>`;
+  }
+  pad.innerHTML = `<div class="kind">Line ${idx} · ${qy.tables.length} table${qy.tables.length > 1 ? 's' : ''}, ${qy.edges.length} join${qy.edges.length === 1 ? '' : 's'}</div>
+    <h2>${esc(qy.question || qy.tables.join(' ⋈ '))}</h2>
+    <div class="who">Route: ${routeText(qy)}</div>
+    <div class="controls">
+      ${sel('measure', 'Measure', [['', '(none)'], ...MEASURES.filter(m => qy.tables.includes(m.t) && (m.need || []).every(t => qy.tables.includes(t))).map(m => [m.id, m.label])], qy.measure || '')}
+      ${sel('dim', 'Break down by', [['', '(none)'], ...DIMS.filter(d => !d.t || qy.tables.includes(d.t)).map(d => [d.id, d.label])], qy.dim || '')}
+      ${sel('n', 'Sample', [[100, '100 rows'], [250, '250 rows'], [500, '500 rows'], [1000, '1,000 rows'], [2500, '2,500 rows']], qy.params.n)}
+      ${sel('days', 'Date range', [[7, 'Last 7 days'], [30, 'Last 30 days'], [90, 'Last 90 days']], qy.params.days)}
+      ${sel('site', 'Pub', [['All', 'All pubs'], ...DB.sites.map(s => [s.name, s.name])], qy.params.site)}
+    </div>
+    <div class="btnrow"><button class="btn primary" data-act="rerun">Re-pour</button><button class="btn" data-act="reseed">New sample</button>${r?.insights ? '<button class="btn" data-dl="md">Download insights (MD)</button><button class="btn" data-dl="json">JSON</button><button class="btn" data-act="pinAll">Pin all</button>' : ''}<button class="btn warn" data-act="hang">Hang up</button></div>
+    ${body}`;
+  pad.querySelectorAll('[data-chart]').forEach(box => { const x = r.insights.find(i => i.uid === box.closest('[data-uid]').dataset.uid); drawChart(box, x.chart, x.chartType); });
 }
-function insightCard(x, i, lineId) {
+function insightCard(x) {
   const c = x.confidence || 'medium';
   return `<article class="ins" data-uid="${x.uid}">
     <div class="ih"><h4 data-edit="title">${esc(x.title)}</h4><span class="chip ${x.ai ? 'ai' : c === 'high' ? 'hi' : c === 'medium' ? 'md' : 'lo'}">${x.ai ? 'Claude · ' : ''}${c}</span></div>
     ${x.value ? `<div class="fig"><b>${esc(x.value)}</b><span>${esc(x.unit || '')}</span></div>` : ''}
     <p data-edit="text">${esc(x.text)}</p>
-    ${x.why ? `<div class="why">${esc(x.why)}</div>` : ''}
     <div class="chart" data-chart></div>
     <div class="acts">
-      <label class="sr" for="pin-${x.uid}">Pin to dashboard</label>
-      <select id="pin-${x.uid}" data-act="pinTo">${dashboards.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}<option value="__new">+ New dashboard…</option></select>
+      <select data-act="pinTo" aria-label="Pin to dashboard">${dashboards.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}<option value="__new">+ New dashboard…</option></select>
       <button class="btn small primary" data-act="pin">Pin</button>
-      ${x.chart ? `<select data-act="ctype" aria-label="Chart type"><option value="bar" ${x.chartType === 'bar' ? 'selected' : ''}>Bar</option><option value="line" ${x.chartType === 'line' ? 'selected' : ''}>Line</option><option value="table" ${x.chartType === 'table' ? 'selected' : ''}>Table</option><option value="none" ${x.chartType === 'none' ? 'selected' : ''}>No chart</option></select>` : ''}
+      ${x.chart ? `<select data-act="ctype" aria-label="Chart type">${['bar', 'line', 'table', 'none'].map(t => `<option value="${t}" ${x.chartType === t ? 'selected' : ''}>${t === 'none' ? 'No chart' : t[0].toUpperCase() + t.slice(1)}</option>`).join('')}</select>` : ''}
       <button class="btn small" data-act="edit">Edit words</button>
       <button class="btn small warn" data-act="drop">Remove</button>
-    </div>
-  </article>`;
+    </div></article>`;
 }
-function renderPad() {
-  const pad = $('pad');
-  const l = lines.find(x => x.id === selected);
-  if (!l) { pad.innerHTML = `<div class="emptyPad"><p>Nothing on the pad yet.</p>Drag a cord from a person to a data source to have the house analyst sample it, between two people to introduce them, or between two data sources to join them.</div>`; return; }
-  const k = lineKind(l), r = results.get(l.id), idx = lines.indexOf(l) + 1;
-  const kindLabel = { pp: 'Person to person: an introduction', pd: 'Person to data: insights for their role', dd: 'Data to data: a join' }[k];
-  let body = '';
-  if (l.status === 'busy') body = `<div class="pour">${pint}<span>${agentKind === 'claude' && sampleFn ? 'Claude is tasting the sample…' : 'Pulling a sample and pouring insights…'}</span></div>`;
-  else if (r?.error) body = `<p class="summary">${esc(r.error)}</p>`;
-  else if (r) {
-    body += `<div class="summary">${esc(r.summary)} <em>(${esc(r.agent)})</em></div>`;
-    if (k === 'pp') {
-      const [A, B] = [PEOPLE[l.a], PEOPLE[l.b]];
-      body += `<div class="people">${[A, B].map(p => `<div class="card-person"><b>${esc(p.name)}</b><span>${esc(p.role)}</span><span>Watches: ${p.loves.map(s => SOURCE_META[s].short).join(', ')}</span><code>${esc(p.email)}</code></div>`).join('')}</div>
-        <h3 style="margin:6px 0 4px;font:700 17px var(--display)">Suggested agenda</h3><ol class="agenda">${r.agenda.map(a => `<li>${esc(a)}</li>`).join('')}</ol>
-        <h3 style="margin:12px 0 6px;font:700 17px var(--display)">What each brings to the table</h3>`;
-    }
-    body += `<div class="insights">${r.insights.map((x, i) => insightCard(x, i, l.id)).join('') || '<p>No insights survived. Widen the sample.</p>'}</div>`;
-    const samp = Object.entries(r.samples || {});
-    if (samp.length) body += samp.map(([id, s]) => `<details class="sample"><summary>Taste the sample: ${esc(SOURCE_META[id].name)} <span>${s.rows.length.toLocaleString()} rows · ${s.from} to ${s.to}</span></summary>
-        <div class="tablewrap">${tableHTML(s.rows.slice(0, 60), SOURCE_META[id].cols)}</div>
-        <div class="btnrow" style="margin-top:6px"><button class="btn small" data-dl="csv" data-src="${id}">Download sample (${s.rows.length.toLocaleString()} rows, CSV)</button></div></details>`).join('');
-  }
-  pad.innerHTML = `<div class="kind">Line ${idx} · ${kindLabel}</div>
-    <h2>${esc(k === 'pd' ? `${jackById(personOf(l)).label}, meet the ${SOURCE_META[dataOf(l)].name}` : k === 'pp' ? `${PEOPLE[l.a].name} ⇄ ${PEOPLE[l.b].name}` : `${SOURCE_META[l.a].name} ⋈ ${SOURCE_META[l.b].name}`)}</h2>
-    <div class="who">${esc(k === 'pd' ? `${PEOPLE[personOf(l)].role} · ${SOURCE_META[dataOf(l)].desc}` : k === 'pp' ? 'Connecting people to people' : 'Joined on date, daily figures compared')}</div>
-    ${paramsControls(l, k)}
-    <div class="btnrow"><button class="btn primary" data-act="rerun">Re-pour</button><button class="btn" data-act="reseed">New sample</button>${r?.insights ? '<button class="btn" data-dl="md">Download insights (MD)</button><button class="btn" data-dl="json">JSON</button><button class="btn" data-act="pinAll">Pin all</button>' : ''}<button class="btn warn" data-act="hang">Hang up</button></div>
-    ${body}`;
-  pad.querySelectorAll('[data-chart]').forEach(box => { const art = box.closest('[data-uid]'); const x = r.insights.find(i => i.uid === art.dataset.uid); drawChart(box, x.chart, x.chartType); });
-}
-const personOf = l => jackById(l.a).kind === 'person' ? l.a : l.b;
-const dataOf = l => jackById(l.a).kind === 'data' ? l.a : l.b;
 $('pad').addEventListener('change', e => {
-  const l = lines.find(x => x.id === selected); if (!l) return;
-  const p = e.target.dataset.p;
-  if (p) { l.params[p] = p === 'site' ? e.target.value : +e.target.value; saveState(); runLine(l); return; }
+  const qy = queries.find(x => x.id === selected); if (!qy) return;
+  const p = e.target.dataset.p, jt = e.target.dataset.jt;
+  if (p === 'measure' || p === 'dim') { qy[p] = e.target.value || null; if (p === 'measure') qy.measure2 = null; saveState(); run(qy); return; }
+  if (p) { qy.params[p] = p === 'site' ? e.target.value : +e.target.value; saveState(); run(qy); return; }
+  if (jt) { qy.joinTypes[jt] = e.target.value; saveState(); run(qy); return; }
   if (e.target.dataset.act === 'ctype') { const x = findInsight(e.target); x.chartType = e.target.value; drawChart(e.target.closest('.ins').querySelector('[data-chart]'), x.chart, x.chartType); }
 });
-$('pad').addEventListener('click', e => {
-  const l = lines.find(x => x.id === selected); if (!l) return;
+$('pad').addEventListener('click', async e => {
+  const jb = e.target.closest('[data-join]');
+  if (jb) { const ed = edgeById(jb.dataset.join); patch(focusTable, other(ed, focusTable)); return; }
+  const qy = queries.find(x => x.id === selected); if (!qy) return;
   const b = e.target.closest('button'); if (!b) return;
-  const act = b.dataset.act, dl = b.dataset.dl, r = results.get(l.id);
-  if (act === 'rerun') runLine(l);
-  else if (act === 'reseed') { l.seed = (l.seed || 1) + 1; runLine(l); }
-  else if (act === 'hang') hangUp(l.id);
-  else if (act === 'pinAll') { const d = dashboards[0]; r.insights.forEach(x => pinInsight(x, l, d.id)); toast(`Pinned ${r.insights.length} insights to ${d.name}`); }
-  else if (act === 'pin') { const x = findInsight(b), sel = b.parentElement.querySelector('[data-act="pinTo"]'); let did = sel.value; if (did === '__new') { did = newDashboard(); } pinInsight(x, l, did); toast(`Pinned to ${dashboards.find(d => d.id === did).name}`); }
+  const act = b.dataset.act, dl = b.dataset.dl, r = results.get(qy.id);
+  if (act === 'rerun') run(qy);
+  else if (act === 'reseed') { qy.seed = (qy.seed || 1) + 1; run(qy); }
+  else if (act === 'hang') hangUp(qy.id);
+  else if (act === 'copy') { try { await navigator.clipboard.writeText(r.sql); toast('SQL copied'); } catch { const rg = document.createRange(); rg.selectNodeContents($('pad').querySelector('pre.sql')); getSelection().removeAllRanges(); getSelection().addRange(rg); toast('SQL selected: press Ctrl+C'); } }
+  else if (act === 'pinAll') { r.insights.forEach(x => pinInsight(x, qy, dashboards[0].id)); toast(`Pinned ${r.insights.length} to ${dashboards[0].name}`); }
+  else if (act === 'pin') { const x = findInsight(b); let did = b.parentElement.querySelector('[data-act="pinTo"]').value; if (did === '__new') did = newDashboard(); pinInsight(x, qy, did); toast(`Pinned to ${dashboards.find(d => d.id === did).name}`); }
   else if (act === 'edit') { const art = b.closest('.ins'), on = art.querySelector('[data-edit]').contentEditable !== 'true'; art.querySelectorAll('[data-edit]').forEach(n => n.contentEditable = on); b.textContent = on ? 'Done editing' : 'Edit words'; if (on) art.querySelector('[data-edit]').focus(); else { const x = findInsight(b); x.title = art.querySelector('[data-edit="title"]').textContent.trim(); x.text = art.querySelector('[data-edit="text"]').textContent.trim(); toast('Saved your wording'); } }
-  else if (act === 'drop') { const x = findInsight(b); r.insights = r.insights.filter(i => i !== x); renderPad(); renderLog(); }
-  else if (dl === 'csv') { const s = r.samples[b.dataset.src]; saveFile(`${slug(SOURCE_META[b.dataset.src].name)}-sample-${s.rows.length}.csv`, toCSV(s.rows, SOURCE_META[b.dataset.src].cols)); }
-  else if (dl === 'md') saveFile(`${slug(lineLabel(l))}-insights.md`, insightsMD(`Line: ${lineLabel(l)}`, r.summary, r.insights, l.params, r.agenda));
-  else if (dl === 'json') saveFile(`${slug(lineLabel(l))}-insights.json`, JSON.stringify({ line: lineLabel(l), kind: lineKind(l), params: l.params, agent: r.agent, summary: r.summary, agenda: r.agenda, insights: r.insights.map(cleanInsight), generated: new Date().toISOString(), data: 'mock' }, null, 2));
+  else if (act === 'drop') { const x = findInsight(b); r.insights = r.insights.filter(i => i !== x); renderPad(); }
+  else if (dl === 'sql') saveFile(`${slug(qy.question || qy.tables.join('-'))}.sql`, r.sql + '\n');
+  else if (dl === 'csv') { const cols = Object.keys(r.rows[0] || {}); saveFile(`${slug(qy.question || qy.tables.join('-'))}-joined-sample.csv`, toCSV(r.rows, cols)); }
+  else if (dl === 'md') saveFile(`${slug(qy.question || qy.tables.join('-'))}-insights.md`, insightsMD(qy.question || qy.tables.join(' ⋈ '), `Route: ${qy.tables.join(' ⋈ ')} · ${r.rows.length} joined rows · ${r.agent}`, r.insights, qy.params, r.sql));
+  else if (dl === 'json') saveFile(`${slug(qy.question || qy.tables.join('-'))}-insights.json`, JSON.stringify({ question: qy.question, route: { root: qy.root, tables: qy.tables, joins: qy.edges.map(id => ({ id, type: qy.joinTypes[id] || 'INNER', on: edgeById(id).keys })) }, sql: r.sql, params: qy.params, joinHealth: r.stats, insights: r.insights.map(cleanInsight), agent: r.agent, generated: new Date().toISOString(), data: 'mock' }, null, 2));
 });
-function findInsight(node) { const l = lines.find(x => x.id === selected), r = results.get(l.id), u = node.closest('[data-uid]').dataset.uid; return r.insights.find(i => i.uid === u); }
-const cleanInsight = x => ({ title: x.title, text: x.text, value: x.value, unit: x.unit, confidence: x.confidence, chart: x.chart, chartType: x.chartType, source: x.source });
+function findInsight(node) { const r = results.get(selected), u = node.closest('[data-uid]').dataset.uid; return r.insights.find(i => i.uid === u); }
+const cleanInsight = x => ({ title: x.title, text: x.text, value: x.value, unit: x.unit, confidence: x.confidence, chart: x.chart, chartType: x.chartType });
 
 /* =====================================================================
-   8. Charts (SVG, cream surface, validated palette, hover tooltips)
+   10. Charts + tables
    ===================================================================== */
-const PAL = ['#1d6a9e', '#c2511c', '#1a8a5a', '#a8760e', '#8a4fa8'];
-const SINGLE = '#1a8a5a';
-const fmtV = (v, f) => f === 'money' ? money(v) : f === 'pct' ? `${num(v, v < 10 ? 1 : 0)}%` : f === 'min' ? `${num(v, 1)} min` : f === 'star' ? `${num(v, 2)}★` : f === 'r' ? num(v, 2) : f === 'idx' ? num(v, 0) : num(v, v < 10 ? 1 : 0);
+const PAL = ['#1d6a9e', '#c2511c', '#1a8a5a', '#a8760e', '#8a4fa8'], SINGLE = '#1a8a5a';
 function drawChart(box, ch, type) {
   box.innerHTML = '';
   if (!ch || type === 'none') return;
@@ -869,91 +1070,71 @@ function drawChart(box, ch, type) {
   const W = Math.max(260, box.clientWidth || 360), multi = ch.series.length > 1;
   if (multi) box.insertAdjacentHTML('beforeend', `<div class="legend">${ch.series.map((s, i) => `<span><i style="background:${PAL[i]}"></i>${esc(s.name)}</span>`).join('')}</div>`);
   if (type === 'bar') {
-    const vals = ch.series[0].values, n = vals.length, rowH = 24, labW = Math.min(150, Math.max(...ch.labels.map(l => String(l).length)) * 7 + 10), valW = 70;
-    const hasNeg = vals.some(v => v < 0), max = Math.max(...vals.map(Math.abs)) || 1, pw = W - labW - valW, H = n * rowH + 4;
-    const zero = hasNeg ? labW + pw / 2 : labW, scale = hasNeg ? pw / 2 / max : pw / max;
+    const vals = ch.series[0].values, n = vals.length, rowH = 24, labW = Math.min(170, Math.max(...ch.labels.map(l => String(l).length)) * 7 + 10), valW = 72;
+    const max = Math.max(...vals.map(Math.abs)) || 1, pw = W - labW - valW, H = n * rowH + 4;
     const s = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': ch.labels.map((lb, i) => `${lb} ${fmtV(vals[i], ch.fmt)}`).join(', ') }, box);
-    if (hasNeg) el('line', { x1: zero, x2: zero, y1: 0, y2: H, stroke: '#d9cbb0' }, s);
     vals.forEach((v, i) => {
-      const y = i * rowH + 3, w = Math.max(1, Math.abs(v) * scale), x = v >= 0 ? zero : zero - w;
-      const lb = el('text', { x: labW - 8, y: y + 13, 'text-anchor': 'end', 'font-size': 12.5, fill: '#6a5a47' }, s); lb.textContent = String(ch.labels[i]).length > 20 ? String(ch.labels[i]).slice(0, 19) + '…' : ch.labels[i];
-      const rr = Math.min(4, w / 2);
-      const path = v >= 0 ? `M${x},${y} h${w - rr} a${rr},${rr} 0 0 1 ${rr},${rr} v${18 - 2 * rr} a${rr},${rr} 0 0 1 ${-rr},${rr} h${-(w - rr)} Z` : `M${x + w},${y} h${-(w - rr)} a${rr},${rr} 0 0 0 ${-rr},${rr} v${18 - 2 * rr} a${rr},${rr} 0 0 0 ${rr},${rr} h${w - rr} Z`;
-      const p = el('path', { d: path, fill: SINGLE }, s);
+      const y = i * rowH + 3, w = Math.max(1, Math.abs(v) / max * pw), x = labW, rr = Math.min(4, w / 2);
+      const lb = el('text', { x: labW - 8, y: y + 13, 'text-anchor': 'end', 'font-size': 12.5, fill: '#6a5a47' }, s); lb.textContent = String(ch.labels[i]).length > 22 ? String(ch.labels[i]).slice(0, 21) + '…' : ch.labels[i];
+      const p = el('path', { d: `M${x},${y} h${w - rr} a${rr},${rr} 0 0 1 ${rr},${rr} v${18 - 2 * rr} a${rr},${rr} 0 0 1 ${-rr},${rr} h${-(w - rr)} Z`, fill: SINGLE }, s);
       p.addEventListener('pointermove', e => tipShow(e, `${ch.labels[i]}: ${fmtV(v, ch.fmt)}`)); p.addEventListener('pointerleave', tipHide);
-      const tv = el('text', { x: v >= 0 ? x + w + 6 : x - 6, y: y + 13, 'text-anchor': v >= 0 ? 'start' : 'end', 'font-size': 12.5, 'font-weight': 600, fill: '#2b2118' }, s); tv.textContent = fmtV(v, ch.fmt);
+      const tv = el('text', { x: x + w + 6, y: y + 13, 'font-size': 12.5, 'font-weight': 600, fill: '#2b2118' }, s); tv.textContent = fmtV(v, ch.fmt);
     });
   } else {
-    const H = 150, padL = 50, padR = 12, padT = 8, padB = 22, n = ch.labels.length;
+    const H = 150, padL = 52, padR = 12, padT = 8, padB = 22, n = ch.labels.length;
     const all = ch.series.flatMap(x => x.values), mx = Math.max(...all), mn = Math.min(0, ...all), rng = mx - mn || 1;
     const x = i => padL + (n < 2 ? 0 : i / (n - 1)) * (W - padL - padR), y = v => padT + (1 - (v - mn) / rng) * (H - padT - padB);
     const s = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': `${ch.series.map(z => z.name).join(' and ')} over ${n} points` }, box);
     for (let k = 0; k <= 3; k++) { const v = mn + rng * k / 3; el('line', { x1: padL, x2: W - padR, y1: y(v), y2: y(v), stroke: '#e7dcc4' }, s); const t = el('text', { x: padL - 6, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#6a5a47' }, s); t.textContent = fmtV(v, ch.fmt); }
     const every = Math.max(1, Math.ceil(n / 6));
     ch.labels.forEach((lb, i) => { if (i % every && i !== n - 1) return; const t = el('text', { x: x(i), y: H - 5, 'text-anchor': 'middle', 'font-size': 11, fill: '#6a5a47' }, s); t.textContent = lb; });
-    ch.series.forEach((sr, si) => {
-      const c = multi ? PAL[si] : SINGLE;
-      if (!multi) el('path', { d: `M${x(0)},${y(mn)} ` + sr.values.map((v, i) => `L${x(i)},${y(v)}`).join(' ') + ` L${x(n - 1)},${y(mn)} Z`, fill: c, opacity: 0.1 }, s);
-      el('path', { d: sr.values.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join(' '), fill: 'none', stroke: c, 'stroke-width': 2, 'stroke-linejoin': 'round' }, s);
-      el('circle', { cx: x(n - 1), cy: y(sr.values[n - 1]), r: 4, fill: c, stroke: '#fffdf7', 'stroke-width': 2 }, s);
-    });
-    const hit = el('rect', { x: padL, y: 0, width: W - padL - padR, height: H, fill: 'transparent' }, s);
-    const cross = el('line', { y1: padT, y2: H - padB, stroke: '#6a5a47', 'stroke-width': 1, visibility: 'hidden' }, s);
-    hit.addEventListener('pointermove', e => { const r = s.getBoundingClientRect(); const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - r.left) * (W / r.width) - padL) / (W - padL - padR) * (n - 1)))); cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible'); tipShow(e, `${ch.labels[i]}: ` + ch.series.map(z => `${z.name === 'value' ? '' : z.name + ' '}${fmtV(z.values[i], ch.fmt)}`).join(' · ')); });
+    ch.series.forEach((sr, si) => { const c = multi ? PAL[si] : SINGLE; if (!multi) el('path', { d: `M${x(0)},${y(mn)} ` + sr.values.map((v, i) => `L${x(i)},${y(v)}`).join(' ') + ` L${x(n - 1)},${y(mn)} Z`, fill: c, opacity: 0.1 }, s); el('path', { d: sr.values.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join(' '), fill: 'none', stroke: c, 'stroke-width': 2, 'stroke-linejoin': 'round' }, s); el('circle', { cx: x(n - 1), cy: y(sr.values[n - 1]), r: 4, fill: c, stroke: '#fffdf7', 'stroke-width': 2 }, s); });
+    const hit = el('rect', { x: padL, y: 0, width: W - padL - padR, height: H, fill: 'transparent' }, s), cross = el('line', { y1: padT, y2: H - padB, stroke: '#6a5a47', visibility: 'hidden' }, s);
+    hit.addEventListener('pointermove', e => { const rc = s.getBoundingClientRect(); const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - rc.left) * (W / rc.width) - padL) / (W - padL - padR) * (n - 1)))); cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible'); tipShow(e, `${ch.labels[i]}: ` + ch.series.map(z => `${z.name === 'value' ? '' : z.name + ' '}${fmtV(z.values[i], ch.fmt)}`).join(' · ')); });
     hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tipHide(); });
   }
 }
 function tableHTML(rows, cols) {
   const isN = c => rows.every(r => r[c] === null || typeof r[c] === 'number');
-  return `<table class="t"><thead><tr>${cols.map(c => `<th class="${isN(c) ? 'n' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="${isN(c) ? 'n' : ''}">${r[c] === null ? '<em style="color:#b04a2a">null</em>' : esc(typeof r[c] === 'boolean' ? (r[c] ? 'yes' : 'no') : r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  return `<table class="t"><thead><tr>${cols.map(c => `<th class="${isN(c) ? 'n' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="${isN(c) ? 'n' : ''}">${r[c] === null || r[c] === undefined ? '<em style="color:#b04a2a">null</em>' : esc(typeof r[c] === 'boolean' ? (r[c] ? 'true' : 'false') : r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 const tip = $('tip');
 function tipShow(e, t) { tip.textContent = t; tip.style.display = 'block'; const w = tip.offsetWidth; tip.style.left = `${Math.min(innerWidth - w - 8, e.clientX + 12)}px`; tip.style.top = `${e.clientY + 14}px`; }
 function tipHide() { tip.style.display = 'none'; }
 
 /* =====================================================================
-   9. Dashboards: pin, rearrange, rename, adjust, export
+   11. Dashboards
    ===================================================================== */
 let activeDash = null;
-function newDashboard(name) {
-  const d = { id: uid(), name: name || `Dashboard ${dashboards.length + 1}`, cards: [] };
-  dashboards.push(d); saveState(); renderDashTabs(); if (selected) renderPad(); return d.id;
-}
-function pinInsight(x, l, did) {
-  const d = dashboards.find(z => z.id === did) || dashboards[0];
-  const r = results.get(l.id);
-  const srcIds = Object.keys(r.samples || {});
-  d.cards.push({ id: uid(), title: x.title, text: x.text, value: x.value, unit: x.unit, confidence: x.confidence, ai: !!x.ai, chart: x.chart, chartType: x.chartType, line: lineLabel(l), kind: lineKind(l), params: { ...l.params }, agent: r.agent, pinned: new Date().toISOString(),
-    sample: srcIds.map(id => ({ source: id, rows: r.samples[id].rows.slice(0, 200) })) });
+function newDashboard(name) { const d = { id: uid(), name: name || `Dashboard ${dashboards.length + 1}`, cards: [] }; dashboards.push(d); saveState(); renderDashTabs(); if (selected) renderPad(); return d.id; }
+function pinInsight(x, qy, did) {
+  const d = dashboards.find(z => z.id === did) || dashboards[0], r = results.get(qy.id);
+  d.cards.push({ id: uid(), title: x.title, text: x.text, value: x.value, unit: x.unit, confidence: x.confidence, ai: !!x.ai, chart: x.chart, chartType: x.chartType, line: qLabel(qy), route: qy.tables.join(' ⋈ '), sql: r.sql, params: { ...qy.params }, agent: r.agent, pinned: new Date().toISOString(), sample: r.rows.slice(0, 150) });
   saveState(); updatePinCount(); sfx.pin();
 }
 function updatePinCount() { $('pinCount').textContent = dashboards.reduce((a, d) => a + d.cards.length, 0); }
 function renderDashTabs() {
   if (!activeDash || !dashboards.find(d => d.id === activeDash)) activeDash = dashboards[0]?.id;
   $('dashbar').innerHTML = dashboards.map(d => `<button class="dt" role="tab" data-d="${d.id}" aria-selected="${d.id === activeDash}">${esc(d.name)} <small>(${d.cards.length})</small></button>`).join('') +
-    `<button class="btn" data-dact="new">+ New board</button><span class="sp"></span>
-     <button class="btn" data-dact="md">Download (MD)</button><button class="btn" data-dact="json">JSON</button><button class="btn" data-dact="csv">Insights CSV</button><button class="btn" data-dact="sample">Sample data CSV</button>
-     <button class="btn" data-dact="rename">Rename</button>${dashboards.length > 1 ? '<button class="btn" data-dact="del">Delete board</button>' : ''}`;
+    `<button class="btn" data-dact="new">+ New board</button><span class="sp"></span><button class="btn" data-dact="md">Download (MD)</button><button class="btn" data-dact="json">JSON</button><button class="btn" data-dact="csv">Insights CSV</button><button class="btn" data-dact="sample">Sample data CSV</button><button class="btn" data-dact="sql">All SQL</button><button class="btn" data-dact="rename">Rename</button>${dashboards.length > 1 ? '<button class="btn" data-dact="del">Delete board</button>' : ''}`;
   updatePinCount();
 }
 function renderDash() {
   renderDashTabs();
   const d = dashboards.find(z => z.id === activeDash);
   $('dName').textContent = d.name;
-  const sites = [...new Set(d.cards.map(c => c.params.site))];
-  $('dMeta').textContent = d.cards.length ? `${d.cards.length} pinned insight${d.cards.length > 1 ? 's' : ''} from ${new Set(d.cards.map(c => c.line)).size} line${new Set(d.cards.map(c => c.line)).size > 1 ? 's' : ''} · ${sites.join(', ')} · mock data` : '';
+  $('dMeta').textContent = d.cards.length ? `${d.cards.length} pinned insight${d.cards.length > 1 ? 's' : ''} · mock data` : '';
   $('tiles').innerHTML = d.cards.length ? d.cards.map((c, i) => `<article class="tile" data-card="${c.id}">
-      <div class="src">${esc(c.line)} · ${c.params.site === 'All' ? 'All pubs' : esc(c.params.site)} · ${c.params.days}d${c.params.n && c.kind !== 'pp' ? ` · n=${c.params.n}` : ''} · ${esc(c.agent)}</div>
+      <div class="src">${esc(c.route)} · ${c.params.site === 'All' ? 'All pubs' : esc(c.params.site)} · ${c.params.days}d · n=${c.params.n} · ${esc(c.agent)}</div>
       <h4 data-edit="title">${esc(c.title)}</h4>
       ${c.value ? `<div class="fig"><b>${esc(c.value)}</b><span>${esc(c.unit || '')}</span></div>` : ''}
       <p data-edit="text">${esc(c.text)}</p>
       <div class="chart" data-chart></div>
       <div class="acts">
-        ${c.chart ? `<select data-cact="ctype" aria-label="Chart type"><option value="bar" ${c.chartType === 'bar' ? 'selected' : ''}>Bar</option><option value="line" ${c.chartType === 'line' ? 'selected' : ''}>Line</option><option value="table" ${c.chartType === 'table' ? 'selected' : ''}>Table</option><option value="none" ${c.chartType === 'none' ? 'selected' : ''}>No chart</option></select>` : ''}
+        ${c.chart ? `<select data-cact="ctype" aria-label="Chart type">${['bar', 'line', 'table', 'none'].map(t => `<option value="${t}" ${c.chartType === t ? 'selected' : ''}>${t === 'none' ? 'No chart' : t[0].toUpperCase() + t.slice(1)}</option>`).join('')}</select>` : ''}
         <select data-cact="move" aria-label="Move to dashboard"><option value="">Move to…</option>${dashboards.filter(z => z.id !== d.id).map(z => `<option value="${z.id}">${esc(z.name)}</option>`).join('')}</select>
         <button class="btn small" data-cact="up" ${i === 0 ? 'disabled' : ''} aria-label="Move earlier">↑</button><button class="btn small" data-cact="down" ${i === d.cards.length - 1 ? 'disabled' : ''} aria-label="Move later">↓</button>
-        <button class="btn small" data-cact="edit">Edit words</button>
-        <button class="btn small warn" data-cact="del">Unpin</button>
+        <button class="btn small" data-cact="edit">Edit words</button><button class="btn small warn" data-cact="del">Unpin</button>
       </div></article>`).join('') : `<div class="dempty">This board is empty. Pin insights from any line on the switchboard.</div>`;
   $('tiles').querySelectorAll('[data-chart]').forEach(box => { const c = d.cards.find(x => x.id === box.closest('[data-card]').dataset.card); drawChart(box, c.chart, c.chartType); });
 }
@@ -966,13 +1147,9 @@ $('dashbar').addEventListener('click', e => {
   else if (act === 'del') { dashboards = dashboards.filter(z => z.id !== d.id); activeDash = dashboards[0].id; saveState(); renderDash(); toast('Board deleted'); }
   else if (act === 'md') saveFile(`${slug(d.name)}.md`, insightsMD(d.name, `${d.cards.length} pinned insights · exported ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · mock data`, d.cards));
   else if (act === 'json') saveFile(`${slug(d.name)}.json`, JSON.stringify({ dashboard: d.name, exported: new Date().toISOString(), data: 'mock', cards: d.cards }, null, 2));
-  else if (act === 'csv') saveFile(`${slug(d.name)}-insights.csv`, toCSV(d.cards.map(c => ({ title: c.title, value: c.value, unit: c.unit, text: c.text, confidence: c.confidence, line: c.line, site: c.params.site, days: c.params.days, sample_n: c.params.n, agent: c.agent, pinned: c.pinned })), ['title', 'value', 'unit', 'text', 'confidence', 'line', 'site', 'days', 'sample_n', 'agent', 'pinned']));
-  else if (act === 'sample') {
-    const rows = []; const cols = new Set(['source', 'insight']);
-    d.cards.forEach(c => (c.sample || []).forEach(s => s.rows.forEach(r => { Object.keys(r).forEach(k => cols.add(k)); rows.push({ source: SOURCE_META[s.source].name, insight: c.title, ...r }); })));
-    if (!rows.length) { toast('No sample rows on this board yet'); return; }
-    saveFile(`${slug(d.name)}-sample-data.csv`, toCSV(rows, [...cols]));
-  }
+  else if (act === 'csv') saveFile(`${slug(d.name)}-insights.csv`, toCSV(d.cards.map(c => ({ title: c.title, value: c.value, unit: c.unit, text: c.text, confidence: c.confidence, route: c.route, site: c.params.site, days: c.params.days, sample_n: c.params.n, agent: c.agent, pinned: c.pinned })), ['title', 'value', 'unit', 'text', 'confidence', 'route', 'site', 'days', 'sample_n', 'agent', 'pinned']));
+  else if (act === 'sql') saveFile(`${slug(d.name)}-queries.sql`, [...new Map(d.cards.map(c => [c.sql, c])).values()].map(c => `-- ${c.line}\n${c.sql}\n`).join('\n'));
+  else if (act === 'sample') { const rows = [], cols = new Set(['insight']); d.cards.forEach(c => (c.sample || []).forEach(r => { Object.keys(r).forEach(k => cols.add(k)); rows.push({ insight: c.title, ...r }); })); if (!rows.length) { toast('No sample rows on this board yet'); return; } saveFile(`${slug(d.name)}-sample-data.csv`, toCSV(rows, [...cols])); }
 });
 function startRename() {
   const h = $('dName'); h.contentEditable = 'true'; h.focus();
@@ -983,8 +1160,7 @@ function startRename() {
 $('dName').addEventListener('dblclick', startRename);
 $('tiles').addEventListener('click', e => {
   const b = e.target.closest('[data-cact]'); if (!b || b.tagName === 'SELECT') return;
-  const d = dashboards.find(z => z.id === activeDash), card = b.closest('[data-card]'), i = d.cards.findIndex(c => c.id === card.dataset.card), c = d.cards[i];
-  const act = b.dataset.cact;
+  const d = dashboards.find(z => z.id === activeDash), card = b.closest('[data-card]'), i = d.cards.findIndex(c => c.id === card.dataset.card), c = d.cards[i], act = b.dataset.cact;
   if (act === 'del') { d.cards.splice(i, 1); saveState(); renderDash(); }
   else if (act === 'up' && i > 0) { [d.cards[i - 1], d.cards[i]] = [d.cards[i], d.cards[i - 1]]; saveState(); renderDash(); }
   else if (act === 'down' && i < d.cards.length - 1) { [d.cards[i + 1], d.cards[i]] = [d.cards[i], d.cards[i + 1]]; saveState(); renderDash(); }
@@ -998,101 +1174,70 @@ $('tiles').addEventListener('change', e => {
 });
 
 /* =====================================================================
-   10. Exports: CSV / Markdown / JSON (downloads capability when hosted)
+   12. Exports + sound + boot
    ===================================================================== */
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'export';
-function toCSV(rows, cols) {
-  const q = v => { if (v === null || v === undefined) return ''; const s = typeof v === 'boolean' ? (v ? 'true' : 'false') : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  return [cols.join(','), ...rows.map(r => cols.map(c => q(r[c])).join(','))].join('\n');
-}
-function insightsMD(title, summary, items, params, agenda) {
-  const lines = [`# ${title}`, '', `_${summary}_`, ''];
-  if (params) lines.push(`**Sample:** ${params.n ? params.n + ' rows, ' : ''}last ${params.days} days, ${params.site === 'All' ? 'all pubs' : params.site}. Data: mock.`, '');
-  if (agenda) { lines.push('## Suggested agenda', ...agenda.map((a, i) => `${i + 1}. ${a}`), ''); }
+function toCSV(rows, cols) { const q = v => { if (v === null || v === undefined) return ''; const s = typeof v === 'boolean' ? String(v) : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }; return [cols.join(','), ...rows.map(r => cols.map(c => q(r[c])).join(','))].join('\n'); }
+function insightsMD(title, summary, items, params, sql) {
+  const L = [`# ${title}`, '', `_${summary}_`, ''];
+  if (params) L.push(`**Sample:** ${params.n} rows, last ${params.days} days, ${params.site === 'All' ? 'all pubs' : params.site}. Data: mock.`, '');
+  if (sql) L.push('```sql', sql, '```', '');
   items.forEach(x => {
-    lines.push(`## ${x.title}`, '');
-    if (x.value) lines.push(`**${x.value}** ${x.unit ? `(${x.unit})` : ''}`, '');
-    lines.push(x.text, '');
-    if (x.line) lines.push(`_From ${x.line} · ${x.params?.site === 'All' ? 'all pubs' : x.params?.site} · ${x.params?.days} days · ${x.agent}_`, '');
-    if (x.chart && x.chartType !== 'none') { lines.push('| Label | ' + x.chart.series.map(s => s.name === 'value' ? 'Value' : s.name).join(' | ') + ' |', '|---|' + x.chart.series.map(() => '---:').join('|') + '|', ...x.chart.labels.map((lb, i) => `| ${lb} | ` + x.chart.series.map(s => fmtV(s.values[i], x.chart.fmt)).join(' | ') + ' |'), ''); }
+    L.push(`## ${x.title}`, ''); if (x.value) L.push(`**${x.value}** ${x.unit ? `(${x.unit})` : ''}`, ''); L.push(x.text, '');
+    if (x.route) L.push(`_Route: ${x.route} · ${x.params?.site === 'All' ? 'all pubs' : x.params?.site} · ${x.params?.days} days · ${x.agent}_`, '');
+    if (x.sql && !sql) L.push('```sql', x.sql, '```', '');
+    if (x.chart && x.chartType !== 'none') L.push('| Label | ' + x.chart.series.map(s => s.name === 'value' ? 'Value' : s.name).join(' | ') + ' |', '|---|' + x.chart.series.map(() => '---:').join('|') + '|', ...x.chart.labels.map((lb, i) => `| ${lb} | ` + x.chart.series.map(s => fmtV(s.values[i], x.chart.fmt)).join(' | ') + ' |'), '');
   });
-  return lines.join('\n');
+  return L.join('\n');
 }
 let downloadsCap = null;
 async function saveFile(filename, text) {
   if (downloadsCap) {
     try { await downloadsCap.save({ filename, data: text }); toast(`Saved ${filename}`); return; }
-    catch (e) { if (e?.code === 'declined') { toast('Download cancelled'); return; } if (!['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) { toast(`Couldn't save: ${e?.message || e?.code}`); return; } }
+    catch (e) { if (e?.code === 'declined') { toast('Download cancelled'); return; } if (!['unavailable', 'not_granted', 'capability_disabled', 'capability_removed', 'rejected_extension'].includes(e?.code)) { toast(`Couldn't save: ${e?.message || e?.code}`); return; } if (e?.code === 'rejected_extension' && filename.endsWith('.sql')) return saveFile(filename.replace(/\.sql$/, '.sql.txt'), text); }
   }
-  const blob = new Blob([text], { type: filename.endsWith('.csv') ? 'text/csv' : filename.endsWith('.json') ? 'application/json' : 'text/markdown' });
+  const blob = new Blob([text], { type: 'text/plain' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   toast(`Downloaded ${filename}`);
 }
-
-/* =====================================================================
-   11. Sound: a soft plug click and bell (WebAudio, after first gesture)
-   ===================================================================== */
-const sfx = (() => {
-  let ctx = null;
-  const tone = (f, d, v, type = 'sine') => { if (!ctx) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + d + 0.02); };
-  return {
-    init() { if (!ctx) try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} },
-    plug() { tone(180, 0.06, 0.2, 'square'); setTimeout(() => tone(1320, 0.5, 0.06), 90); setTimeout(() => tone(1760, 0.6, 0.04), 160); },
-    unplug() { tone(140, 0.05, 0.15, 'square'); },
-    pin() { tone(880, 0.12, 0.05, 'triangle'); },
-  };
-})();
-
-/* =====================================================================
-   12. Views, toast, boot
-   ===================================================================== */
-function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), 2200); }
-function showView(v) {
-  const dash = v === 'dash';
-  $('viewBoard').hidden = dash; $('viewDash').hidden = !dash;
-  $('tabBoard').setAttribute('aria-selected', !dash); $('tabDash').setAttribute('aria-selected', dash);
-  if (dash) renderDash(); else { renderBoard(); renderPad(); }
-}
-$('tabBoard').onclick = () => showView('board');
-$('tabDash').onclick = () => showView('dash');
+const sfx = (() => { let ctx = null; const tone = (f, d, v, type = 'sine') => { if (!ctx) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + d + 0.02); };
+  return { init() { if (!ctx) try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }, plug() { tone(180, 0.06, 0.2, 'square'); setTimeout(() => tone(1320, 0.5, 0.06), 90); }, unplug() { tone(140, 0.05, 0.15, 'square'); }, pin() { tone(880, 0.12, 0.05, 'triangle'); } }; })();
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), 2400); }
+function showView(v) { const dash = v === 'dash'; $('viewBoard').hidden = dash; $('viewDash').hidden = !dash; $('tabBoard').setAttribute('aria-selected', !dash); $('tabDash').setAttribute('aria-selected', dash); if (dash) renderDash(); else { renderBoard(); renderPad(); } }
+$('tabBoard').onclick = () => showView('board'); $('tabDash').onclick = () => showView('dash');
 function renderAll() { renderBoard(); renderLog(); renderPad(); updatePinCount(); }
 
-// first visit: a realistic working state (clearly mock) so the page shows what it does
-if (!lines) lines = [
-  { id: uid(), a: 'mara', b: 'sales', color: CORD_COLORS[0], params: { ...DEFAULT_PARAMS } },
-  { id: uid(), a: 'theo', b: 'tickets', color: CORD_COLORS[1], params: { ...DEFAULT_PARAMS } },
-  { id: uid(), a: 'owen', b: 'theo', color: CORD_COLORS[2], params: { ...DEFAULT_PARAMS } },
-  { id: uid(), a: 'bookings', b: 'rota', color: CORD_COLORS[3], params: { ...DEFAULT_PARAMS, days: 90 } },
-];
+// first visit: a working state (clearly mock) so the page shows what it does
 if (!dashboards) dashboards = [{ id: uid(), name: 'Friday Briefing', cards: [] }, { id: uid(), name: 'Kitchen Pass', cards: [] }, { id: uid(), name: 'Back Office', cards: [] }];
-selected = lines[0]?.id ?? null;
-lines.forEach(l => { l.status = 'busy'; });
+const firstVisit = !queries;
+if (!queries) queries = [];
 renderAll();
 (async () => {
-  for (const l of lines) await runLine(l);
-  // seed the first board once so the dashboards view isn't empty
-  if (!store.get('pp-seeded', false) && dashboards[0].cards.length === 0) {
-    const pickFrom = (i, n) => { const l = lines[i]; const r = l && results.get(l.id); r?.insights?.slice(0, n).forEach(x => pinInsight(x, l, dashboards[0].id)); };
-    pickFrom(0, 2); pickFrom(1, 1); pickFrom(3, 1);
-    store.set('pp-seeded', true);
-    if (selected) renderPad();
+  if (firstVisit) {
+    for (const q of ['Which dishes get comped most at each pub?', 'Do web bookings no-show more?']) {
+      const p = parseQuestion(q), rs = suggestRoutes(p);
+      if (rs[0]) queries.push({ id: uid(), root: p.measures[0]?.t || rs[0].root, tables: rs[0].tables, edges: rs[0].edges, joinTypes: {}, params: { ...DEFAULT_PARAMS }, question: q, measure: p.measures[0]?.id || null, measure2: p.measures[1]?.id || null, dim: p.dim?.id || null, color: CORD_COLORS[queries.length] });
+    }
+    saveState();
   }
+  selected = queries[0]?.id ?? null;
+  for (const q of queries) await run(q);
+  $('q').value = 'Which beers waste the most at each pub?'; ask($('q').value);
+  if (firstVisit && dashboards[0].cards.length === 0) { queries.forEach(q => { const r = results.get(q.id); r?.insights?.slice(0, 1).forEach(x => pinInsight(x, q, dashboards[0].id)); }); if (selected) renderPad(); }
 })();
-
-// runtime capabilities on the hosted page (absent elsewhere: everything still works)
 if (window.claude?.use) {
   window.claude.use('downloads').then(d => { downloadsCap = d; }).catch(() => {});
   window.claude.use('sample').then(s => { if (!s) return; sampleFn = s; $('agentPick').hidden = false; }).catch(() => {});
 }
-$('agentSel').addEventListener('change', e => { agentKind = e.target.value; toast(agentKind === 'claude' ? 'Claude will analyse the next pour. It asks permission first.' : 'Back to the house analyst'); const l = lines.find(x => x.id === selected); if (l) runLine(l); });
+$('agentSel').addEventListener('change', e => { agentKind = e.target.value; toast(agentKind === 'claude' ? 'Claude will read the next join. It asks permission first.' : 'Back to the house analyst'); const q = queries.find(x => x.id === selected); if (q) run(q); });
 
-/* ---------- public seam for plugging in real data later ---------- */
+/* ---------- public seam for plugging in a real database ---------- */
 window.Switchboard = {
-  /** Replace the mock data. The adapter must implement listSources(), schema(id) and sample(id, {n, days, site, seed}) → {rows, population, total, from, to}. */
-  useAdapter(a) { adapter = a; lines.forEach(l => runLine(l)); },
-  mock: MOCK, sources: SOURCE_META, people: PEOPLE,
-  connect, lines: () => lines, results, dashboards: () => dashboards,
+  /** Replace the mock database. An adapter implements rows(table, {days, site}) and all(table); keep TABLES/EDGES in step with your schema. */
+  useAdapter(a) { adapter = a; queries.forEach(q => run(q)); },
+  tables: TABLES, joins: EDGES, db: DB, parseQuestion, suggestRoutes, buildSQL,
+  queries: () => queries, results, dashboards: () => dashboards, ask,
 };
 </script>
 </body>

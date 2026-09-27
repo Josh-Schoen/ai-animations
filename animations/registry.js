@@ -47,8 +47,8 @@ window.ANIMATIONS = [
   {
     slug: 'patch-and-pint',
     title: 'Patch & Pint',
-    description: 'A gastropub operator switchboard: patch cords between people and data sources, let an agent sample the data and pour out insights, then pin them to dashboards and export them.',
-    tags: ['agents', 'data', 'dashboard'],
+    description: 'A gastropub switchboard of SQL joins: ask a question, filter the tables, and patch a suggested join route. See the SQL, INNER/LEFT match rates and insights, then pin and export them.',
+    tags: ['sql', 'data', 'dashboard'],
     added: '2026-09-27',
   },
 ];

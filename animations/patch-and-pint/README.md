@@ -1,62 +1,62 @@
 # Patch & Pint
 
-A gastropub-style operator switchboard: a digital twin of how people connect to people, to data, and to insights. Plug a cord between two jacks and a house analyst agent samples the data behind that connection and pours out insights. You can adjust them, pin them to dashboards, and download them.
+A gastropub-style operator switchboard for **SQL joins**. Each jack is a table and each faint wire is a join the schema allows. Ask a question in plain words and the exchange narrows the board to the tables that answer it. It suggests pre-connected join routes, patches the one you pick, shows the SQL, and a house analyst pours out the answer.
 
-It runs on **mock data** for three sample pubs (The Crown, The Anchor, The Stag): 90 days across six sources, generated in the page from a fixed seed. Everything is shaped so a real source can replace the mock one later.
+It runs on **mock data**: twelve tables for three sample pubs (The Crown, The Anchor, The Stag) over 90 days, generated in the page from a fixed seed.
 
-## What each connection does
+## Finding the right joins
 
-| Patch | Result |
-| --- | --- |
-| **Person → data source** | The agent samples the source (size, date range and pub are adjustable). It returns 3–5 insights ranked for that person's role. |
-| **Person → person** | An introduction: who they are, the sources they both watch, a suggested agenda, and the headline insight each brings from their own desk. |
-| **Data → data** | A join on date: correlation of the two sources' daily figures, an indexed comparison chart, and the pub where the link is clearest. |
+1. **Ask**: type a question (for example *"which dishes get comped most at each pub?"*) or tap an example. The parser picks out:
+   - up to two **measures**, such as comp rate, revenue, margin, no-show rate, waste, labour hours or rating
+   - a **breakdown**, such as pub, dish, category, channel, beer, style, role, server, segment, daypart, station or weekday
+2. **Narrow**: tables the question doesn't need are dimmed. The **Show** chips filter the board by area (front of house, kitchen & bar, cellar & staff), and **Available joins** toggles the faint wires.
+3. **Pick a route**: up to three pre-connected routes, shortest first. Each route is tagged:
+   - soft joins (on `site_id + date` rather than a key)
+   - fan-out (one-to-many steps that would double count)
+   - the number of joins
 
-Each insight has a headline figure, confidence, a "why it matters" line for the role, and a chart. On every insight you can:
-- switch the chart between bar, line, table or none
-- edit the wording in place
-- remove it
-- pin it to any dashboard, or to a new one
+   Hover a route to preview it on the board, then press **Patch it in**.
+4. **Or patch by hand**: drag a cord between two jacks, or tap one and then another. If there's no direct key, the exchange routes through the tables in between. Tap a single table to see:
+   - its columns, with PK/FK badges
+   - its available joins, as one-click patches
+   - sample rows
 
-On each line you can:
-- re-pour it, or draw a new sample
-- download the sample as CSV
-- download the insights as Markdown or JSON
+## Each patched line
 
-**Dashboards** are separate boards (e.g. *Friday Briefing*, *Kitchen Pass*, *Back Office*):
-- add, rename or delete boards
-- reorder cards, move them between boards, retype charts and edit their text
-- export a board as Markdown, JSON, an insights CSV, or a CSV of the sample rows behind its cards
+- **Joins**: each join has an INNER/LEFT switch, with match rate, orphan count and fan-out, so bad keys and null foreign keys stand out.
+- **SQL**: the generated query, which you can copy or download as `.sql`.
+- **Controls**: change the measure, breakdown, sample size, date range and pub.
+- **Insights**:
+  - the answer, aggregated at the measure's own grain, so fan-out never double counts
+  - a two-measure comparison
+  - join health
+  - a weekday cut
+- **Downloads**: the joined rows as CSV, and the insights (with SQL) as Markdown or JSON.
 
-Lines and dashboards are saved in your browser.
+Pin insights to any **dashboard**. Boards can be renamed, reordered and exported as Markdown, JSON, CSV or one **All SQL** file. Lines and dashboards are saved in your browser.
 
-## Controls
+The mock data has some patterns baked in to find:
+- slow kitchen tickets bring comps and lower review scores
+- web bookings no-show more
+- the Stag's stout goes to waste
+- 15% of orders have no customer, and some tickets have no staff member (LEFT vs INNER matters)
 
-- **Drag** a cord from one jack to another, or **tap** one jack and then another. With a keyboard, Tab to a jack, press Enter, then Enter on a second jack.
-- Click a cord or a line in the Operator's log to open it. Double-click a cord, or use **Hang up**, to disconnect.
+## Plugging in a real database
 
-## Plugging in real data
-
-The page talks to data only through an **adapter** with three calls:
+The schema lives in `TABLES` (columns, primary key, date column, domain) and `EDGES` (foreign keys: `{ many, one, keys: [[fkCol, pkCol]], soft }`). Data comes through an adapter:
 
 ```js
-const MyAdapter = {
-  name: 'Warehouse',
-  async listSources() { /* → [{ id, name, short, desc, cols, rows }] */ },
-  async schema(id)    { /* → ['date', 'site', ...] */ },
-  async sample(id, { n, days, site, seed }) {
-    // e.g. SELECT * FROM <table> WHERE date >= now() - days AND (site = ? OR 'All') ORDER BY random() LIMIT n
-    return { rows, population, total, from, to };
-  },
-};
-Switchboard.useAdapter(MyAdapter);   // every open line re-runs against it
+Switchboard.useAdapter({
+  async tables() { /* table metadata */ },
+  async joins()  { /* FK edges, e.g. from information_schema */ },
+  async rows(table, { days, site }) { /* filtered rows to sample from */ },
+  async all(table) { /* lookup rows for the hash joins */ },
+});
 ```
 
-Keep the column names in `SOURCE_META` (or update them together with the insight recipes in `RECIPES`), and swap `PEOPLE` for a real directory. Each insight recipe is a plain function from sampled rows to insight objects, so adding a metric is a new recipe.
+`Switchboard.parseQuestion`, `suggestRoutes` and `buildSQL` are also exposed, so routes and SQL can be generated without the board.
 
 ## The agent
 
-- **House analyst (built-in):** deterministic recipes per source, ranked by each person's lens, plus data-quality checks (null rates, freshness) for the Data Steward.
-- **Claude (hosted page only):** when the page runs as a Claude artifact, an **Agent** picker appears. Claude gets the built-in findings and up to 60 sampled rows per source, and writes the insights. It runs on the viewer's own Claude usage and asks permission first.
-
-Downloads use the artifact's download prompt when hosted, and a normal browser download otherwise.
+- **House analyst (built-in):** deterministic insights plus join-health checks.
+- **Claude (hosted page only):** when the page runs as a Claude artifact, an **Agent** picker appears. Claude gets the route, the SQL, the built-in findings and a slice of joined rows, and writes the insights. It runs on the viewer's own Claude usage.
