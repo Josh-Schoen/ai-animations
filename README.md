@@ -4,9 +4,11 @@ A gallery of standalone three.js animations about AI systems. Each animation is 
 
 **Play online:** [josh-schoen.github.io/ai-animations](https://josh-schoen.github.io/ai-animations/), served by GitHub Pages from `main`. You can also open any `index.html` straight from disk; it only needs an internet connection for three.js and fonts.
 
+**Read the story:** [Beam Me Up: The Sci-Fi Computer Is Already in Your Pocket](https://josh-schoen.github.io/ai-animations/article/), about how these were built ([source](article/article.md)).
+
 ```bash
 npm run serve        # python3 -m http.server 8000
-# open http://localhost:8000 for the gallery
+# open http://localhost:8000 for the home page
 ```
 
 ## Animations
@@ -24,8 +26,11 @@ npm run serve        # python3 -m http.server 8000
 ## Layout
 
 ```
-index.html                  gallery page (reads animations/registry.js)
+index.html                  home page: featured story and games (reads animations/registry.js)
+assets/                     shared site.css, theme.js (light/dark) and avatar
+article/                    the story: article.md (source) and index.html
 animations/
+  index.html                gallery of every animation
   registry.js               one entry per animation: slug, title, description, tags, added
   <slug>/index.html         the animation, self-contained
   <slug>/thumb.jpg          16:9 gallery thumbnail (optional, ~960×540)

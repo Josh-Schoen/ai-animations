@@ -3,136 +3,147 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AI Animations</title>
+<title>The Accidental Engineer Lab</title>
+<meta name="description" content="Games, tools and experiments built in conversation with an AI agent, by Josh Schoen." />
+<meta property="og:title" content="The Accidental Engineer Lab" />
+<meta property="og:description" content="Games, tools and experiments built in conversation with an AI agent." />
+<meta property="og:image" content="article/media/nightglass-drill.jpg" />
+<link rel="icon" href="assets/avatar.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/site.css" />
+<script src="assets/theme.js"></script>
 <style>
-  :root {
-    --bg: #f3f5f7;
-    --panel: #ffffff;
-    --ink: #121820;
-    --dim: #5b6674;
-    --line: #dde2e8;
-    --accent: #0b7a8c;
-    --thumb: #0a0f14;
-    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --bg: #0b0e12; --panel: #12171d; --ink: #e3e9ef; --dim: #8b97a4; --line: #222a33; --accent: #5fd4e6;
-    }
-  }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #0b0e12; --panel: #12171d; --ink: #e3e9ef; --dim: #8b97a4; --line: #222a33; --accent: #5fd4e6;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); padding-inline: 16px; }
-  .wrap { max-width: 1120px; margin: 0 auto; padding-block: 48px 64px; display: grid; gap: 36px; }
+  .hero { border-bottom: 1px solid var(--color-border); }
+  .hero .container { padding-block: 80px 96px; display: flex; flex-wrap: wrap-reverse; align-items: center; justify-content: space-between; gap: 32px; }
+  .hero .text { flex: 1 1 26rem; }
+  .hero h1 { margin: 16px 0 0; max-width: 42rem; font-size: clamp(36px, 6vw, 48px); line-height: 1.1; font-weight: 700; letter-spacing: -.025em; text-wrap: balance; }
+  .hero .lede { margin: 16px 0 0; max-width: 36rem; font-size: 18px; line-height: 1.65; color: var(--color-text-secondary); }
+  .hero .by { margin: 4px 0 0; font-size: 14px; color: var(--color-text-tertiary); }
+  .hero .actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 16px; }
+  .hero .portrait { width: 160px; height: 160px; border-radius: 999px; flex-shrink: 0; }
+  @media (max-width: 640px) { .hero .container { padding-block: 56px 64px; } .hero .portrait { width: 96px; height: 96px; } }
 
-  header { display: grid; gap: 10px; }
-  .eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--accent); }
-  h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; font-weight: 600; text-wrap: balance; }
-  .lede { margin: 0; max-width: 62ch; color: var(--dim); }
+  .section { border-bottom: 1px solid var(--color-border); }
+  .section .container { padding-block: 64px; }
+  .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .section-head h2 { margin: 0; }
+  .more { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--color-text-secondary); text-decoration: none; }
+  .more:hover { color: var(--color-text-primary); }
 
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .toolbar .count { font: 12px var(--mono); color: var(--dim); margin-right: auto; font-variant-numeric: tabular-nums; }
-  .chip {
-    font: 12px var(--mono); color: var(--dim); background: transparent; border: 1px solid var(--line);
-    border-radius: 999px; padding: 4px 11px; cursor: pointer;
+  .feature {
+    position: relative; margin-top: 24px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); overflow: hidden;
+    border: 1px solid var(--color-border-strong); background: var(--color-surface-alt); border-radius: 8px; color: inherit; text-decoration: none;
+    transition: border-color .15s;
   }
-  .chip:hover { color: var(--ink); }
-  .chip[aria-pressed="true"] { color: var(--bg); background: var(--ink); border-color: var(--ink); }
-  .chip:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .feature:hover { border-color: var(--color-accent); }
+  .feature:hover h3 { color: var(--color-accent); }
+  .feature .media { position: relative; min-height: 240px; background: var(--color-surface); border-right: 1px solid var(--color-border); }
+  .feature .media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .feature .body { padding: 28px 28px 32px; display: grid; gap: 10px; align-content: center; }
+  .feature h3 { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; transition: color .15s; }
+  .feature p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--color-text-secondary); }
+  .feature .badges { margin-top: 6px; }
+  @media (max-width: 760px) {
+    .feature { grid-template-columns: 1fr; }
+    .feature .media { aspect-ratio: 16 / 9; min-height: 0; border-right: 0; border-bottom: 1px solid var(--color-border); }
+  }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-  .card {
-    display: grid; grid-template-rows: auto 1fr; background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; overflow: hidden; color: inherit; text-decoration: none; transition: border-color .2s, transform .2s;
-  }
-  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-  .thumb { aspect-ratio: 16 / 9; max-width: 100%; background: var(--thumb); position: relative; overflow: hidden; }
-  .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-  .thumb .ph {
-    position: absolute; inset: 0; display: grid; place-items: center; font: 12px var(--mono); letter-spacing: .2em; color: #5fd4e6;
-    background: radial-gradient(circle at 50% 60%, rgba(95,212,230,.18), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(95,212,230,.06) 0 1px, transparent 1px 24px),
-      repeating-linear-gradient(90deg, rgba(95,212,230,.06) 0 1px, transparent 1px 24px);
-  }
-  .body { padding: 16px 18px 18px; display: grid; gap: 8px; align-content: start; }
-  .body h2 { margin: 0; font-size: 18px; font-weight: 600; text-wrap: balance; }
-  .body p { margin: 0; color: var(--dim); font-size: 14px; }
-  .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
-  .tag { font: 11px var(--mono); color: var(--dim); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
-  .date { font: 11px var(--mono); color: var(--dim); margin-left: auto; font-variant-numeric: tabular-nums; }
-
-  .empty { color: var(--dim); font: 13px var(--mono); padding: 24px 0; }
-  footer { border-top: 1px solid var(--line); padding-top: 20px; color: var(--dim); font-size: 13px; display: grid; gap: 6px; }
-  code { font: 12.5px var(--mono); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--ink); overflow-wrap: anywhere; }
-  @media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
+  .facts { margin: 24px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .facts li { padding: 20px; border: 1px solid var(--color-border); border-radius: 8px; }
+  .facts b { display: block; font: 500 14px var(--font-mono); color: var(--color-text-primary); }
+  .facts span { display: block; margin-top: 6px; font-size: 14px; line-height: 1.65; color: var(--color-text-secondary); }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="eyebrow">ai-animations</div>
-    <h1>Animations of AI systems at work</h1>
-    <p class="lede">Standalone three.js scenes that show how agents, evals and models behave while they run. Each one lives in its own folder and opens on its own.</p>
-  </header>
+<header class="site-header"><div class="container">
+  <a class="brand" href="./" aria-current="page"><img src="assets/avatar.png" alt="" width="32" height="32" /><span>the accidental engineer<span class="sub"> / lab</span></span></a>
+  <nav class="site-nav" aria-label="Site">
+    <a href="animations/">Games</a>
+    <a href="article/">Story</a>
+    <a class="opt" href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a>
+    <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+  </nav>
+</div></header>
 
-  <main>
-    <div class="toolbar" role="toolbar" aria-label="Filter by tag">
-      <span class="count" id="count"></span>
+<main>
+  <section class="hero"><div class="container">
+    <div class="text">
+      <p class="eyebrow">a design-engineering lab</p>
+      <h1>The Accidental Engineer Lab</h1>
+      <p class="lede">Games, tools and experiments built in conversation with an AI agent. Each one started as a sentence or two, and each one runs right in your browser.</p>
+      <p class="by">by Josh Schoen</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="article/">Read the story <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        <a class="btn btn-secondary" href="animations/">Play the games</a>
+      </div>
     </div>
-    <div class="grid" id="grid" style="margin-top:16px"></div>
-    <p class="empty" id="empty" hidden>No animations match this tag.</p>
-  </main>
+    <img class="portrait" src="assets/avatar.png" alt="Josh Schoen" width="160" height="160" />
+  </div></section>
 
-  <footer>
-    <div>Add one with <code>npm run new -- my-slug "My Title"</code>, then run <code>npm run check</code>.</div>
-    <div>Serve locally with <code>npm run serve</code> and open <code>http://localhost:8000</code>.</div>
-  </footer>
-</div>
+  <section class="section"><div class="container">
+    <div class="section-head"><h2 class="eyebrow">Featured story</h2></div>
+    <a class="feature" href="article/">
+      <div class="media"><img src="article/media/nightglass-drill.jpg" alt="Nightglass drilling into an agent's tool-call step" loading="lazy" /></div>
+      <div class="body">
+        <div class="meta-line"><time datetime="2026-09-27">Sep 27, 2026</time><span aria-hidden="true">&middot;</span><span>13 min read</span></div>
+        <h3>Beam Me Up: The Sci-Fi Computer Is Already in Your Pocket</h3>
+        <p>Seven games and tools, one conversation, built from a phone. What one-shot builds and self-testing agents mean for the kid who grew up on Star Wars and Star Trek, and for UX.</p>
+        <div class="badges"><span class="badge-tag">ai</span><span class="badge-tag">ux</span><span class="badge-tag">agents</span></div>
+      </div>
+    </a>
+  </div></section>
+
+  <section class="section"><div class="container">
+    <div class="section-head"><h2 class="eyebrow">Games &amp; tools</h2><a class="more" id="allLink" href="animations/">See all <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a></div>
+    <div class="grid" id="grid"></div>
+  </div></section>
+
+  <section class="section" style="border-bottom:0"><div class="container">
+    <div class="section-head"><h2 class="eyebrow">How it's made</h2></div>
+    <ul class="facts">
+      <li><b>One conversation</b><span>Every project began as a plain-English request in a single chat with Claude Code, typed from a phone.</span></li>
+      <li><b>Self-tested</b><span>The agent played each game in a headless browser, read the errors and fixed what broke before I saw it.</span></li>
+      <li><b>One file each</b><span>No build step and no server. Every page opens on its own, straight from GitHub Pages or from disk.</span></li>
+    </ul>
+  </div></section>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <div class="top">
+    <div>
+      <p class="name">the accidental engineer</p>
+      <p class="blurb">Notes from the intersection of design, engineering, and accidentally becoming the person who fixes the build.</p>
+    </div>
+    <nav aria-label="Footer">
+      <div><span>Navigate</span><a href="./">Home</a><a href="animations/">Games</a><a href="article/">Story</a></div>
+      <div><span>Meta</span><a href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a></div>
+    </nav>
+  </div>
+  <div class="bottom"><span>&copy; 2026 Josh Schoen</span><span>Built in conversation with Claude Code. No build step.</span></div>
+</div></footer>
 
 <script src="animations/registry.js"></script>
 <script>
-  const list = (window.ANIMATIONS || []).slice().sort((a, b) => (b.added || '').localeCompare(a.added || ''));
-  const grid = document.getElementById('grid');
-  const toolbar = document.querySelector('.toolbar');
+  // Featured picks first, then the newest; the gallery at animations/ lists everything.
+  const FEATURED = ['agent-eval-nightglass', 'patch-and-pint', 'micro-rally'];
+  const all = window.ANIMATIONS || [];
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  let active = 'all';
-
-  const tags = ['all', ...new Set(list.flatMap(a => a.tags || []))];
-  if (tags.length > 2) {
-    tags.forEach(t => {
-      const b = document.createElement('button');
-      b.className = 'chip'; b.textContent = t; b.setAttribute('aria-pressed', t === active);
-      b.onclick = () => { active = t; toolbar.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); };
-      toolbar.appendChild(b);
-    });
-  }
-
-  function render() {
-    const shown = list.filter(a => active === 'all' || (a.tags || []).includes(active));
-    document.getElementById('count').textContent = `${shown.length} of ${list.length} animation${list.length === 1 ? '' : 's'}`;
-    document.getElementById('empty').hidden = shown.length > 0;
-    grid.innerHTML = shown.map(a => `
-      <a class="card" href="animations/${esc(a.slug)}/">
-        <div class="thumb">
-          <div class="ph">${esc(a.slug)}</div>
-          <img src="animations/${esc(a.slug)}/thumb.jpg" alt="" loading="lazy" onerror="this.remove()" />
-        </div>
-        <div class="body">
-          <h2>${esc(a.title)}</h2>
-          <p>${esc(a.description)}</p>
-          <div class="meta">${(a.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('')}<span class="date">${esc(a.added || '')}</span></div>
-        </div>
-      </a>`).join('');
-  }
-  render();
+  const fmt = d => { if (!d) return ''; const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); };
+  const picks = FEATURED.map(s => all.find(a => a.slug === s)).filter(Boolean);
+  for (const a of all.slice().sort((x, y) => (y.added || '').localeCompare(x.added || ''))) if (picks.length < 3 && !picks.includes(a)) picks.push(a);
+  document.getElementById('allLink').firstChild.textContent = `See all ${all.length} `;
+  document.getElementById('grid').innerHTML = picks.map(a => `
+    <a class="card" href="animations/${esc(a.slug)}/">
+      <div class="thumb"><div class="ph">${esc(a.slug)}</div><img src="animations/${esc(a.slug)}/thumb.jpg" alt="" loading="lazy" onerror="this.remove()" /></div>
+      <div class="body">
+        <div class="meta-line"><time datetime="${esc(a.added || '')}">${esc(fmt(a.added))}</time></div>
+        <h3>${esc(a.title)}</h3>
+        <p>${esc(a.description)}</p>
+        <div class="badges">${(a.tags || []).map(t => `<span class="badge-tag">${esc(t)}</span>`).join('')}</div>
+      </div>
+    </a>`).join('');
 </script>
 </body>
 </html>
