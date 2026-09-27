@@ -34,6 +34,7 @@ Tap the agent to see its full configuration, overall totals, suite history, and 
 
 - Drag to orbit, scroll or pinch to zoom.
 - `Space`: pause/resume. Buttons set speed (1×–8×), reset, and toggle fullscreen (`F`).
+- `⤢ EXPAND` on the live telemetry panel (or `L`) opens it full screen: the last 800 events, filters for pass, fail, retry and system events, and a jump-to-live button. Tap any step line to drill into that step.
 - `1`–`8` drill into a step, `A` into the agent, `←`/`→` cycle steps, `Esc` closes the dossier.
 - URL params: `?speed=4` sets the starting speed, `?runs=16` sets runs per suite (8–96).
 
