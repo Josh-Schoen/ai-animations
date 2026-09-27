@@ -16,6 +16,8 @@ npm run serve        # python3 -m http.server 8000
 | [`animations/breach`](animations/breach/) | A whale-jumping game against an AI agent: faster tapping means higher breaches and bigger splashes, first to 500 points wins. |
 | [`animations/vector-ko`](animations/vector-ko/) | A green wireframe boxing game with the controls across the top: read the tells, dodge, counter for stars, and land the star uppercut. |
 | [`animations/micro-rally`](animations/micro-rally/) | An RC-style toy truck racer with four tracks, item boxes (missiles, nitro, oil), AI rivals and a championship. |
+| [`animations/kinetic-fury`](animations/kinetic-fury/) | A 2.5D arcade fighter: four fierce original fighters with elemental specials and supers, best-of-three against a CPU. |
+| [`animations/patch-and-pint`](animations/patch-and-pint/) | A gastropub switchboard of SQL joins: ask a question, filter the tables to pre-connected join routes, patch one in, and get the SQL, join health and insights on dashboards. |
 
 ## Layout
 

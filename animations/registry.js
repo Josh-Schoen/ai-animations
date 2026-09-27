@@ -37,4 +37,18 @@ window.ANIMATIONS = [
     tags: ['three.js', 'game', 'racing'],
     added: '2026-09-27',
   },
+  {
+    slug: 'kinetic-fury',
+    title: 'Kinetic Fury',
+    description: 'A 2.5D arcade fighter with four fierce original fighters, elemental specials and screen-shaking supers, fought best-of-three against a CPU that blocks, anti-airs and punishes.',
+    tags: ['three.js', 'game', 'fighting'],
+    added: '2026-09-27',
+  },
+  {
+    slug: 'patch-and-pint',
+    title: 'Patch & Pint',
+    description: 'A gastropub switchboard of SQL joins: ask a question, filter the tables, and patch a suggested join route. See the SQL, INNER/LEFT match rates and insights, then pin and export them.',
+    tags: ['sql', 'data', 'dashboard'],
+    added: '2026-09-27',
+  },
 ];
