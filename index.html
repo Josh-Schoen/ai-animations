@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
 <style>
   :root {
+    color-scheme: dark;
     --bg: #020806;
     --ink: #b8fff0;
     --dim: #3f8f7c;
@@ -352,7 +353,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 1.5, 0);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-controls.autoRotate = true;
+controls.autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 controls.autoRotateSpeed = 0.35;
 controls.minDistance = 12;
 controls.maxDistance = 80;
