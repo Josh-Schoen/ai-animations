@@ -1,0 +1,11 @@
+{
+  "name": "ai-animations",
+  "private": true,
+  "description": "A gallery of standalone three.js animations about AI systems.",
+  "type": "module",
+  "scripts": {
+    "new": "node scripts/new-animation.mjs",
+    "check": "node scripts/check.mjs",
+    "serve": "python3 -m http.server 8000"
+  }
+}

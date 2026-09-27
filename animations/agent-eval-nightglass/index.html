@@ -1,0 +1,1565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nightglass Agent Evals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #020806;
+    --ink: #b8fff0;
+    --dim: #3f8f7c;
+    --faint: #0f3a31;
+    --line: rgba(0, 255, 200, 0.22);
+    --prime: #00ffc8;
+    --run: #00e5ff;
+    --pass: #28ff8a;
+    --fail: #ff2d55;
+    --warn: #ffb020;
+    --panel: rgba(2, 18, 15, 0.72);
+    --mono: "Share Tech Mono", ui-monospace, Menlo, Consolas, monospace;
+    --display: "Orbitron", "Share Tech Mono", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--mono); }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+
+  /* CRT scanlines + vignette */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    background:
+      repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.18) 2px 3px),
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.65) 100%);
+  }
+
+  /* ---------- 3D node labels ---------- */
+  .nl {
+    font-size: 10px; line-height: 1.35; letter-spacing: 0.04em;
+    background: rgba(1, 14, 12, 0.78); border: 1px solid rgba(0,255,200,0.25);
+    padding: 5px 7px 6px; min-width: 150px; color: #8fdcca;
+    transform: translateY(-50%);
+    transition: border-color .25s, box-shadow .25s, color .25s, background .25s;
+    position: relative;
+  }
+  .nl::before, .nl::after {
+    content: ""; position: absolute; width: 7px; height: 7px; border: 1px solid currentColor; opacity: .8;
+  }
+  .nl::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .nl::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .nl .hd { display: flex; gap: 6px; align-items: baseline; font-family: var(--display); font-weight: 700; font-size: 10px; color: var(--ink); margin-bottom: 3px; white-space: nowrap; }
+  .nl .hd .ix { color: var(--dim); }
+  .nl .hd .st { margin-left: auto; font-family: var(--mono); font-weight: 400; font-size: 9px; padding: 0 4px; border: 1px solid currentColor; color: var(--dim); }
+  .nl .rw { display: flex; justify-content: space-between; gap: 10px; white-space: nowrap; }
+  .nl .rw b { font-weight: 400; color: var(--dim); text-transform: uppercase; }
+  .nl .bar { height: 2px; background: var(--faint); margin-top: 4px; position: relative; overflow: hidden; }
+  .nl .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--prime); transition: width .3s; }
+
+  .nl[data-state="running"] { border-color: var(--run); color: var(--run); box-shadow: 0 0 14px rgba(0,229,255,.55), inset 0 0 12px rgba(0,229,255,.18); }
+  .nl[data-state="running"] .st { color: var(--run); animation: blink .5s steps(2) infinite; }
+  .nl[data-state="pass"] { border-color: var(--pass); color: var(--pass); box-shadow: 0 0 12px rgba(40,255,138,.45); }
+  .nl[data-state="pass"] .st { color: var(--pass); }
+  .nl[data-state="fail"] { border-color: var(--fail); color: var(--fail); box-shadow: 0 0 18px rgba(255,45,85,.7), inset 0 0 14px rgba(255,45,85,.25); background: rgba(40,2,10,.8); }
+  .nl[data-state="fail"] .st { color: var(--fail); }
+  .nl[data-state="warn"] { border-color: var(--warn); color: var(--warn); box-shadow: 0 0 14px rgba(255,176,32,.55); }
+  .nl[data-state="warn"] .st { color: var(--warn); animation: blink .35s steps(2) infinite; }
+  .nl[data-state="skip"] { opacity: .45; }
+
+  .nl.agent { min-width: 300px; font-size: 10.5px; border-color: rgba(0,255,200,.5); color: var(--prime); box-shadow: 0 0 16px rgba(0,255,200,.25); }
+  .nl.agent .hd { font-size: 13px; letter-spacing: .12em; color: var(--prime); }
+  .nl.agent .sub { color: var(--dim); font-size: 9px; letter-spacing: .2em; margin-bottom: 4px; }
+  .nl.agent .rw span { color: var(--ink); }
+  .nl.agent .cfg { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  .nl.agent .tools { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 3px; }
+  .nl.agent .tools span { border: 1px solid var(--faint); padding: 0 3px; color: #7fd9c4; font-size: 9px; }
+  .nl.agent .live { margin-top: 5px; padding-top: 4px; border-top: 1px dashed var(--faint); color: var(--ink); }
+  .nl.agent[data-state="pass"] { border-color: var(--pass); color: var(--pass); box-shadow: 0 0 22px rgba(40,255,138,.55); }
+  .nl.agent[data-state="fail"] { border-color: var(--fail); color: var(--fail); box-shadow: 0 0 22px rgba(255,45,85,.65); }
+
+  @keyframes blink { 50% { opacity: .25; } }
+
+  /* ---------- HUD ---------- */
+  .hud { position: fixed; z-index: 10; pointer-events: none; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); padding: 10px 12px; pointer-events: auto;
+    backdrop-filter: blur(3px); position: relative;
+  }
+  .panel::before {
+    content: attr(data-tag); position: absolute; top: -8px; left: 10px; font-size: 9px; letter-spacing: .25em;
+    background: var(--bg); padding: 0 5px; color: var(--dim);
+  }
+  #log, #intel { position: fixed; }
+  #brand { top: 16px; left: 16px; max-width: calc(100vw - 32px); }
+  #brand .back { pointer-events: auto; display: inline-block; margin-bottom: 6px; font-size: 10px; letter-spacing: .25em; color: var(--dim); text-decoration: none; }
+  #brand .back:hover, #brand .back:focus-visible { color: var(--prime); outline: none; }
+  #brand h1 { margin: 0; font-family: var(--display); font-weight: 900; font-size: 18px; letter-spacing: .22em; color: var(--prime); text-shadow: 0 0 12px rgba(0,255,200,.6); }
+  #brand .meta { font-size: 10px; color: var(--dim); letter-spacing: .18em; margin-top: 4px; }
+  #brand .meta em { font-style: normal; color: var(--fail); border: 1px solid var(--fail); padding: 0 4px; margin-right: 6px; }
+  #brand .clock { color: var(--ink); }
+
+  #stats { top: 16px; right: 16px; width: 312px; display: flex; flex-direction: column; gap: 14px; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .kpi .l { font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+  .kpi .v { font-family: var(--display); font-size: 17px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .kpi.pass .v { color: var(--pass); } .kpi.fail .v { color: var(--fail); }
+  .acc { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 10px; }
+  .acc .big { font-family: var(--display); font-weight: 900; font-size: 40px; line-height: 1; color: var(--prime); text-shadow: 0 0 18px rgba(0,255,200,.55); font-variant-numeric: tabular-nums; }
+  .acc .big small { font-size: 18px; }
+  .acc .side { text-align: right; font-size: 10px; color: var(--dim); letter-spacing: .12em; line-height: 1.6; }
+  .acc .side span { color: var(--ink); }
+  .verdict { font-size: 9px; letter-spacing: .2em; padding: 1px 5px; border: 1px solid currentColor; }
+  .verdict.ok { color: var(--pass); } .verdict.bad { color: var(--fail); }
+  #spark { width: 100%; height: 54px; display: block; margin-top: 8px; }
+
+  .runhead { display: flex; justify-content: space-between; align-items: baseline; font-size: 10px; letter-spacing: .15em; color: var(--dim); }
+  .runhead .n { font-family: var(--display); font-size: 16px; color: var(--ink); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+  #grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; margin-top: 8px; }
+  #grid i { aspect-ratio: 1; border: 1px solid var(--faint); background: rgba(0,255,200,.03); }
+  #grid i.pass { background: var(--pass); border-color: var(--pass); box-shadow: 0 0 6px rgba(40,255,138,.6); }
+  #grid i.fail { background: var(--fail); border-color: var(--fail); box-shadow: 0 0 6px rgba(255,45,85,.7); }
+  #grid i.cur { border-color: var(--run); animation: blink .4s steps(2) infinite; background: rgba(0,229,255,.35); }
+  .suitebar { height: 3px; background: var(--faint); margin-top: 8px; position: relative; }
+  .suitebar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--run); box-shadow: 0 0 8px var(--run); transition: width .3s; }
+  #suites { margin-top: 8px; font-size: 10px; line-height: 1.6; }
+  #suites div { display: flex; justify-content: space-between; color: var(--dim); }
+  #suites div span:last-child { color: var(--ink); }
+
+  #log { left: 16px; bottom: 16px; width: min(470px, calc(100vw - 32px)); height: 196px; font-size: 11px; line-height: 1.5; }
+  #logLines { height: 100%; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+  #log .ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #6fc7b2; }
+  #log .ln .t { color: var(--dim); }
+  #log .ln.pass .s { color: var(--pass); } #log .ln.fail .s { color: var(--fail); } #log .ln.warn .s { color: var(--warn); } #log .ln.run .s { color: var(--run); }
+  #log .ln.sys { color: var(--prime); }
+  #log .ln[data-step] { cursor: pointer; }
+  #log .ln[data-step]:hover { color: var(--ink); background: rgba(0,255,200,.06); }
+  #logMax {
+    position: absolute; top: -9px; right: 10px; z-index: 1; font-family: var(--mono); font-size: 9px; letter-spacing: .2em;
+    color: var(--prime); background: var(--bg); border: 1px solid var(--line); padding: 1px 6px; cursor: pointer;
+  }
+  #logMax:hover, #logMax:focus-visible { border-color: var(--prime); outline: none; box-shadow: 0 0 8px rgba(0,255,200,.4); }
+  #logBar { display: none; }
+
+  /* expanded telemetry: full-viewport intercept console */
+  body.logmax #log {
+    inset: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+    width: auto; height: auto; z-index: 40; display: flex !important; flex-direction: column;
+    background: rgba(1, 12, 10, 0.94); font-size: 12px; line-height: 1.6; padding: 0;
+  }
+  body.logmax #logMax { display: none; }
+  body.logmax #log::before { display: none; }
+  body.logmax #logBar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line);
+  }
+  #logBar h2 { margin: 0 12px 0 0; font-family: var(--display); font-size: 15px; letter-spacing: .18em; color: var(--prime); text-shadow: 0 0 10px rgba(0,255,200,.5); }
+  #logBar .grow { flex: 1; }
+  #logBar button {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .15em; color: var(--ink); background: rgba(0,30,24,.6);
+    border: 1px solid var(--faint); padding: 4px 8px; cursor: pointer;
+  }
+  #logBar button:hover, #logBar button:focus-visible { border-color: var(--prime); outline: none; }
+  #logBar button.on { border-color: var(--prime); color: var(--prime); box-shadow: inset 0 0 0 1px var(--prime); }
+  #logBar button[data-f="pass"] b { color: var(--pass); } #logBar button[data-f="fail"] b { color: var(--fail); }
+  #logBar button[data-f="warn"] b { color: var(--warn); } #logBar button[data-f="sys"] b { color: var(--prime); }
+  #logBar b { font-weight: 400; font-variant-numeric: tabular-nums; }
+  #logBar #logClose { color: var(--prime); border-color: var(--line); }
+  body.logmax #logLines { flex: 1; min-height: 0; overflow-y: auto; justify-content: flex-start; padding: 8px 14px; scrollbar-width: thin; scrollbar-color: var(--faint) transparent; }
+  body.logmax #log .ln { white-space: normal; overflow: visible; padding: 1px 0; border-bottom: 1px solid rgba(0,255,200,.04); }
+  body.logmax #log .ln .t { display: inline-block; min-width: 96px; }
+  #logFoot { display: none; }
+  body.logmax #logFoot { display: flex; justify-content: space-between; gap: 12px; padding: 7px 14px; border-top: 1px solid var(--line); font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+  #logLive { display: none; }
+  body.logmax.scrolled #logLive { display: inline-block; }
+  @media (max-width: 700px) {
+    body.logmax #log { inset: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) 0; font-size: 11px; }
+    body.logmax #log .ln .t { min-width: 0; }
+    #logBar h2 { font-size: 12px; width: 100%; }
+  }
+  #log .ln:last-child::after { content: "█"; color: var(--prime); animation: blink .8s steps(2) infinite; margin-left: 3px; }
+
+  #intel { right: 16px; bottom: 16px; width: 312px; font-size: 10px; }
+  #intel .row { display: grid; grid-template-columns: 18px 92px 1fr 40px 30px; gap: 6px; align-items: center; padding: 2px 0; transition: color .2s; }
+  #intel .row .ix { color: var(--dim); }
+  #intel .row .b { height: 5px; background: var(--faint); position: relative; }
+  #intel .row .b i { position: absolute; inset: 0 auto 0 0; background: var(--pass); width: 0; transition: width .3s, background .3s; }
+  #intel .row .p { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+  #intel .row .f { text-align: right; color: var(--fail); font-variant-numeric: tabular-nums; }
+  #intel .row.running { color: var(--run); } #intel .row.fail { color: var(--fail); }
+  #intel .hdr { display: grid; grid-template-columns: 18px 92px 1fr 40px 30px; gap: 6px; color: var(--dim); font-size: 8.5px; letter-spacing: .15em; margin-bottom: 4px; }
+  #intel .hdr span:nth-child(n+4) { text-align: right; }
+
+  #controls { left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 6px; }
+  #controls button {
+    pointer-events: auto; font-family: var(--mono); font-size: 11px; letter-spacing: .15em; color: var(--prime);
+    background: rgba(0, 30, 24, .75); border: 1px solid var(--line); padding: 6px 10px; cursor: pointer;
+  }
+  #controls button:hover { border-color: var(--prime); box-shadow: 0 0 8px rgba(0,255,200,.4); }
+  #controls button.on { background: var(--prime); color: #001a14; }
+  #controls button:focus-visible { outline: 1px solid var(--prime); outline-offset: 2px; }
+
+  #stamp {
+    position: fixed; top: 22%; left: 50%; z-index: 20; pointer-events: none;
+    transform: translate(-50%, -50%) rotate(-6deg) scale(1.4); opacity: 0;
+    font-family: var(--display); font-weight: 900; font-size: 30px; letter-spacing: .3em; padding: 8px 18px;
+    border: 3px double currentColor; text-align: center; white-space: nowrap;
+  }
+  #stamp small { display: block; font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: .3em; margin-top: 3px; }
+  #stamp.pass { color: var(--pass); text-shadow: 0 0 16px rgba(40,255,138,.8); }
+  #stamp.fail { color: var(--fail); text-shadow: 0 0 16px rgba(255,45,85,.9); }
+  #stamp.show { animation: stamp 1.3s ease-out forwards; }
+  @keyframes stamp {
+    0% { opacity: 0; transform: translate(-50%,-50%) rotate(-6deg) scale(1.6); }
+    12% { opacity: 1; transform: translate(-50%,-50%) rotate(-6deg) scale(1); }
+    75% { opacity: .95; }
+    100% { opacity: 0; transform: translate(-50%,-50%) rotate(-6deg) scale(1); }
+  }
+
+  #banner {
+    position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; pointer-events: none;
+    opacity: 0; transition: opacity .4s; background: radial-gradient(ellipse at center, rgba(0,20,16,.8), rgba(0,0,0,0) 70%);
+  }
+  #banner.show { opacity: 1; }
+  #banner .box { text-align: center; border-top: 1px solid var(--prime); border-bottom: 1px solid var(--prime); padding: 18px 40px; }
+  #banner .k { font-size: 11px; letter-spacing: .5em; color: var(--dim); }
+  #banner .t { font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: .2em; color: var(--prime); text-shadow: 0 0 20px rgba(0,255,200,.7); margin: 6px 0; }
+  #banner .s { font-size: 13px; letter-spacing: .25em; color: var(--ink); }
+
+  /* tappable nodes */
+  .nl { pointer-events: auto; cursor: pointer; }
+  .nl:hover { border-color: var(--prime); }
+  .nl.focus { border-color: var(--prime); box-shadow: 0 0 0 1px var(--prime), 0 0 18px rgba(0,255,200,.5); }
+  #stage canvas.hot { cursor: pointer; }
+
+  #hint {
+    position: fixed; left: 50%; bottom: 58px; transform: translateX(-50%); z-index: 10; pointer-events: none;
+    font-size: 10px; letter-spacing: .3em; color: var(--dim); white-space: nowrap; transition: opacity .6s;
+  }
+  #hint b { color: var(--prime); font-weight: 400; }
+  body.focused #hint, body.seen #hint { opacity: 0; }
+
+  /* ---------- drill-in dossier ---------- */
+  #dossier {
+    position: fixed; z-index: 15; top: 16px; right: 16px; bottom: 16px; width: 372px;
+    display: flex; flex-direction: column; padding: 0; opacity: 0; transform: translateX(24px);
+    pointer-events: none; transition: opacity .35s, transform .35s;
+  }
+  body.focused #dossier { opacity: 1; transform: none; pointer-events: auto; }
+  body.focused #stats, body.focused #intel { opacity: 0; pointer-events: none; }
+  #stats, #intel { transition: opacity .35s; }
+  #dossier .dh { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px; border-bottom: 1px solid var(--line); }
+  #dossier .dh .ttl { flex: 1; min-width: 0; }
+  #dossier .dh .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; letter-spacing: .3em; color: var(--dim); }
+  #dossier .dh h2 { margin: 2px 0 0; font-family: var(--display); font-size: 17px; letter-spacing: .12em; color: var(--prime); text-shadow: 0 0 10px rgba(0,255,200,.5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #dossier .dh button {
+    font-family: var(--mono); font-size: 13px; color: var(--prime); background: rgba(0,30,24,.75);
+    border: 1px solid var(--line); width: 30px; height: 30px; cursor: pointer; flex: none;
+  }
+  #dossier .dh button:hover, #dossier .dh button:focus-visible { border-color: var(--prime); outline: none; box-shadow: 0 0 8px rgba(0,255,200,.4); }
+  #dossier .db { flex: 1; overflow-y: auto; padding: 4px 12px 14px; scrollbar-width: thin; scrollbar-color: var(--faint) transparent; }
+  #dossier section { padding: 10px 0; border-bottom: 1px dashed var(--faint); }
+  #dossier section:last-child { border-bottom: none; }
+  #dossier h3 { margin: 0 0 7px; font-size: 9px; font-weight: 400; letter-spacing: .3em; color: var(--dim); }
+  #dossier .kv { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 3px; font-size: 11px; }
+  #dossier .kv b { font-weight: 400; color: var(--dim); text-transform: uppercase; font-size: 10px; letter-spacing: .08em; }
+  #dossier .kv span { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+  #dossier .chip { display: inline-block; font-size: 10px; letter-spacing: .15em; padding: 1px 6px; border: 1px solid currentColor; color: var(--dim); }
+  #dossier .chip.running { color: var(--run); } #dossier .chip.pass { color: var(--pass); }
+  #dossier .chip.fail { color: var(--fail); } #dossier .chip.warn { color: var(--warn); }
+  #dossier .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  #dossier .tile .l { font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+  #dossier .tile .v { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  #dossier .tile.pass .v { color: var(--pass); } #dossier .tile.fail .v { color: var(--fail); } #dossier .tile.warn .v { color: var(--warn); }
+  #dossier .rate { display: flex; align-items: baseline; justify-content: space-between; margin-top: 10px; }
+  #dossier .rate .big { font-family: var(--display); font-weight: 900; font-size: 32px; color: var(--prime); text-shadow: 0 0 14px rgba(0,255,200,.5); font-variant-numeric: tabular-nums; }
+  #dossier .rate .big small { font-size: 15px; }
+  #dossier .rate .exp { font-size: 10px; color: var(--dim); text-align: right; line-height: 1.6; }
+  #dossier .rate .exp span { color: var(--ink); }
+  #dossier .hist { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+  #dossier .hist i { aspect-ratio: 1; border: 1px solid var(--faint); }
+  #dossier .hist i.pass { background: var(--pass); border-color: var(--pass); }
+  #dossier .hist i.fail { background: var(--fail); border-color: var(--fail); box-shadow: 0 0 5px rgba(255,45,85,.7); }
+  #dossier .hist i.retry { outline: 1px solid var(--warn); outline-offset: 1px; }
+  #dossier .legend { display: flex; gap: 12px; margin-top: 6px; font-size: 9px; color: var(--dim); letter-spacing: .1em; }
+  #dossier canvas { width: 100%; height: 70px; display: block; }
+  #dossier .modes div { display: grid; grid-template-columns: 1fr 70px 22px; gap: 8px; align-items: center; font-size: 10.5px; padding: 2px 0; }
+  #dossier .modes .mb { height: 4px; background: var(--faint); position: relative; }
+  #dossier .modes .mb i { position: absolute; inset: 0 auto 0 0; background: var(--fail); }
+  #dossier .modes .c { text-align: right; color: var(--fail); font-variant-numeric: tabular-nums; }
+  #dossier .modes .none { display: block; color: var(--dim); }
+  #dossier .modes .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #dossier .event { font-size: 10.5px; color: #8fdcca; line-height: 1.5; }
+  #dossier .tools { display: flex; flex-wrap: wrap; gap: 4px; }
+  #dossier .tools span { border: 1px solid var(--faint); padding: 1px 5px; font-size: 10px; color: #7fd9c4; }
+  #dossier .jump { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  #dossier .jump button {
+    font-family: var(--mono); font-size: 9.5px; color: var(--ink); background: rgba(0,30,24,.6); border: 1px solid var(--faint);
+    padding: 4px 2px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .04em;
+  }
+  #dossier .jump button:hover, #dossier .jump button:focus-visible { border-color: var(--prime); outline: none; }
+  #dossier .jump button.fail { color: var(--fail); } #dossier .jump button.running { color: var(--run); }
+  #dossier .foot { padding: 8px 12px; border-top: 1px solid var(--line); font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+
+  @media (max-width: 900px) {
+    #intel { display: none; }
+    #log { height: 120px; font-size: 10px; }
+  }
+  @media (max-width: 700px) {
+    #dossier { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 58%; transform: translateY(24px); }
+    body.focused #log { display: none; }
+    #dossier .foot { display: none; }
+    #hint { bottom: auto; top: 140px; }
+    #stats { top: auto; bottom: 150px; right: 16px; left: 16px; width: auto; }
+    #stats .panel:nth-child(2) { display: none; }
+    #spark { display: none; }
+    #log { height: 84px; }
+    #controls { bottom: auto; top: 104px; left: 16px; right: 16px; transform: none; justify-content: center; flex-wrap: wrap; gap: 4px; }
+    #controls button { padding: 6px 8px; font-size: 10px; letter-spacing: .08em; }
+    #controls .lg { display: none; }
+    .nl .rw { display: none; }
+    .nl .bar { display: none; }
+    .nl { min-width: 0; }
+    .nl.agent .rw, .nl.agent .tools { display: none; }
+    #brand h1 { font-size: 14px; }
+    #stamp { font-size: 20px; }
+    #banner .t { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="labels"></div>
+
+<div class="hud" id="brand">
+  <a class="back" href="../../">← ALL ANIMATIONS</a>
+  <h1>OPERATION NIGHTGLASS</h1>
+  <div class="meta"><em>TOP SECRET</em>AGENT EVAL HARNESS // FIELD UNIT SPECTRE-7 // <span class="clock" id="clock">T+00:00.000</span></div>
+</div>
+
+<div class="hud" id="stats">
+  <div class="panel" data-tag="OVERALL // ALL SUITES">
+    <div class="kpis">
+      <div class="kpi"><div class="l">TOTAL RUNS</div><div class="v" id="kTotal">0</div></div>
+      <div class="kpi pass"><div class="l">CLEARED</div><div class="v" id="kPass">0</div></div>
+      <div class="kpi fail"><div class="l">COMPROMISED</div><div class="v" id="kFail">0</div></div>
+    </div>
+    <div class="acc">
+      <div class="big" id="kAcc">--.-<small>%</small></div>
+      <div class="side">
+        OVERALL ACCURACY<br />
+        THRESHOLD <span>80.0%</span><br />
+        <span class="verdict" id="kVerdict">AWAITING</span>
+      </div>
+    </div>
+    <canvas id="spark"></canvas>
+  </div>
+  <div class="panel" data-tag="CURRENT SUITE // RUN OF RUNS">
+    <div class="runhead">
+      <div>SUITE <span class="n" id="sName">S-01</span></div>
+      <div>RUN <span class="n" id="sRun">000 / 048</span></div>
+    </div>
+    <div class="runhead" style="margin-top:4px">
+      <div>SUITE ACC <span style="color:var(--ink)" id="sAcc">--.-%</span></div>
+      <div><span style="color:var(--pass)" id="sPass">0</span> / <span style="color:var(--fail)" id="sFail">0</span></div>
+    </div>
+    <div id="grid"></div>
+    <div class="suitebar"><i id="sBar"></i></div>
+    <div id="suites"></div>
+  </div>
+</div>
+
+<div class="hud panel" id="log" data-tag="INTERCEPT // LIVE TELEMETRY">
+  <button id="logMax" title="Expand telemetry (L)" aria-label="Expand live telemetry to full screen">⤢ EXPAND</button>
+  <div id="logBar">
+    <h2>LIVE TELEMETRY</h2>
+    <button data-f="all" class="on">ALL <b id="cAll">0</b></button>
+    <button data-f="pass">PASS <b id="cPass">0</b></button>
+    <button data-f="fail">FAIL <b id="cFail">0</b></button>
+    <button data-f="warn">RETRY <b id="cWarn">0</b></button>
+    <button data-f="sys">SYSTEM <b id="cSys">0</b></button>
+    <span class="grow"></span>
+    <button id="logLive">▼ JUMP TO LIVE</button>
+    <button id="logClose" aria-label="Close telemetry">✕ CLOSE</button>
+  </div>
+  <div id="logLines"></div>
+  <div id="logFoot"><span id="logInfo"></span><span>TAP A STEP LINE TO DRILL IN · ESC CLOSE</span></div>
+</div>
+
+<div class="hud panel" id="intel" data-tag="STEP INTEL // PASS RATE">
+  <div class="hdr"><span>#</span><span>STEP</span><span></span><span>PASS</span><span>FAIL</span></div>
+  <div id="intelRows"></div>
+</div>
+
+<div class="hud" id="controls">
+  <button id="bPause" title="Space">❚❚ PAUSE</button>
+  <button data-speed="1">1×</button>
+  <button data-speed="2" class="on">2×</button>
+  <button data-speed="4">4×</button>
+  <button data-speed="8">8×</button>
+  <button id="bReset">RESET</button>
+  <button id="bFull" title="F">⛶<span class="lg"> FULLSCREEN</span></button>
+</div>
+<div id="hint"><b>TAP A NODE</b> TO DRILL IN · DRAG TO ORBIT · PINCH OR SCROLL TO ZOOM</div>
+<aside class="hud panel" id="dossier" data-tag="DOSSIER // DRILL-IN" aria-live="polite">
+  <div class="dh">
+    <button data-act="prev" title="Previous step (←)" aria-label="Previous step">‹</button>
+    <div class="ttl"><div class="k" id="dK">STEP 01 / 08</div><h2 id="dT">—</h2></div>
+    <button data-act="next" title="Next step (→)" aria-label="Next step">›</button>
+    <button data-act="close" title="Close (Esc)" aria-label="Close dossier">✕</button>
+  </div>
+  <div class="db" id="dB"></div>
+  <div class="foot">ESC CLOSE · ← → CYCLE STEPS · A AGENT</div>
+</aside>
+
+<div id="stamp"></div>
+<div id="banner"><div class="box"><div class="k" id="bnK">DEBRIEF</div><div class="t" id="bnT">SUITE COMPLETE</div><div class="s" id="bnS"></div></div></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* =====================================================================
+   Eval definition: agent configuration, suites and test steps
+   ===================================================================== */
+const SUITE_SIZE = Math.min(96, Math.max(8, +new URLSearchParams(location.search).get('runs') || 48));
+const THRESHOLD = 0.80;
+
+// Each suite re-runs the same test plan against a different agent config.
+// `mod` scales failure probability (>1 = more reliable).
+const CONFIGS = [
+  { suite: 'S-01', temperature: 0.2, top_p: 0.90, prompt: 'v3.1', retries: 1, mod: 1.00 },
+  { suite: 'S-02', temperature: 0.8, top_p: 0.95, prompt: 'v3.2', retries: 1, mod: 0.75 },
+  { suite: 'S-03', temperature: 0.0, top_p: 0.85, prompt: 'v4.0', retries: 2, mod: 1.45 },
+  { suite: 'S-04', temperature: 0.4, top_p: 0.90, prompt: 'v4.1', retries: 2, mod: 1.20 },
+];
+const AGENT = {
+  callsign: 'SPECTRE-7',
+  model: 'claude-sonnet-5',
+  max_steps: 12,
+  memory: 'episodic / 32k',
+  tools: ['vector_search', 'http_api', 'py_sandbox', 'guardrail', 'llm_judge'],
+};
+
+const STEPS = [
+  { key: 'INGEST_TASK',  kind: 'parser',  tool: 'schema_v2',     assert: 'input ⊨ schema',     timeout: 1500, lat: 0.45, p: 0.995 },
+  { key: 'PLAN',         kind: 'planner', tool: '—',             assert: 'plan.depth ≤ 6',      timeout: 4000, lat: 0.90, p: 0.975 },
+  { key: 'RETRIEVE',     kind: 'tool',    tool: 'vector_search', assert: 'recall@5 ≥ 0.80',     timeout: 2500, lat: 0.70, p: 0.965 },
+  { key: 'TOOL_CALL',    kind: 'tool',    tool: 'http_api',      assert: '2xx ∧ args valid',    timeout: 3000, lat: 0.80, p: 0.950, flaky: true },
+  { key: 'CODE_EXEC',    kind: 'sandbox', tool: 'py_sandbox',    assert: 'exit == 0',           timeout: 5000, lat: 1.00, p: 0.955, flaky: true },
+  { key: 'REASON',       kind: 'llm',     tool: '—',             assert: 'no contradiction',    timeout: 6000, lat: 1.10, p: 0.970 },
+  { key: 'SAFETY_GUARD', kind: 'policy',  tool: 'guardrail',     assert: 'no PII / jailbreak',  timeout: 1200, lat: 0.40, p: 0.990 },
+  { key: 'FINAL_ANSWER', kind: 'grader',  tool: 'llm_judge',     assert: 'judge ≥ 0.80',        timeout: 3000, lat: 0.80, p: 0.950 },
+];
+const FAIL_REASONS = {
+  INGEST_TASK: ['schema mismatch: missing field "goal"'],
+  PLAN: ['plan depth 9 > 6', 'circular dependency in plan'],
+  RETRIEVE: ['recall@5 = 0.60', 'empty result set'],
+  TOOL_CALL: ['HTTP 503 upstream', 'arg "id" type mismatch', 'timeout 3000ms'],
+  CODE_EXEC: ['exit 1: KeyError', 'sandbox OOM', 'timeout 5000ms'],
+  REASON: ['contradiction detected', 'hallucinated citation'],
+  SAFETY_GUARD: ['PII leak: email address', 'prompt injection followed'],
+  FINAL_ANSWER: ['judge 0.62 < 0.80', 'format violation', 'judge 0.71 < 0.80'],
+};
+
+/* =====================================================================
+   Renderer / scene
+   ===================================================================== */
+const COLORS = {
+  idle: new THREE.Color(0x0d6b5a),
+  agent: new THREE.Color(0x00ffc8),
+  running: new THREE.Color(0x00e5ff),
+  pass: new THREE.Color(0x28ff8a),
+  fail: new THREE.Color(0xff2d55),
+  warn: new THREE.Color(0xffb020),
+  edge: new THREE.Color(0x12a585),
+};
+const stateColor = s => COLORS[s] || COLORS.idle;
+
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x020806, 1);
+stage.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer({ element: document.getElementById('labels') });
+labelRenderer.setSize(innerWidth, innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x020806, 0.012);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
+camera.position.set(0, 20, 38);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.5, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+controls.autoRotateSpeed = 0.35;
+controls.minDistance = 12;
+controls.maxDistance = 80;
+controls.maxPolarAngle = Math.PI * 0.49;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.85, 0.45, 0.22);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+function fitCamera() {
+  const narrow = innerWidth / innerHeight < 0.9;
+  camera.position.setLength(narrow ? 62 : 42);
+}
+fitCamera();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+  sizeSpark();
+});
+
+/* ---------- helpers ---------- */
+function glowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.25, 'rgba(255,255,255,0.8)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const GLOW = glowTexture();
+const additive = (opts) => ({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, ...opts });
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const pad = (n, w = 3) => String(n).padStart(w, '0');
+
+/* =====================================================================
+   Environment: floor grid, radar sweep, dust, outer tick ring
+   ===================================================================== */
+const FLOOR_Y = -4;
+{
+  const grid = new THREE.GridHelper(160, 80, 0x0c5a4a, 0x06261f);
+  grid.position.y = FLOOR_Y;
+  grid.material.transparent = true; grid.material.opacity = 0.55;
+  scene.add(grid);
+}
+const radarMat = new THREE.ShaderMaterial({
+  ...additive({}),
+  uniforms: { uTime: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader: `
+    uniform float uTime; varying vec2 vUv;
+    void main(){
+      vec2 p = vUv*2.-1.; float r = length(p); if(r>1.) discard;
+      float a = atan(p.y,p.x);
+      float sweep = mod(a + uTime*0.9, 6.2831853);
+      float trail = exp(-sweep*3.0) * (1.-r*0.5);
+      float d = abs(fract(r*5.+.5)-.5)/5.;
+      float rings = smoothstep(0.004,0.0,d)*0.35;
+      float cross = (smoothstep(0.003,0.,abs(p.x)) + smoothstep(0.003,0.,abs(p.y)))*0.18;
+      float edge = smoothstep(0.012,0.,abs(r-0.995))*0.8;
+      float v = trail*0.3 + rings*0.6 + cross + edge*0.6;
+      gl_FragColor = vec4(vec3(0.0,1.0,0.78)*v, v);
+    }`,
+});
+const radar = new THREE.Mesh(new THREE.PlaneGeometry(56, 56), radarMat);
+radar.rotation.x = -Math.PI / 2; radar.position.y = FLOOR_Y + 0.02;
+scene.add(radar);
+
+const dust = (() => {
+  const n = 1400, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    pos[i * 3] = rand(-70, 70); pos[i * 3 + 1] = rand(FLOOR_Y, 30); pos[i * 3 + 2] = rand(-70, 70);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.PointsMaterial({ ...additive({}), size: 0.12, color: 0x00ffc8, opacity: 0.35, map: GLOW });
+  const pts = new THREE.Points(g, m); scene.add(pts); return pts;
+})();
+
+const tickRing = (() => {
+  const grp = new THREE.Group();
+  const pts = [];
+  const R = 24;
+  for (let i = 0; i < 180; i++) {
+    const a = i / 180 * Math.PI * 2, len = i % 15 === 0 ? 1.4 : i % 5 === 0 ? 0.7 : 0.3;
+    pts.push(new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R), new THREE.Vector3(Math.cos(a) * (R + len), 0, Math.sin(a) * (R + len)));
+  }
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  grp.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ ...additive({}), color: 0x00ffc8, opacity: 0.35 })));
+  const circ = new THREE.Mesh(new THREE.RingGeometry(R - 0.04, R + 0.04, 256), new THREE.MeshBasicMaterial({ ...additive({}), color: 0x00ffc8, opacity: 0.4, side: THREE.DoubleSide }));
+  circ.rotation.x = -Math.PI / 2; grp.add(circ);
+  grp.position.y = FLOOR_Y + 0.05;
+  scene.add(grp); return grp;
+})();
+
+/* =====================================================================
+   Agent node (largest node, center)
+   ===================================================================== */
+const AGENT_POS = new THREE.Vector3(0, 2, 0);
+const agent = (() => {
+  const g = new THREE.Group(); g.position.copy(AGENT_POS);
+  const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(3.1, 1), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.agent, wireframe: true, opacity: 0.55 }));
+  const shell2 = new THREE.Mesh(new THREE.IcosahedronGeometry(2.3, 0), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.agent, wireframe: true, opacity: 0.8 }));
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(1.15, 0), new THREE.MeshBasicMaterial({ color: COLORS.agent }));
+  const haze = new THREE.Sprite(new THREE.SpriteMaterial({ ...additive({}), map: GLOW, color: COLORS.agent, opacity: 0.3 }));
+  haze.scale.setScalar(7);
+  g.add(shell, shell2, core, haze);
+  const rings = [];
+  [[4.2, 0.03, [Math.PI / 2, 0, 0]], [4.8, 0.02, [Math.PI / 2.6, 0.5, 0]], [5.4, 0.025, [Math.PI / 1.7, -0.4, 0.3]]].forEach(([r, t, rot]) => {
+    const m = new THREE.Mesh(new THREE.TorusGeometry(r, t, 8, 160), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.agent, opacity: 0.7 }));
+    m.rotation.set(...rot); g.add(m); rings.push(m);
+    // a bead riding each ring
+    const bead = new THREE.Sprite(new THREE.SpriteMaterial({ ...additive({}), map: GLOW, color: 0xffffff }));
+    bead.scale.setScalar(0.7); bead.position.set(r, 0, 0); m.add(bead);
+  });
+  // floor reticle beneath agent
+  const ret = new THREE.Mesh(new THREE.RingGeometry(5.6, 5.75, 6), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.agent, opacity: 0.6, side: THREE.DoubleSide }));
+  ret.rotation.x = -Math.PI / 2; ret.position.y = FLOOR_Y - AGENT_POS.y + 0.06; g.add(ret);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, AGENT_POS.y - FLOOR_Y, 6), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.agent, opacity: 0.5 }));
+  beam.position.y = (FLOOR_Y - AGENT_POS.y) / 2; g.add(beam);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(3.6, 12, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  hit.userData.pick = 'agent'; g.add(hit);
+  scene.add(g);
+  return { hit, group: g, shell, shell2, core, haze, rings, ret, color: COLORS.agent.clone(), target: COLORS.agent.clone(), flash: 0 };
+})();
+
+// Agent configuration label
+const agentEl = document.createElement('div');
+agentEl.className = 'nl agent';
+const agentLabel = new CSS2DObject(agentEl);
+agentLabel.position.set(0, 7.6, 0);
+agent.group.add(agentLabel);
+agentEl.addEventListener('click', () => focusOn('agent'));
+
+function renderAgentLabel(liveText = 'STANDBY') {
+  const c = CONFIGS[state.suiteIdx % CONFIGS.length];
+  agentEl.innerHTML = `
+    <div class="hd">◉ AGENT ${AGENT.callsign}</div>
+    <div class="sub">SUBJECT UNDER TEST // CONFIG ${c.suite}</div>
+    <div class="cfg">
+      <div class="rw"><b>model</b><span>${AGENT.model}</span></div>
+      <div class="rw"><b>temp</b><span>${c.temperature.toFixed(1)}</span></div>
+      <div class="rw"><b>top_p</b><span>${c.top_p.toFixed(2)}</span></div>
+      <div class="rw"><b>max_steps</b><span>${AGENT.max_steps}</span></div>
+      <div class="rw"><b>retries</b><span>${c.retries}</span></div>
+      <div class="rw"><b>memory</b><span>${AGENT.memory}</span></div>
+      <div class="rw"><b>prompt</b><span>${c.prompt}</span></div>
+      <div class="rw"><b>hash</b><span>#${hash(c.prompt)}</span></div>
+    </div>
+    <div class="tools">${AGENT.tools.map(t => `<span>${t}</span>`).join('')}</div>
+    <div class="live" id="agentLive">${liveText}</div>`;
+}
+function hash(s) { let h = 2166136261; for (const ch of s + AGENT.callsign) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (h >>> 0).toString(16).slice(0, 7); }
+function setAgentLive(text, st = '') {
+  const el = document.getElementById('agentLive'); if (el) el.textContent = text;
+  agentEl.dataset.state = st;
+}
+
+/* =====================================================================
+   Step nodes + metadata labels
+   ===================================================================== */
+const N = STEPS.length;
+const STEP_R = 16;
+const nodes = STEPS.map((s, i) => {
+  const a = Math.PI + (i / N) * Math.PI * 2;
+  const pos = new THREE.Vector3(Math.cos(a) * STEP_R, 1.2 + Math.sin(i * 1.7) * 2.2, Math.sin(a) * STEP_R);
+  const g = new THREE.Group(); g.position.copy(pos);
+
+  const hexGeo = new THREE.CylinderGeometry(1.1, 1.1, 0.7, 6);
+  const fill = new THREE.Mesh(hexGeo, new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.idle, opacity: 0.18 }));
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(hexGeo), new THREE.LineBasicMaterial({ ...additive({}), color: COLORS.idle, opacity: 1 }));
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), new THREE.MeshBasicMaterial({ color: COLORS.idle }));
+  core.position.y = 0.95;
+  const halo = new THREE.Mesh(new THREE.RingGeometry(1.55, 1.66, 6), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.idle, opacity: 0.8, side: THREE.DoubleSide }));
+  halo.rotation.x = -Math.PI / 2;
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ ...additive({}), map: GLOW, color: COLORS.idle, opacity: 0.35 }));
+  glow.scale.setScalar(4.5);
+  // targeting beam (visible while running)
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.2, 28, 12, 1, true), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.running, opacity: 0, side: THREE.DoubleSide }));
+  beam.position.y = 14;
+  // drop line to floor
+  const drop = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, pos.y - FLOOR_Y, 4), new THREE.MeshBasicMaterial({ ...additive({}), color: COLORS.idle, opacity: 0.5 }));
+  drop.position.y = -(pos.y - FLOOR_Y) / 2;
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(2.2, 10, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  hit.userData.pick = i;
+  g.add(fill, edges, core, halo, glow, beam, drop, hit);
+  scene.add(g);
+
+  const el = document.createElement('div');
+  el.className = 'nl'; el.dataset.state = 'idle';
+  el.innerHTML = `
+    <div class="hd"><span class="ix">${pad(i + 1, 2)}</span>${s.key}<span class="st">IDLE</span></div>
+    <div class="rw"><b>kind</b><span>${s.kind}</span></div>
+    ${s.tool !== '—' ? `<div class="rw"><b>tool</b><span>${s.tool}</span></div>` : ''}
+    <div class="rw"><b>assert</b><span>${s.assert}</span></div>
+    <div class="rw"><b>timeout</b><span>${s.timeout}ms</span></div>
+    <div class="rw"><b>last</b><span class="lt">—</span></div>
+    <div class="rw"><b>pass rate</b><span class="pr">—</span></div>
+    <div class="bar"><i></i></div>`;
+  const label = new CSS2DObject(el);
+  label.position.set(0, 3.6, 0);
+  g.add(label);
+  el.addEventListener('click', () => focusOn(i));
+
+  return {
+    step: s, i, pos, group: g, fill, edges, core, halo, glow, beam, drop, el,
+    stEl: el.querySelector('.st'), ltEl: el.querySelector('.lt'), prEl: el.querySelector('.pr'), barEl: el.querySelector('.bar i'),
+    state: 'idle', color: COLORS.idle.clone(), target: COLORS.idle.clone(), pulse: 0,
+    runs: 0, passes: 0, fails: 0, retries: 0, lat: [], hist: [], reasons: {}, lastEvent: 'No activity yet.',
+  };
+});
+
+/* =====================================================================
+   Edges (agent→step spokes, step→step pipeline) with flowing activity shader
+   ===================================================================== */
+const edgeVS = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`;
+const edgeFS = `
+  uniform vec3 uBase; uniform vec3 uHot; uniform float uHeat; uniform float uTime; uniform float uDir; uniform float uDensity;
+  varying vec2 vUv;
+  void main(){
+    float flow = smoothstep(0.35, 0.5, fract(vUv.x*uDensity - uTime*2.4*uDir)) * (1.0 - smoothstep(0.5, 0.95, fract(vUv.x*uDensity - uTime*2.4*uDir)));
+    vec3 col = mix(uBase, uHot, clamp(uHeat,0.,1.));
+    float a = 0.3 + uHeat*(0.25 + 0.9*flow);
+    gl_FragColor = vec4(col*(0.7 + uHeat*1.6*(0.4+flow)), a);
+  }`;
+function makeEdge(curve, radius, density) {
+  const mat = new THREE.ShaderMaterial({
+    ...additive({}),
+    uniforms: { uBase: { value: COLORS.edge.clone() }, uHot: { value: COLORS.running.clone() }, uHeat: { value: 0 }, uTime: { value: 0 }, uDir: { value: 1 }, uDensity: { value: density } },
+    vertexShader: edgeVS, fragmentShader: edgeFS,
+  });
+  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 80, radius, 6, false), mat);
+  scene.add(mesh);
+  return { curve, mesh, mat, heat: 0, hold: 0 };
+}
+const spokes = nodes.map(n => {
+  const dir = n.pos.clone().sub(AGENT_POS).normalize();
+  const a = AGENT_POS.clone().addScaledVector(dir, 3.2);
+  const b = n.pos.clone().addScaledVector(dir, -1.3);
+  const mid = a.clone().lerp(b, 0.5); mid.y += 3.2;
+  return makeEdge(new THREE.QuadraticBezierCurve3(a, mid, b), 0.06, 14);
+});
+const pipes = nodes.slice(0, -1).map((n, i) => {
+  const m = nodes[i + 1];
+  const a = n.pos.clone(), b = m.pos.clone();
+  const mid = a.clone().lerp(b, 0.5);
+  const out = new THREE.Vector3(mid.x, 0, mid.z).normalize().multiplyScalar(3.5);
+  mid.add(out); mid.y += 2.4;
+  const dirA = mid.clone().sub(a).normalize(), dirB = mid.clone().sub(b).normalize();
+  return makeEdge(new THREE.QuadraticBezierCurve3(a.addScaledVector(dirA, 1.3), mid, b.addScaledVector(dirB, 1.3)), 0.07, 8);
+});
+const allEdges = [...spokes, ...pipes];
+
+/* =====================================================================
+   Packets (data moving along edges), pings, run-history orbit
+   ===================================================================== */
+const spritePool = [];
+function getSprite() {
+  const s = spritePool.pop() || new THREE.Sprite(new THREE.SpriteMaterial({ ...additive({}), map: GLOW }));
+  s.visible = true; scene.add(s); return s;
+}
+function freeSprite(s) { s.visible = false; scene.remove(s); spritePool.push(s); }
+
+const packets = [];
+function sendPacket(edge, { color, reverse = false, dur = 0.55, size = 1.1, trail = 4, onArrive = null, heat = 1 }) {
+  const sprites = [];
+  for (let k = 0; k <= trail; k++) {
+    const s = getSprite();
+    s.material.color.copy(color);
+    s.material.opacity = 1 - k / (trail + 1);
+    s.scale.setScalar(size * (1 - k * 0.14));
+    sprites.push(s);
+  }
+  packets.push({ edge, reverse, t0: sim.time, dur, sprites, onArrive, heat, color });
+  edge.hot = color; edge.mat.uniforms.uDir.value = reverse ? -1 : 1;
+}
+const tmpV = new THREE.Vector3();
+function updatePackets() {
+  for (let i = packets.length - 1; i >= 0; i--) {
+    const p = packets[i];
+    const u = (sim.time - p.t0) / p.dur;
+    p.sprites.forEach((s, k) => {
+      const uk = THREE.MathUtils.clamp(u - k * 0.045, 0, 1);
+      p.edge.curve.getPoint(p.reverse ? 1 - uk : uk, s.position);
+    });
+    p.edge.heat = Math.max(p.edge.heat, p.heat);
+    p.edge.mat.uniforms.uHot.value.lerp(p.color, 0.25);
+    if (u >= 1 + p.sprites.length * 0.045) {
+      p.sprites.forEach(freeSprite);
+      packets.splice(i, 1);
+      p.onArrive && p.onArrive();
+    }
+  }
+}
+
+const pings = [];
+const pingGeo = new THREE.RingGeometry(0.9, 1.0, 48);
+function ping(pos, color, scale = 5, dur = 0.9) {
+  const m = new THREE.Mesh(pingGeo, new THREE.MeshBasicMaterial({ ...additive({}), color, side: THREE.DoubleSide }));
+  m.position.copy(pos); m.rotation.x = -Math.PI / 2;
+  scene.add(m);
+  pings.push({ m, t0: sim.time, dur, scale });
+}
+function updatePings() {
+  for (let i = pings.length - 1; i >= 0; i--) {
+    const p = pings[i], u = (sim.time - p.t0) / p.dur;
+    if (u >= 1) { scene.remove(p.m); p.m.material.dispose(); pings.splice(i, 1); continue; }
+    p.m.scale.setScalar(1 + u * p.scale);
+    p.m.material.opacity = (1 - u) * 0.9;
+  }
+}
+
+// Completed runs orbit the agent as a ring of beads (the current suite's "run of runs")
+const orbit = new THREE.Group(); orbit.position.copy(AGENT_POS); orbit.rotation.x = 0.18; scene.add(orbit);
+const ORBIT_R = 8.2;
+{
+  const guide = new THREE.Mesh(new THREE.TorusGeometry(ORBIT_R, 0.012, 4, 200), new THREE.MeshBasicMaterial({ ...additive({}), color: 0x00ffc8, opacity: 0.35 }));
+  guide.rotation.x = Math.PI / 2; orbit.add(guide);
+}
+const orbitBeads = [];
+function addOrbitBead(idx, ok) {
+  const a = (idx / SUITE_SIZE) * Math.PI * 2;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ ...additive({}), map: GLOW, color: ok ? COLORS.pass : COLORS.fail }));
+  s.position.set(Math.cos(a) * ORBIT_R, 0, Math.sin(a) * ORBIT_R);
+  s.scale.setScalar(0.01); s.userData.born = sim.time;
+  orbit.add(s); orbitBeads.push(s);
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshBasicMaterial({ color: ok ? COLORS.pass : COLORS.fail }));
+  s.add(core); // sprite children scale with it; keeps a crisp centre
+}
+function clearOrbit() { orbitBeads.forEach(b => { orbit.remove(b); b.material.dispose(); }); orbitBeads.length = 0; }
+
+/* =====================================================================
+   Simulation (scheduled on a sim clock so speed/pause apply uniformly)
+   ===================================================================== */
+const params = new URLSearchParams(location.search);
+const sim = { time: 0, speed: [1, 2, 4, 8].includes(+params.get('speed')) ? +params.get('speed') : 2, paused: false, events: [] };
+function after(delay, fn) { sim.events.push({ t: sim.time + delay, fn, epoch: state.epoch }); }
+
+const state = {
+  epoch: 0, suiteIdx: 0, suiteRun: 0, suitePass: 0, suiteFail: 0,
+  total: 0, pass: 0, fail: 0, accHistory: [], suites: [], run: null,
+};
+
+function effectivePass(step) {
+  const c = CONFIGS[state.suiteIdx % CONFIGS.length];
+  return 1 - (1 - step.p) / c.mod;
+}
+
+function setStepState(n, st, statusText) {
+  n.state = st;
+  n.target.copy(stateColor(st === 'skip' ? 'idle' : st));
+  n.el.dataset.state = st;
+  n.stEl.textContent = statusText || st.toUpperCase();
+  n.pulse = 1;
+  const row = intelRows[n.i];
+  row.el.className = 'row ' + (st === 'running' || st === 'warn' ? 'running' : st === 'fail' ? 'fail' : '');
+  if (focus.id === n.i) refreshDossier();
+}
+
+function startRun() {
+  if (state.suiteRun >= SUITE_SIZE) return finishSuite();
+  const run = state.run = { id: state.total + 1, idx: state.suiteRun, t0: sim.time, streamEdge: null, streamAcc: 0 };
+  nodes.forEach(n => setStepState(n, 'idle', 'QUEUED'));
+  markGridCurrent(run.idx);
+  agent.target.copy(COLORS.running);
+  setAgentLive(`▶ RUN #${pad(run.id, 4)} EXECUTING · STEP 01/${pad(N, 2)}`);
+  log(`RUN #${pad(run.id, 4)} ▸ DISPATCH ${CONFIGS[state.suiteIdx % CONFIGS.length].suite} [${pad(run.idx + 1)}/${pad(SUITE_SIZE)}]`, 'run', '◆ START');
+  ping(AGENT_POS.clone().setY(FLOOR_Y + 0.1), COLORS.running, 7, 1.2);
+  sendPacket(spokes[0], { color: COLORS.running, dur: 0.6, onArrive: () => beginStep(0) });
+}
+
+function beginStep(i) {
+  const run = state.run, n = nodes[i], s = n.step;
+  setStepState(n, 'running', 'EXEC');
+  setAgentLive(`▶ RUN #${pad(run.id, 4)} · STEP ${pad(i + 1, 2)}/${pad(N, 2)} ${s.key}`);
+  run.streamEdge = spokes[i]; run.streamAcc = 0;
+  const latency = s.lat * rand(0.6, 1.5);
+  const ok = Math.random() < effectivePass(s);
+  const retry = s.flaky && Math.random() < 0.22;
+  if (retry) {
+    after(latency * 0.55, () => {
+      n.retries++; run.retried = true;
+      n.lastEvent = `Run #${pad(run.id, 4)}: transient fault, retrying.`;
+      setStepState(n, 'warn', 'RETRY');
+      log(`RUN #${pad(run.id, 4)} ▸ ${pad(i + 1, 2)} ${s.key} transient fault → retry 1/${CONFIGS[state.suiteIdx % CONFIGS.length].retries}`, 'warn', '↻ RETRY', i);
+      after(latency * 0.7, () => endStep(i, ok, latency * 1.25));
+    });
+  } else {
+    after(latency, () => endStep(i, ok, latency));
+  }
+}
+
+function endStep(i, ok, latency) {
+  const run = state.run, n = nodes[i], s = n.step;
+  run.streamEdge = null;
+  const ms = Math.round(latency * 1000 * rand(0.9, 1.1));
+  n.runs++; ok ? n.passes++ : n.fails++;
+  setStepState(n, ok ? 'pass' : 'fail', ok ? 'PASS' : 'FAIL');
+  n.ltEl.textContent = `${ok ? '✓' : '✗'} ${ms}ms`;
+  updateStepRate(n);
+  ping(n.pos, ok ? COLORS.pass : COLORS.fail, ok ? 3.5 : 6, ok ? 0.7 : 1.1);
+  if (!ok) ping(n.pos, COLORS.fail, 9, 1.6);
+  const why = ok ? '' : pick(FAIL_REASONS[s.key]);
+  const reason = ok ? '' : ` — ${why}`;
+  n.lat.push(ms); if (n.lat.length > 200) n.lat.shift();
+  n.hist.push({ ok, id: run.id, retry: !!run.retried }); if (n.hist.length > 32) n.hist.shift();
+  run.retried = false;
+  if (!ok) n.reasons[why] = (n.reasons[why] || 0) + 1;
+  n.lastEvent = ok ? `Run #${pad(run.id, 4)}: passed in ${ms}ms.` : `Run #${pad(run.id, 4)}: failed after ${ms}ms. ${why}.`;
+  refreshDossier();
+  log(`RUN #${pad(run.id, 4)} ▸ ${pad(i + 1, 2)} ${s.key} ${ms}ms${reason}`, ok ? 'pass' : 'fail', ok ? '✓ PASS' : '✗ FAIL', i);
+
+  const last = i === N - 1;
+  // telemetry report back to the agent along the spoke
+  sendPacket(spokes[i], {
+    color: ok ? COLORS.pass : COLORS.fail, reverse: true, dur: 0.5, size: ok ? 1 : 1.5,
+    onArrive: (!ok || last) ? () => finishRun(ok, i) : null,
+  });
+  if (ok && !last) {
+    sendPacket(pipes[i], { color: COLORS.running, dur: 0.55, size: 1.2, onArrive: () => beginStep(i + 1) });
+  }
+  if (!ok) for (let k = i + 1; k < N; k++) setStepState(nodes[k], 'skip', 'SKIP');
+}
+
+function finishRun(ok, failIdx) {
+  const run = state.run;
+  state.total++; state.suiteRun++;
+  if (ok) { state.pass++; state.suitePass++; } else { state.fail++; state.suiteFail++; }
+  state.accHistory.push(state.pass / state.total);
+  if (state.accHistory.length > 400) state.accHistory.shift();
+  agent.target.copy(ok ? COLORS.pass : COLORS.fail); agent.flash = 1;
+  setAgentLive(ok ? `✓ RUN #${pad(run.id, 4)} CLEARED · ${N}/${N} STEPS` : `✗ RUN #${pad(run.id, 4)} COMPROMISED @ ${nodes[failIdx].step.key}`, ok ? 'pass' : 'fail');
+  ping(AGENT_POS, ok ? COLORS.pass : COLORS.fail, 8, 1.2);
+  addOrbitBead(run.idx, ok);
+  setGridCell(run.idx, ok);
+  stamp(ok, run, failIdx);
+  log(`RUN #${pad(run.id, 4)} ▸ ${ok ? 'CLEARED' : 'COMPROMISED'} in ${(sim.time - run.t0).toFixed(1)}s · overall ${(100 * state.pass / state.total).toFixed(1)}%`, ok ? 'pass' : 'fail', '■ RESULT', ok ? undefined : failIdx);
+  updateHud();
+  refreshDossier();
+  after(1.3, () => { agent.target.copy(COLORS.agent); startRun(); });
+}
+
+function finishSuite() {
+  const c = CONFIGS[state.suiteIdx % CONFIGS.length];
+  const acc = state.suitePass / SUITE_SIZE;
+  state.suites.push({ name: c.suite, cfg: `T=${c.temperature.toFixed(1)} ${c.prompt}`, acc });
+  log(`SUITE ${c.suite} COMPLETE ▸ ${state.suitePass}/${SUITE_SIZE} cleared · accuracy ${(acc * 100).toFixed(1)}%`, 'sys', '');
+  document.getElementById('bnK').textContent = `DEBRIEF // ${c.suite}`;
+  document.getElementById('bnT').textContent = acc >= THRESHOLD ? 'SUITE CLEARED' : 'SUITE BELOW THRESHOLD';
+  document.getElementById('bnS').textContent = `${state.suitePass}/${SUITE_SIZE} RUNS · ACCURACY ${(acc * 100).toFixed(1)}% · OVERALL ${(100 * state.pass / state.total).toFixed(1)}%`;
+  document.getElementById('banner').classList.add('show');
+  setAgentLive(`■ SUITE ${c.suite} COMPLETE · ${(acc * 100).toFixed(1)}%`, acc >= THRESHOLD ? 'pass' : 'fail');
+  renderSuites();
+  after(3.2, () => {
+    document.getElementById('banner').classList.remove('show');
+    state.suiteIdx++; state.suiteRun = 0; state.suitePass = 0; state.suiteFail = 0;
+    clearOrbit(); buildGrid();
+    renderAgentLabel('RECONFIGURING…');
+    const nc = CONFIGS[state.suiteIdx % CONFIGS.length];
+    log(`AGENT ${AGENT.callsign} reconfigured → ${nc.suite} temp=${nc.temperature} top_p=${nc.top_p} prompt=${nc.prompt}`, 'sys', '');
+    ping(AGENT_POS, COLORS.agent, 14, 1.8);
+    updateHud();
+    after(1.2, startRun);
+  });
+}
+
+/* =====================================================================
+   HUD
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const gridEl = $('grid');
+function buildGrid() { gridEl.innerHTML = '<i></i>'.repeat(SUITE_SIZE); }
+function markGridCurrent(i) { gridEl.children[i]?.classList.add('cur'); }
+function setGridCell(i, ok) { const c = gridEl.children[i]; if (c) c.className = ok ? 'pass' : 'fail'; }
+
+const intelRows = STEPS.map((s, i) => {
+  const el = document.createElement('div'); el.className = 'row';
+  el.innerHTML = `<span class="ix">${pad(i + 1, 2)}</span><span>${s.key}</span><span class="b"><i></i></span><span class="p">—</span><span class="f">0</span>`;
+  $('intelRows').appendChild(el);
+  return { el, bar: el.querySelector('.b i'), p: el.querySelector('.p'), f: el.querySelector('.f') };
+});
+function updateStepRate(n) {
+  const r = n.runs ? n.passes / n.runs : 0;
+  const pct = (r * 100).toFixed(1) + '%';
+  n.prEl.textContent = `${pct} (${n.passes}/${n.runs})`;
+  n.barEl.style.width = (r * 100) + '%';
+  n.barEl.style.background = r >= 0.95 ? 'var(--pass)' : r >= 0.9 ? 'var(--warn)' : 'var(--fail)';
+  const row = intelRows[n.i];
+  row.bar.style.width = (r * 100) + '%';
+  row.bar.style.background = n.barEl.style.background;
+  row.p.textContent = pct; row.f.textContent = n.fails;
+}
+
+function updateHud() {
+  $('kTotal').textContent = state.total;
+  $('kPass').textContent = state.pass;
+  $('kFail').textContent = state.fail;
+  const acc = state.total ? state.pass / state.total : null;
+  $('kAcc').innerHTML = acc === null ? '--.-<small>%</small>' : `${(acc * 100).toFixed(1)}<small>%</small>`;
+  const v = $('kVerdict');
+  if (acc === null) { v.textContent = 'AWAITING'; v.className = 'verdict'; }
+  else if (acc >= THRESHOLD) { v.textContent = 'ABOVE THRESHOLD'; v.className = 'verdict ok'; }
+  else { v.textContent = 'BELOW THRESHOLD'; v.className = 'verdict bad'; }
+  const c = CONFIGS[state.suiteIdx % CONFIGS.length];
+  $('sName').textContent = c.suite;
+  $('sRun').textContent = `${pad(state.suiteRun)} / ${pad(SUITE_SIZE)}`;
+  $('sPass').textContent = state.suitePass; $('sFail').textContent = state.suiteFail;
+  $('sAcc').textContent = state.suiteRun ? `${(100 * state.suitePass / state.suiteRun).toFixed(1)}%` : '--.-%';
+  $('sBar').style.width = `${100 * state.suiteRun / SUITE_SIZE}%`;
+  drawSpark();
+}
+function renderSuites() {
+  $('suites').innerHTML = state.suites.slice(-4).map(s =>
+    `<div><span>${s.name} · ${s.cfg}</span><span style="color:${s.acc >= THRESHOLD ? 'var(--pass)' : 'var(--fail)'}">${(s.acc * 100).toFixed(1)}%</span></div>`).join('');
+}
+
+const spark = $('spark'), sctx = spark.getContext('2d');
+function sizeSpark() {
+  const r = spark.getBoundingClientRect(), d = Math.min(devicePixelRatio, 2);
+  spark.width = Math.max(1, r.width * d); spark.height = Math.max(1, r.height * d);
+  drawSpark();
+}
+function drawSpark() {
+  const w = spark.width, h = spark.height, d = Math.min(devicePixelRatio, 2);
+  sctx.clearRect(0, 0, w, h);
+  const lo = 0.5, hi = 1.0, y = v => h - ((v - lo) / (hi - lo)) * (h - 4 * d) - 2 * d;
+  // threshold
+  sctx.strokeStyle = 'rgba(255,45,85,.55)'; sctx.setLineDash([4 * d, 4 * d]); sctx.lineWidth = d;
+  sctx.beginPath(); sctx.moveTo(0, y(THRESHOLD)); sctx.lineTo(w, y(THRESHOLD)); sctx.stroke(); sctx.setLineDash([]);
+  sctx.fillStyle = 'rgba(255,45,85,.7)'; sctx.font = `${9 * d}px Share Tech Mono, monospace`; sctx.fillText('80%', 2 * d, y(THRESHOLD) - 3 * d);
+  const H = state.accHistory; if (H.length < 2) return;
+  const x = i => (i / (H.length - 1)) * w;
+  const grd = sctx.createLinearGradient(0, 0, 0, h);
+  grd.addColorStop(0, 'rgba(0,255,200,.35)'); grd.addColorStop(1, 'rgba(0,255,200,0)');
+  sctx.beginPath(); sctx.moveTo(0, h);
+  H.forEach((v, i) => sctx.lineTo(x(i), y(Math.max(lo, v))));
+  sctx.lineTo(w, h); sctx.closePath(); sctx.fillStyle = grd; sctx.fill();
+  sctx.beginPath(); H.forEach((v, i) => i ? sctx.lineTo(x(i), y(Math.max(lo, v))) : sctx.moveTo(0, y(Math.max(lo, v))));
+  sctx.strokeStyle = '#00ffc8'; sctx.lineWidth = 1.5 * d; sctx.shadowColor = '#00ffc8'; sctx.shadowBlur = 6 * d; sctx.stroke(); sctx.shadowBlur = 0;
+  const lx = w, ly = y(Math.max(lo, H[H.length - 1]));
+  sctx.fillStyle = '#fff'; sctx.beginPath(); sctx.arc(lx - 2 * d, ly, 2.5 * d, 0, Math.PI * 2); sctx.fill();
+}
+
+const logEl = $('logLines');
+const LOG_KEEP = 800, LOG_COMPACT = 14;
+const logHist = [];
+const logView = { max: false, filter: 'all' };
+function fmtT(t) { const m = Math.floor(t / 60), s = t - m * 60; return `${pad(m, 2)}:${s.toFixed(3).padStart(6, '0')}`; }
+const logKind = e => (e.cls === 'run' ? 'sys' : e.cls || 'sys');
+const logMatch = e => logView.filter === 'all' || logKind(e) === logView.filter;
+function logLine(e) {
+  const ln = document.createElement('div'); ln.className = 'ln ' + e.cls;
+  if (e.step !== undefined) { ln.dataset.step = e.step; ln.title = `Open ${nodes[e.step].step.key} details`; }
+  ln.innerHTML = `<span class="t">[${fmtT(e.t)}]</span> ${e.tag ? `<span class="s">${e.tag}</span> ` : ''}${e.msg}`;
+  return ln;
+}
+function logCounts() {
+  const c = { all: logHist.length, pass: 0, fail: 0, warn: 0, sys: 0 };
+  logHist.forEach(e => c[logKind(e)]++);
+  $('cAll').textContent = c.all; $('cPass').textContent = c.pass; $('cFail').textContent = c.fail;
+  $('cWarn').textContent = c.warn; $('cSys').textContent = c.sys;
+  $('logInfo').textContent = `${c.all} EVENTS BUFFERED (LAST ${LOG_KEEP}) · ${state.total} RUNS · T+${fmtT(sim.time)}`;
+}
+const atBottom = () => logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 24;
+function renderLog() {
+  const rows = logView.max ? logHist.filter(logMatch) : logHist.slice(-LOG_COMPACT);
+  logEl.replaceChildren(...rows.map(logLine));
+  if (logView.max) { logEl.scrollTop = logEl.scrollHeight; document.body.classList.remove('scrolled'); logCounts(); }
+}
+function log(msg, cls = '', tag = '', step) {
+  const e = { t: sim.time, msg, cls, tag, step };
+  logHist.push(e);
+  if (logHist.length > LOG_KEEP) logHist.shift();
+  if (!logView.max) {
+    logEl.appendChild(logLine(e));
+    while (logEl.children.length > LOG_COMPACT) logEl.firstChild.remove();
+    return;
+  }
+  const follow = atBottom();
+  if (logMatch(e)) logEl.appendChild(logLine(e));
+  while (logEl.children.length > LOG_KEEP) logEl.firstChild.remove();
+  if (follow) logEl.scrollTop = logEl.scrollHeight;
+  logCounts();
+}
+function openLog() {
+  logView.max = true;
+  document.body.classList.add('logmax');
+  renderLog();
+  $('logClose').focus({ preventScroll: true });
+}
+function closeLog() {
+  if (!logView.max) return;
+  logView.max = false;
+  document.body.classList.remove('logmax', 'scrolled');
+  renderLog();
+  $('logMax').focus({ preventScroll: true });
+}
+$('logMax').onclick = openLog;
+$('logClose').onclick = closeLog;
+$('logLive').onclick = () => { logEl.scrollTop = logEl.scrollHeight; };
+logEl.addEventListener('scroll', () => { if (logView.max) document.body.classList.toggle('scrolled', !atBottom()); });
+$('logBar').addEventListener('click', e => {
+  const b = e.target.closest('[data-f]'); if (!b) return;
+  logView.filter = b.dataset.f;
+  $('logBar').querySelectorAll('[data-f]').forEach(x => x.classList.toggle('on', x === b));
+  renderLog();
+});
+logEl.addEventListener('click', e => {
+  const ln = e.target.closest('.ln[data-step]'); if (!ln) return;
+  closeLog();
+  focusOn(+ln.dataset.step);
+});
+
+const stampEl = $('stamp');
+function stamp(ok, run, failIdx) {
+  stampEl.className = ok ? 'pass' : 'fail';
+  stampEl.innerHTML = `${ok ? 'CLEARED' : 'COMPROMISED'}<small>RUN #${pad(run.id, 4)} · ${ok ? `${N}/${N} STEPS VERIFIED` : `FAILED @ ${pad(failIdx + 1, 2)} ${nodes[failIdx].step.key}`}</small>`;
+  void stampEl.offsetWidth; stampEl.classList.add('show');
+}
+
+/* ---------- controls ---------- */
+const bPause = $('bPause');
+function togglePause() { sim.paused = !sim.paused; bPause.textContent = sim.paused ? '▶ RESUME' : '❚❚ PAUSE'; bPause.classList.toggle('on', sim.paused); }
+bPause.onclick = togglePause;
+addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); togglePause(); } });
+document.querySelectorAll('[data-speed]').forEach(b => b.onclick = () => {
+  sim.speed = +b.dataset.speed;
+  document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', x === b));
+});
+$('bReset').onclick = reset;
+
+/* ---------- fullscreen ---------- */
+const bFull = $('bFull');
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+const canFs = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+if (!canFs) bFull.hidden = true;
+async function toggleFullscreen() {
+  try {
+    if (fsEl()) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else await (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement);
+  } catch { bFull.hidden = true; }
+}
+bFull.onclick = toggleFullscreen;
+const syncFs = () => { bFull.innerHTML = fsEl() ? '⛶<span class="lg"> EXIT FULL</span>' : '⛶<span class="lg"> FULLSCREEN</span>'; bFull.classList.toggle('on', !!fsEl()); };
+document.addEventListener('fullscreenchange', syncFs);
+document.addEventListener('webkitfullscreenchange', syncFs);
+
+/* ---------- tap-to-drill-in ---------- */
+const focus = { id: null };
+const fly = { active: false };
+const HOME_TARGET = new THREE.Vector3(0, 1.5, 0);
+const homeDist = () => (innerWidth / innerHeight < 0.9 ? 62 : 42);
+const narrow = () => innerWidth <= 700;
+function flyTo(pos, target, dur = 1.1) {
+  Object.assign(fly, { active: true, p0: camera.position.clone(), q0: controls.target.clone(), p1: pos, q1: target, s: performance.now(), dur: dur * 1000 });
+}
+function focusOn(id) {
+  focus.id = id;
+  document.body.classList.add('focused', 'seen');
+  controls.autoRotate = false;
+  if (id === 'agent') {
+    const dir = camera.position.clone().sub(AGENT_POS).setY(0).normalize();
+    const tgt = AGENT_POS.clone().setY(AGENT_POS.y + (narrow() ? -3 : 1));
+    flyTo(AGENT_POS.clone().addScaledVector(dir, narrow() ? 30 : 20).setY(AGENT_POS.y + 9), tgt);
+  } else {
+    const n = nodes[id];
+    const out = new THREE.Vector3(n.pos.x, 0, n.pos.z).normalize();
+    // look in from outside the ring so the agent sits behind the step
+    const side = new THREE.Vector3(-out.z, 0, out.x);
+    const tgt = n.pos.clone().setY(n.pos.y + (narrow() ? -3.5 : 1.8));
+    if (!narrow()) tgt.addScaledVector(side, 2.8); // keep the node left of the dossier panel
+    flyTo(n.pos.clone().addScaledVector(out, narrow() ? 30 : 15).setY(n.pos.y + (narrow() ? 8 : 5)), tgt);
+  }
+  agentEl.classList.toggle('focus', id === 'agent');
+  nodes.forEach(n => n.el.classList.toggle('focus', n.i === id));
+  refreshDossier();
+}
+function unfocus() {
+  if (focus.id === null) return;
+  focus.id = null;
+  document.body.classList.remove('focused');
+  agentEl.classList.remove('focus');
+  nodes.forEach(n => n.el.classList.remove('focus'));
+  const dir = camera.position.clone().sub(HOME_TARGET).setY(0).normalize();
+  flyTo(HOME_TARGET.clone().addScaledVector(dir, homeDist() * 0.88).setY(HOME_TARGET.y + homeDist() * 0.45), HOME_TARGET.clone(), 1.2);
+  controls.autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function cycle(d) {
+  const cur = typeof focus.id === 'number' ? focus.id : d > 0 ? -1 : N;
+  focusOn((cur + d + N) % N);
+}
+$('dossier').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'close') unfocus();
+  else if (act === 'prev') cycle(-1);
+  else if (act === 'next') cycle(1);
+  else if (b.dataset.go !== undefined) focusOn(b.dataset.go === 'agent' ? 'agent' : +b.dataset.go);
+});
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (logView.max) {
+    if (e.key === 'Escape' || e.key === 'l' || e.key === 'L') closeLog();
+    return;
+  }
+  if (e.key === 'l' || e.key === 'L') openLog();
+  else if (e.key === 'Escape') unfocus();
+  else if (e.key === 'ArrowRight') cycle(1);
+  else if (e.key === 'ArrowLeft') cycle(-1);
+  else if (e.key === 'f' || e.key === 'F') { if (canFs) toggleFullscreen(); }
+  else if (e.key === 'a' || e.key === 'A') focusOn('agent');
+  else if (/^[1-8]$/.test(e.key)) focusOn(+e.key - 1);
+});
+
+// distinguish a tap from an orbit drag, then raycast against the node hit spheres
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const pickables = [agent.hit, ...nodes.map(n => n.group.children.find(c => c.userData.pick === n.i))];
+function pickAt(x, y) {
+  ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hitObj = ray.intersectObjects(pickables, false)[0];
+  return hitObj ? hitObj.object.userData.pick : null;
+}
+let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down) return;
+  const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), quick = performance.now() - down.t < 450;
+  down = null;
+  if (moved > 8 || !quick) return;
+  const id = pickAt(e.clientX, e.clientY);
+  if (id !== null && id !== undefined) focusOn(id);
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || e.buttons) return;
+  const id = pickAt(e.clientX, e.clientY);
+  renderer.domElement.classList.toggle('hot', id !== null && id !== undefined);
+});
+
+// targeting reticle around the focused node
+const reticle = new THREE.Group();
+for (let k = 0; k < 4; k++) {
+  const arc = new THREE.Mesh(new THREE.RingGeometry(2.5, 2.62, 24, 1, k * Math.PI / 2 + 0.25, Math.PI / 2 - 0.5), new THREE.MeshBasicMaterial({ ...additive({}), color: 0x00ffc8, side: THREE.DoubleSide }));
+  reticle.add(arc);
+}
+reticle.visible = false; scene.add(reticle);
+
+/* ---------- dossier content ---------- */
+const dB = $('dB'), dK = $('dK'), dT = $('dT');
+const pct = (a, b) => b ? (100 * a / b).toFixed(1) : '--.-';
+function quantile(arr, q) { if (!arr.length) return null; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; }
+function jumpRow() {
+  return `<section><h3>JUMP TO</h3><div class="jump">
+    <button data-go="agent">AGENT</button>
+    ${nodes.map(n => `<button data-go="${n.i}" class="${n.state === 'fail' ? 'fail' : n.state === 'running' || n.state === 'warn' ? 'running' : ''}">${pad(n.i + 1, 2)} ${n.step.key}</button>`).join('')}
+  </div></section>`;
+}
+function refreshDossier() {
+  if (focus.id === null) return;
+  const scroll = dB.scrollTop;
+  if (focus.id === 'agent') renderAgentDossier(); else renderStepDossier(nodes[focus.id]);
+  dB.scrollTop = scroll;
+}
+function renderStepDossier(n) {
+  const s = n.step, c = CONFIGS[state.suiteIdx % CONFIGS.length];
+  const avg = n.lat.length ? Math.round(n.lat.reduce((a, b) => a + b, 0) / n.lat.length) : null;
+  const p50 = quantile(n.lat, 0.5), p95 = quantile(n.lat, 0.95);
+  const chip = n.state === 'skip' ? '' : n.state;
+  const reasons = Object.entries(n.reasons).sort((a, b) => b[1] - a[1]);
+  const maxR = reasons.length ? reasons[0][1] : 1;
+  dK.textContent = `STEP ${pad(n.i + 1, 2)} / ${pad(N, 2)} · ${s.kind.toUpperCase()}`;
+  dT.textContent = s.key;
+  dB.innerHTML = `
+    <section>
+      <h3>STATUS</h3>
+      <span class="chip ${chip}">${n.stEl.textContent}</span>
+      <div class="event" style="margin-top:6px">${n.lastEvent}</div>
+    </section>
+    <section>
+      <h3>SPECIFICATION</h3>
+      <div class="kv">
+        <b>kind</b><span>${s.kind}</span>
+        <b>tool</b><span>${s.tool}</span>
+        <b>assertion</b><span>${s.assert}</span>
+        <b>timeout</b><span>${s.timeout} ms</span>
+        <b>expected latency</b><span>~${Math.round(s.lat * 1000)} ms</span>
+        <b>flaky / retryable</b><span>${s.flaky ? `yes · up to ${c.retries} retr${c.retries > 1 ? 'ies' : 'y'}` : 'no'}</span>
+        <b>order</b><span>${n.i ? `after ${nodes[n.i - 1].step.key}` : 'entry point'}</span>
+      </div>
+    </section>
+    <section>
+      <h3>PERFORMANCE · ALL SUITES</h3>
+      <div class="tiles">
+        <div class="tile"><div class="l">EXECUTED</div><div class="v">${n.runs}</div></div>
+        <div class="tile pass"><div class="l">PASSED</div><div class="v">${n.passes}</div></div>
+        <div class="tile fail"><div class="l">FAILED</div><div class="v">${n.fails}</div></div>
+      </div>
+      <div class="rate">
+        <div class="big">${pct(n.passes, n.runs)}<small>%</small></div>
+        <div class="exp">EXPECTED (${c.suite}) <span>${(effectivePass(s) * 100).toFixed(1)}%</span><br />RETRIES <span style="color:var(--warn)">${n.retries}</span></div>
+      </div>
+    </section>
+    <section>
+      <h3>LAST ${pad(n.hist.length, 2)} EXECUTIONS</h3>
+      <div class="hist">${n.hist.map(h => `<i class="${h.ok ? 'pass' : 'fail'}${h.retry ? ' retry' : ''}" title="Run #${pad(h.id, 4)} ${h.ok ? 'pass' : 'fail'}${h.retry ? ' (retried)' : ''}"></i>`).join('')}${'<i></i>'.repeat(Math.max(0, 32 - n.hist.length))}</div>
+      <div class="legend"><span style="color:var(--pass)">■ PASS</span><span style="color:var(--fail)">■ FAIL</span><span style="color:var(--warn)">□ RETRIED</span></div>
+    </section>
+    <section>
+      <h3>LATENCY · MS</h3>
+      <div class="kv">
+        <b>avg</b><span>${avg ?? '—'}</span>
+        <b>p50</b><span>${p50 ?? '—'}</span>
+        <b>p95</b><span>${p95 ?? '—'}</span>
+        <b>headroom to timeout</b><span>${p95 ? `${Math.round(100 * (1 - p95 / s.timeout))}%` : '—'}</span>
+      </div>
+      <canvas id="dLat" style="margin-top:8px"></canvas>
+    </section>
+    <section class="modes">
+      <h3>FAILURE MODES</h3>
+      ${reasons.length ? reasons.map(([r, k]) => `<div><span class="nm" title="${r}">${r}</span><span class="mb"><i style="width:${100 * k / maxR}%"></i></span><span class="c">${k}</span></div>`).join('') : '<span class="none">No failures recorded.</span>'}
+    </section>
+    ${jumpRow()}`;
+  drawLatency(n);
+}
+function drawLatency(n) {
+  const cv = $('dLat'); if (!cv) return;
+  const d = Math.min(devicePixelRatio, 2), r = cv.getBoundingClientRect();
+  cv.width = Math.max(1, r.width * d); cv.height = Math.max(1, r.height * d);
+  const g = cv.getContext('2d'), w = cv.width, h = cv.height, L = n.lat.slice(-40), T = n.step.timeout;
+  const top = Math.max(T * 1.1, ...L), y = v => h - (v / top) * (h - 6 * d) - 3 * d;
+  g.strokeStyle = 'rgba(0,255,200,.08)'; g.lineWidth = d;
+  for (let k = 1; k < 4; k++) { g.beginPath(); g.moveTo(0, h * k / 4); g.lineTo(w, h * k / 4); g.stroke(); }
+  g.setLineDash([4 * d, 4 * d]); g.strokeStyle = 'rgba(255,45,85,.6)';
+  g.beginPath(); g.moveTo(0, y(T)); g.lineTo(w, y(T)); g.stroke(); g.setLineDash([]);
+  g.fillStyle = 'rgba(255,45,85,.8)'; g.font = `${9 * d}px Share Tech Mono, monospace`; g.fillText(`TIMEOUT ${T}ms`, 3 * d, y(T) - 3 * d);
+  if (!L.length) return;
+  const bw = w / 40;
+  L.forEach((v, k) => {
+    const hk = n.hist[n.hist.length - L.length + k];
+    g.fillStyle = hk && !hk.ok ? '#ff2d55' : 'rgba(0,229,255,.75)';
+    g.fillRect(k * bw + bw * 0.15, y(v), bw * 0.7, h - y(v));
+  });
+}
+function renderAgentDossier() {
+  const c = CONFIGS[state.suiteIdx % CONFIGS.length];
+  const totalFails = nodes.reduce((a, n) => a + n.fails, 0) || 1;
+  const liveEl = document.getElementById('agentLive');
+  dK.textContent = `SUBJECT UNDER TEST · CONFIG ${c.suite}`;
+  dT.textContent = `AGENT ${AGENT.callsign}`;
+  dB.innerHTML = `
+    <section>
+      <h3>CURRENT RUN</h3>
+      <span class="chip ${agentEl.dataset.state || 'running'}">${liveEl ? liveEl.textContent : 'STANDBY'}</span>
+    </section>
+    <section>
+      <h3>CONFIGURATION</h3>
+      <div class="kv">
+        <b>model</b><span>${AGENT.model}</span>
+        <b>temperature</b><span>${c.temperature.toFixed(1)}</span>
+        <b>top_p</b><span>${c.top_p.toFixed(2)}</span>
+        <b>max_steps</b><span>${AGENT.max_steps}</span>
+        <b>retries</b><span>${c.retries}</span>
+        <b>memory</b><span>${AGENT.memory}</span>
+        <b>system prompt</b><span>${c.prompt} · #${hash(c.prompt)}</span>
+      </div>
+      <h3 style="margin-top:10px">TOOLS</h3>
+      <div class="tools">${AGENT.tools.map(t => `<span>${t}</span>`).join('')}</div>
+    </section>
+    <section>
+      <h3>MISSION STATUS</h3>
+      <div class="tiles">
+        <div class="tile"><div class="l">TOTAL RUNS</div><div class="v">${state.total}</div></div>
+        <div class="tile pass"><div class="l">CLEARED</div><div class="v">${state.pass}</div></div>
+        <div class="tile fail"><div class="l">COMPROMISED</div><div class="v">${state.fail}</div></div>
+      </div>
+      <div class="rate">
+        <div class="big">${pct(state.pass, state.total)}<small>%</small></div>
+        <div class="exp">SUITE ${c.suite} <span>${pad(state.suiteRun)}/${pad(SUITE_SIZE)}</span><br />SUITE ACC <span>${pct(state.suitePass, state.suiteRun)}%</span></div>
+      </div>
+    </section>
+    <section>
+      <h3>SUITE HISTORY</h3>
+      <div class="kv">${state.suites.length ? state.suites.map(x => `<b>${x.name} · ${x.cfg}</b><span style="color:${x.acc >= THRESHOLD ? 'var(--pass)' : 'var(--fail)'}">${(x.acc * 100).toFixed(1)}%</span>`).join('') : '<b>no suite completed yet</b><span></span>'}</div>
+    </section>
+    <section class="modes">
+      <h3>FAILURE ATTRIBUTION BY STEP</h3>
+      ${nodes.map(n => `<div><span class="nm">${pad(n.i + 1, 2)} ${n.step.key}</span><span class="mb"><i style="width:${100 * n.fails / totalFails}%"></i></span><span class="c">${n.fails}</span></div>`).join('')}
+    </section>
+    ${jumpRow()}`;
+}
+document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', +x.dataset.speed === sim.speed));
+
+function reset() {
+  unfocus();
+  state.epoch++;
+  sim.events.length = 0;
+  packets.forEach(p => p.sprites.forEach(freeSprite)); packets.length = 0;
+  Object.assign(state, { suiteIdx: 0, suiteRun: 0, suitePass: 0, suiteFail: 0, total: 0, pass: 0, fail: 0, accHistory: [], suites: [], run: null });
+  nodes.forEach(n => { n.runs = n.passes = n.fails = n.retries = 0; n.lat = []; n.hist = []; n.reasons = {}; n.lastEvent = 'No activity yet.'; n.prEl.textContent = '—'; n.ltEl.textContent = '—'; n.barEl.style.width = '0'; setStepState(n, 'idle'); });
+  intelRows.forEach(r => { r.bar.style.width = '0'; r.p.textContent = '—'; r.f.textContent = '0'; });
+  clearOrbit(); buildGrid(); renderSuites();
+  $('banner').classList.remove('show');
+  logHist.length = 0;
+  renderLog();
+  renderAgentLabel('STANDBY');
+  updateHud();
+  log(`SECURE CHANNEL ESTABLISHED · agent ${AGENT.callsign} (${AGENT.model}) · ${N} test steps · ${SUITE_SIZE} runs/suite`, 'sys');
+  after(1.0, startRun);
+}
+
+/* =====================================================================
+   Frame loop
+   ===================================================================== */
+const clock = new THREE.Clock();
+const clockEl = $('clock');
+function tick() {
+  requestAnimationFrame(tick);
+  const rdt = Math.min(clock.getDelta(), 0.1);
+  const dt = sim.paused ? 0 : rdt * sim.speed;
+  sim.time += dt;
+
+  // fire due events (ignore events from a previous epoch after reset)
+  if (sim.events.length) {
+    const due = sim.events.filter(e => e.t <= sim.time);
+    if (due.length) {
+      sim.events = sim.events.filter(e => e.t > sim.time);
+      due.sort((a, b) => a.t - b.t).forEach(e => e.epoch === state.epoch && e.fn());
+    }
+  }
+
+  // live token stream on the active step's spoke (actual agent<->tool traffic)
+  const run = state.run;
+  if (run && run.streamEdge && !sim.paused) {
+    run.streamAcc += dt;
+    while (run.streamAcc > 0.09) {
+      run.streamAcc -= 0.09;
+      const back = Math.random() < 0.5;
+      sendPacket(run.streamEdge, { color: back ? COLORS.agent : COLORS.running, reverse: back, dur: 0.45, size: 0.55, trail: 1, heat: 0.75 });
+    }
+  }
+
+  updatePackets();
+  updatePings();
+
+  // edges
+  const t = sim.time;
+  allEdges.forEach(e => {
+    e.heat = Math.max(0, e.heat - dt * 0.9);
+    e.mat.uniforms.uHeat.value = e.heat;
+    e.mat.uniforms.uTime.value = t;
+  });
+
+  // step nodes
+  const wall = performance.now() / 1000;
+  nodes.forEach(n => {
+    n.color.lerp(n.target, 0.12);
+    n.pulse = Math.max(0, n.pulse - rdt * 1.8);
+    const running = n.state === 'running' || n.state === 'warn';
+    const k = running ? 0.5 + 0.5 * Math.sin(wall * 12) : 0;
+    n.fill.material.color.copy(n.color); n.fill.material.opacity = n.state === 'idle' || n.state === 'skip' ? 0.14 : 0.32 + k * 0.2;
+    n.edges.material.color.copy(n.color);
+    n.core.material.color.copy(n.color);
+    n.halo.material.color.copy(n.color);
+    n.glow.material.color.copy(n.color);
+    n.drop.material.color.copy(n.color);
+    n.glow.material.opacity = (n.state === 'idle' || n.state === 'skip' ? 0.12 : 0.4) + k * 0.3 + n.pulse * 0.5;
+    n.glow.scale.setScalar(4.5 + n.pulse * 3 + k * 1.2);
+    n.core.rotation.y += rdt * (running ? 6 : 0.8);
+    n.core.position.y = 0.95 + Math.sin(wall * 2 + n.i) * 0.12;
+    n.halo.rotation.z += rdt * (running ? 2.5 : 0.3);
+    n.halo.scale.setScalar(1 + k * 0.15 + n.pulse * 0.4);
+    n.beam.material.color.copy(n.color);
+    n.beam.material.opacity = THREE.MathUtils.lerp(n.beam.material.opacity, running ? 0.10 + k * 0.06 : n.state === 'fail' ? 0.12 : 0, 0.1);
+    n.group.scale.setScalar(1 + n.pulse * 0.12);
+  });
+
+  // labels behind the agent recede unless they carry live status
+  const agentDist = camera.position.distanceTo(AGENT_POS);
+  nodes.forEach(n => {
+    const behind = camera.position.distanceTo(n.pos) > agentDist + 4;
+    const live = n.state === 'running' || n.state === 'warn' || n.state === 'fail';
+    const other = focus.id !== null && focus.id !== n.i;
+    n.el.style.opacity = other && !live ? 0.3 : behind && !live && focus.id !== n.i ? 0.45 : '';
+  });
+  agentEl.style.opacity = typeof focus.id === 'number' ? 0.35 : '';
+
+  // drill-in camera flight + reticle
+  if (fly.active) {
+    const u = Math.min(1, (performance.now() - fly.s) / fly.dur);
+    const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+    camera.position.lerpVectors(fly.p0, fly.p1, e);
+    controls.target.lerpVectors(fly.q0, fly.q1, e);
+    if (u >= 1) fly.active = false;
+  }
+  if (focus.id !== null) {
+    const fp = focus.id === 'agent' ? AGENT_POS : nodes[focus.id].pos;
+    reticle.visible = true;
+    reticle.position.copy(fp);
+    reticle.quaternion.copy(camera.quaternion);
+    reticle.rotateZ(wall * 0.8);
+    reticle.scale.setScalar((focus.id === 'agent' ? 2.3 : 1) * (1 + 0.05 * Math.sin(wall * 5)));
+    const fc = focus.id === 'agent' ? agent.color : nodes[focus.id].color;
+    reticle.children.forEach(m => m.material.color.copy(fc));
+  } else reticle.visible = false;
+
+  // agent
+  agent.flash = Math.max(0, agent.flash - rdt * 1.2);
+  agent.color.lerp(agent.target, 0.06);
+  const busy = run && !!run.streamEdge;
+  const ak = 0.5 + 0.5 * Math.sin(wall * (busy ? 7 : 2));
+  [agent.shell, agent.shell2, agent.core, agent.haze, agent.ret, ...agent.rings].forEach(m => m.material.color.copy(agent.color));
+  agent.shell.rotation.y += rdt * 0.25; agent.shell.rotation.x += rdt * 0.08;
+  agent.shell2.rotation.y -= rdt * 0.5; agent.shell2.rotation.z += rdt * 0.2;
+  agent.core.rotation.y += rdt * (busy ? 2.5 : 0.7);
+  agent.core.scale.setScalar(1 + ak * 0.12 + agent.flash * 0.5);
+  agent.haze.material.opacity = 0.18 + ak * 0.12 + agent.flash * 0.45;
+  agent.haze.scale.setScalar(7 + agent.flash * 5);
+  agent.rings.forEach((r, i) => { r.rotation.z += rdt * (0.4 + i * 0.25) * (busy ? 2.2 : 1) * (i % 2 ? -1 : 1); });
+  agent.ret.rotation.z += rdt * 0.2;
+
+  // orbit beads
+  orbit.rotation.y += rdt * 0.12;
+  orbitBeads.forEach(b => {
+    const age = sim.time - b.userData.born;
+    b.scale.setScalar(Math.min(1, age * 3) * 1.1 + Math.max(0, 1 - age * 2) * 1.5);
+  });
+
+  radarMat.uniforms.uTime.value = wall;
+  tickRing.rotation.y -= rdt * 0.03;
+  dust.rotation.y += rdt * 0.01;
+  clockEl.textContent = 'T+' + fmtT(sim.time);
+
+  controls.update();
+  composer.render();
+  labelRenderer.render(scene, camera);
+  // keep the live step's metadata on top of any overlapping label
+  nodes.forEach(n => { if (n.state === 'running' || n.state === 'warn' || n.state === 'fail') n.el.style.zIndex = 100000; });
+}
+
+buildGrid();
+sizeSpark();
+reset();
+tick();
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__TITLE__</title>
+<style>
+  :root { color-scheme: dark; --bg: #05070a; --ink: #d8e2ec; --dim: #7d8a97; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+  #stage { position: fixed; inset: 0; }
+  .back { position: fixed; top: 16px; left: 16px; z-index: 10; color: var(--dim); text-decoration: none; letter-spacing: .15em; font-size: 11px; }
+  .back:hover, .back:focus-visible { color: var(--ink); }
+</style>
+</head>
+<body>
+<a class="back" href="../../">← ALL ANIMATIONS</a>
+<div id="stage"></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.getElementById('stage').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(0, 3, 8);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 1), new THREE.MeshBasicMaterial({ color: 0x5fd4ff, wireframe: true }));
+scene.add(mesh);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+renderer.setAnimationLoop(t => {
+  mesh.rotation.y = t / 2000;
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
