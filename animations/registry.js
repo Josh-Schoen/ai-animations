@@ -16,4 +16,25 @@ window.ANIMATIONS = [
     tags: ['sql', 'agents', 'dashboard', 'game'],
     added: '2026-09-27',
   },
+  {
+    slug: 'breach',
+    title: 'Breach',
+    description: 'A whale-jumping duel against an AI agent: tap fast to build surge, let go to breach, land flat for bigger splashes, and race the agent to 500 points.',
+    tags: ['three.js', 'game', 'agents'],
+    added: '2026-09-27',
+  },
+  {
+    slug: 'vector-ko',
+    title: 'Vector KO',
+    description: 'A green wireframe boxing game: read the opponent\'s tells, dodge, counter for stars, and land the star uppercut, with the controls across the top.',
+    tags: ['three.js', 'game'],
+    added: '2026-09-27',
+  },
+  {
+    slug: 'micro-rally',
+    title: 'Micro Rally',
+    description: 'An RC-style toy truck racer on four tracks: grab item boxes, fire missiles, drop oil, and finish top three to advance through the championship.',
+    tags: ['three.js', 'game', 'racing'],
+    added: '2026-09-27',
+  },
 ];

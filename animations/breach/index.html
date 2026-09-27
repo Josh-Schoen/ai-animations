@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Breach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  /* A single sunset-ocean look, by design. */
+  :root {
+    color-scheme: dark;
+    --ink: #ffffff;
+    --ink-2: #d7e6ee;
+    --muted: #9fb6c3;
+    --panel: rgba(6, 26, 40, 0.62);
+    --panel-2: rgba(6, 26, 40, 0.85);
+    --line: rgba(255, 255, 255, 0.16);
+    --you: #ffc857;      /* player accent */
+    --agent: #5ee6ff;    /* agent accent */
+    --good: #6be39a;
+    --bad: #ff7a7a;
+    --display: "Fredoka", "Nunito", system-ui, sans-serif;
+    --sans: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a2f45; color: var(--ink); font: 15px/1.45 var(--sans); touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--you); outline-offset: 2px; }
+  .hud { position: fixed; z-index: 10; pointer-events: none; }
+
+  /* ---------- top: race to 500 ---------- */
+  #race { top: calc(12px + env(safe-area-inset-top, 0px)); left: 16px; right: 16px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: start; }
+  .side { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px 10px; backdrop-filter: blur(6px); min-width: 0; }
+  .side .row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .side .who { font: 600 13px var(--display); letter-spacing: .08em; white-space: nowrap; }
+  .side .pts { font: 700 26px/1 var(--display); font-variant-numeric: tabular-nums; }
+  .side .pts small { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .side .bar { height: 10px; border-radius: 5px; background: rgba(255,255,255,.12); margin-top: 7px; overflow: hidden; }
+  .side .bar i { display: block; height: 100%; width: 0; border-radius: 5px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  #sideYou .who { color: var(--you); } #sideYou .bar i { background: var(--you); }
+  #sideAgent .who { color: var(--agent); } #sideAgent .bar i { background: var(--agent); margin-left: auto; }
+  #sideAgent .row { flex-direction: row-reverse; }
+  #sideAgent .bar { display: flex; }
+  .goal { text-align: center; font: 600 12px var(--display); color: var(--ink-2); letter-spacing: .1em; padding-top: 6px; }
+  .goal b { display: block; font-size: 22px; color: var(--ink); letter-spacing: 0; }
+
+  /* ---------- bottom: meters ---------- */
+  .meterbox { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(330px, calc(50vw - 24px)); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; backdrop-filter: blur(6px); }
+  #meterYou { left: 16px; }
+  #meterAgent { right: 16px; }
+  .meterbox .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; color: var(--ink-2); }
+  .meterbox .top b { font: 600 13px var(--display); letter-spacing: .06em; }
+  #meterYou .top b { color: var(--you); } #meterAgent .top b { color: var(--agent); }
+  .meterbox .rate { font-variant-numeric: tabular-nums; }
+  .surge { position: relative; height: 16px; border-radius: 8px; background: rgba(255,255,255,.12); margin-top: 7px; overflow: hidden; }
+  .surge i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 8px; }
+  .surge .peak { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; left: 0; opacity: 0; border-radius: 2px; }
+  .surge .max { position: absolute; right: 6px; top: 0; font: 700 10px/16px var(--display); color: rgba(255,255,255,.55); letter-spacing: .08em; }
+  #meterYou .surge i { background: linear-gradient(90deg, #ff9f43, var(--you)); }
+  #meterAgent .surge i { background: linear-gradient(90deg, #2bb8e0, var(--agent)); }
+  .meterbox .state { margin-top: 6px; font-size: 12.5px; color: var(--muted); min-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thoughts { margin-top: 6px; display: grid; gap: 2px; font-size: 12.5px; color: var(--ink-2); min-height: 38px; }
+  .thoughts div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .6; }
+  .thoughts div:last-child { opacity: 1; }
+  .thoughts div::before { content: "› "; color: var(--agent); }
+
+  /* ---------- controls ---------- */
+  #ctl { top: calc(96px + env(safe-area-inset-top, 0px)); right: 16px; display: flex; gap: 6px; pointer-events: auto; }
+  #ctl button, #ctl a { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); display: grid; place-items: center; font-size: 16px; text-decoration: none; color: var(--ink); backdrop-filter: blur(6px); }
+  #ctl a { font-size: 14px; }
+
+  /* ---------- floating labels + popups ---------- */
+  .tag { position: fixed; z-index: 5; transform: translate(-50%, -100%); font: 700 12px var(--display); letter-spacing: .12em; padding: 2px 8px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
+  #tagYou { background: var(--you); color: #3a2400; }
+  #tagAgent { background: var(--agent); color: #002b36; }
+  .pop { position: fixed; z-index: 6; transform: translate(-50%, -50%); pointer-events: none; text-align: center; white-space: nowrap; text-shadow: 0 2px 10px rgba(0,0,0,.45); animation: pop 1.9s ease-out forwards; }
+  .pop b { display: block; font: 700 34px/1 var(--display); }
+  .pop span { font: 600 13px var(--display); letter-spacing: .06em; }
+  .pop.you b { color: var(--you); } .pop.agent b { color: var(--agent); }
+  .pop.max b { font-size: 46px; }
+  @keyframes pop { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.7); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } 20% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -110%); } }
+
+  /* ---------- overlays ---------- */
+  .overlay { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at center, rgba(4, 20, 32, .55), rgba(4, 20, 32, .8)); }
+  .overlay[hidden] { display: none; }
+  .card { width: min(460px, 100%); max-height: calc(100% - 16px); overflow-y: auto; background: var(--panel-2); border: 1px solid var(--line); border-radius: 22px; padding: 22px 22px 20px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+  .card h1 { margin: 0; font: 700 clamp(44px, 10vw, 64px)/1 var(--display); letter-spacing: .04em; background: linear-gradient(180deg, #fff, #9fe3ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .card .sub { margin: 6px 0 16px; color: var(--ink-2); }
+  .how { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; text-align: left; }
+  .how li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; font-size: 14px; color: var(--ink-2); }
+  .how li span:first-child { font-size: 20px; line-height: 1.2; text-align: center; }
+  .how b { color: var(--ink); }
+  .diff { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .diff button { border: 1px solid var(--line); background: rgba(255,255,255,.06); border-radius: 12px; padding: 8px 4px; display: grid; gap: 1px; }
+  .diff button b { font: 600 16px var(--display); }
+  .diff button span { font-size: 11.5px; color: var(--muted); }
+  .diff button[aria-pressed="true"] { border-color: var(--agent); background: rgba(94, 230, 255, .14); }
+  .go { width: 100%; border: 0; border-radius: 14px; padding: 13px; font: 700 19px var(--display); letter-spacing: .06em; color: #3a2400; background: linear-gradient(180deg, #ffd87a, var(--you)); box-shadow: 0 6px 20px rgba(255, 200, 87, .35); }
+  .go:hover { filter: brightness(1.05); }
+  .ghost { margin-top: 8px; width: 100%; border: 1px solid var(--line); background: none; border-radius: 12px; padding: 9px; color: var(--ink-2); }
+  .keys { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  .result h1 { font-size: clamp(40px, 9vw, 56px); }
+  .result.win h1 { background: linear-gradient(180deg, #fff3cf, var(--you)); -webkit-background-clip: text; background-clip: text; }
+  .result.lose h1 { background: linear-gradient(180deg, #e6fbff, var(--agent)); -webkit-background-clip: text; background-clip: text; }
+  .stats { width: 100%; border-collapse: collapse; margin: 6px 0 16px; font-size: 14px; }
+  .stats th { font: 600 12px var(--display); letter-spacing: .08em; color: var(--muted); padding: 4px 6px; text-align: right; }
+  .stats th:first-child, .stats td:first-child { text-align: left; }
+  .stats td { padding: 5px 6px; border-top: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+  .stats td.you { color: var(--you); } .stats td.agent { color: var(--agent); }
+  #count { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; pointer-events: none; font: 700 120px/1 var(--display); color: #fff; text-shadow: 0 6px 30px rgba(0,0,0,.4); }
+  #count[hidden] { display: none; }
+  #count span { animation: countin .9s ease-out forwards; }
+  @keyframes countin { 0% { opacity: 0; transform: scale(1.6); } 25% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.8); } }
+  #hintTap { position: fixed; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 9; pointer-events: none; font: 600 15px var(--display); letter-spacing: .06em; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.5); white-space: nowrap; transition: opacity .5s; }
+  #hintTap.off { opacity: 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    #race { grid-template-columns: 1fr 1fr; }
+    .goal { display: none; }
+    .side .pts { font-size: 22px; }
+    .meterbox { width: calc(50vw - 20px); padding: 8px 10px; }
+    #meterYou { left: 12px; } #meterAgent { right: 12px; }
+    .thoughts { display: none; }
+    .meterbox .top { flex-wrap: nowrap; font-size: 11px; }
+    .meterbox .top b { font-size: 11px; letter-spacing: .02em; white-space: nowrap; }
+    .meterbox .rate { white-space: nowrap; }
+    .meterbox .state { white-space: normal; font-size: 11.5px; min-height: 32px; }
+    #ctl { top: calc(84px + env(safe-area-inset-top, 0px)); }
+    #hintTap { bottom: calc(108px + env(safe-area-inset-bottom, 0px)); font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage" aria-hidden="true"></div>
+
+<div class="hud" id="race">
+  <div class="side" id="sideYou"><div class="row"><span class="who">YOU</span><span class="pts" id="ptsYou">0<small> / 500</small></span></div><div class="bar"><i id="barYou"></i></div></div>
+  <div class="goal">FIRST TO<b>500</b></div>
+  <div class="side" id="sideAgent"><div class="row"><span class="who">AI AGENT</span><span class="pts" id="ptsAgent">0<small> / 500</small></span></div><div class="bar"><i id="barAgent"></i></div></div>
+</div>
+
+<div class="hud" id="ctl">
+  <button id="bPause" aria-label="Pause (P)" title="Pause (P)">❚❚</button>
+  <button id="bSound" aria-label="Sound on (M)" title="Sound (M)">🔊</button>
+  <a href="../../" id="bHome" aria-label="All animations" title="All animations">⌂</a>
+</div>
+
+<div class="hud meterbox" id="meterYou">
+  <div class="top"><b>YOUR SURGE</b><span class="rate" id="rateYou">0.0 taps/s</span></div>
+  <div class="surge"><i id="surgeYou"></i><span class="peak" id="peakYou"></span><span class="max">MAX</span></div>
+  <div class="state" id="stateYou">Tap fast to charge, stop to breach</div>
+</div>
+<div class="hud meterbox" id="meterAgent">
+  <div class="top"><b>AGENT SURGE</b><span class="rate" id="rateAgent">0.0 taps/s</span></div>
+  <div class="surge"><i id="surgeAgent"></i><span class="peak" id="peakAgent"></span><span class="max">MAX</span></div>
+  <div class="state" id="stateAgent">Waiting for the start</div>
+  <div class="thoughts" id="thoughts"></div>
+</div>
+
+<div class="tag" id="tagYou">YOU</div>
+<div class="tag" id="tagAgent">AI AGENT</div>
+<div id="hintTap" class="off">TAP TAP TAP… then let go</div>
+<div id="count" hidden></div>
+<div class="sr" aria-live="polite" id="announce"></div>
+
+<div class="overlay" id="menu">
+  <div class="card">
+    <h1>BREACH</h1>
+    <p class="sub">A whale-jumping duel against an AI agent. First to 500 points wins.</p>
+    <ul class="how">
+      <li><span>👆</span><span><b>Tap fast</b> anywhere (or press Space) to build surge. Your whale dives to wind up.</span></li>
+      <li><span>🐋</span><span><b>Stop tapping</b> and it breaches. Faster tapping means a higher peak, a higher jump and more points.</span></li>
+      <li><span>🌊</span><span><b>Flat landings splash bigger.</b> Tap while airborne to spin for style points.</span></li>
+      <li><span>🤖</span><span>The <b>AI agent</b> plays by the same physics and shows its strategy as it goes.</span></li>
+    </ul>
+    <div class="diff" role="group" aria-label="Agent difficulty">
+      <button data-d="calm" aria-pressed="false"><b>Calm</b><span>~6 taps/s</span></button>
+      <button data-d="pod" aria-pressed="true"><b>Pod</b><span>~8 taps/s</span></button>
+      <button data-d="orca" aria-pressed="false"><b>Orca</b><span>~10 taps/s</span></button>
+    </div>
+    <button class="go" id="bStart">START</button>
+    <div class="keys">Space: tap · P: pause · M: sound · <span id="bestLine"></span></div>
+  </div>
+</div>
+
+<div class="overlay" id="over" hidden>
+  <div class="card result" id="resultCard">
+    <h1 id="resTitle">YOU WIN</h1>
+    <p class="sub" id="resSub"></p>
+    <table class="stats" id="resStats"></table>
+    <button class="go" id="bAgain">REMATCH</button>
+    <button class="ghost" id="bMenu">Change difficulty</button>
+  </div>
+</div>
+
+<div class="overlay" id="paused" hidden>
+  <div class="card"><h1 style="font-size:44px">PAUSED</h1><p class="sub">The ocean waits.</p><button class="go" id="bResume">RESUME</button><button class="ghost" id="bQuit">Quit to menu</button></div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const $ = id => document.getElementById(id);
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+/* =====================================================================
+   Tunables: the whole game lives in these numbers
+   ===================================================================== */
+const GOAL = 500;
+const G = 30;               // gravity (units/s²); 1 unit ≈ 1 m
+const DECAY = 1.2;          // surge decays exponentially at this rate
+const RELEASE = 0.4;        // seconds without a tap before the whale launches
+const surgeGain = rate => 0.06 + 0.08 * Math.min(rate / 10, 1); // per tap; faster tapping gains more
+const heightFor = p => 4 + 28 * Math.pow(p, 1.2);               // apex height (m) from peak surge
+const DIFF = {
+  calm: { name: 'Calm', rate: 6.2, react: [0.5, 0.9], airTaps: [0, 3], smart: 0.5 },
+  pod:  { name: 'Pod',  rate: 8.0, react: [0.3, 0.6], airTaps: [2, 4], smart: 0.8 },
+  orca: { name: 'Orca', rate: 9.8, react: [0.15, 0.35], airTaps: [5, 7], smart: 1.0 },
+};
+// steady-state surge a tapper can hold at a given rate: r·gain(r) / DECAY
+const reachable = r => Math.min(1, (r * surgeGain(r)) / DECAY);
+function scoreFor(p, splashS, spins) {
+  const h = heightFor(p);
+  return Math.round(8 + h * 1.2 + splashS * 24 + spins * 8 + (p >= 0.97 ? 20 : 0));
+}
+
+/* =====================================================================
+   Renderer, camera, sky
+   ===================================================================== */
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+$('stage').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const FOG = new THREE.Color('#f3c9a2');
+scene.fog = new THREE.Fog(FOG, 120, 420);
+scene.background = (() => {
+  const c = document.createElement('canvas'); c.width = 4; c.height = 512;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 512);
+  gr.addColorStop(0, '#2c6f9e'); gr.addColorStop(0.42, '#7fb6d6'); gr.addColorStop(0.62, '#f6d2ae'); gr.addColorStop(0.7, '#ffb98a'); gr.addColorStop(1, '#f3c9a2');
+  g.fillStyle = gr; g.fillRect(0, 0, 4, 512);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+
+const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 800);
+const SUN_DIR = new THREE.Vector3(0.25, 0.32, -1).normalize();
+scene.add(new THREE.HemisphereLight('#cfe8ff', '#1d4a66', 1.1));
+const sun = new THREE.DirectionalLight('#ffe2c0', 2.2); sun.position.copy(SUN_DIR).multiplyScalar(100); scene.add(sun);
+const rim = new THREE.DirectionalLight('#9fd8ff', 0.6); rim.position.set(-30, 20, 40); scene.add(rim);
+
+// sun disc + glow on the horizon
+const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.18, 'rgba(255,240,210,.9)'); r.addColorStop(.45, 'rgba(255,200,140,.25)'); r.addColorStop(1, 'rgba(255,190,130,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, fog: false, depthWrite: false, transparent: true }));
+sunSprite.position.copy(SUN_DIR).multiplyScalar(380); sunSprite.scale.setScalar(120); scene.add(sunSprite);
+
+/* =====================================================================
+   Ocean: displaced plane with base swell + splash ripples
+   ===================================================================== */
+const RIPPLES = 10;
+const ripples = Array.from({ length: RIPPLES }, () => new THREE.Vector4(0, 0, -99, 0));
+let rippleIdx = 0;
+const WAVE_GLSL = `
+  float baseH(vec2 p, float t) {
+    return 0.55 * sin(0.09 * p.x + 0.6 * t) + 0.4 * sin(0.13 * p.y - 0.8 * t + 1.3)
+         + 0.25 * sin(0.21 * (p.x + p.y) + 1.1 * t) + 0.12 * sin(0.37 * p.x - 0.29 * p.y + 1.7 * t);
+  }
+  float ripH(vec2 p, float t, out float foam) {
+    float h = 0.0; foam = 0.0;
+    for (int i = 0; i < ${RIPPLES}; i++) {
+      vec4 r = uRip[i];
+      float age = t - r.z;
+      if (r.w <= 0.0 || age < 0.0 || age > 8.0) continue;
+      float d = distance(p, r.xy);
+      float R = age * 7.5;
+      float env = r.w * exp(-age * 0.55);
+      float ring = exp(-pow(d - R, 2.0) / (2.5 + age * 1.8));
+      h += env * ring * cos((d - R) * 0.8) * 0.9;
+      h += r.w * 1.4 * exp(-age * 2.6) * exp(-d * d / 10.0);
+      foam += env * ring * 0.9 + r.w * exp(-age * 1.2) * exp(-d * d / (6.0 + age * 20.0));
+    }
+    return h;
+  }`;
+const waterMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime: { value: 0 }, uRip: { value: ripples },
+    uSun: { value: SUN_DIR }, uDeep: { value: new THREE.Vector3(0.02, 0.17, 0.27) }, uShallow: { value: new THREE.Vector3(0.1, 0.45, 0.55) },
+    uSky: { value: new THREE.Vector3(0.93, 0.8, 0.7) }, uFog: { value: new THREE.Vector3(0.95, 0.79, 0.64) },
+  },
+  vertexShader: `
+    uniform float uTime; uniform vec4 uRip[${RIPPLES}];
+    varying vec3 vWorld; varying vec3 vN; varying float vFoam; varying float vH;
+    ${WAVE_GLSL}
+    float H(vec2 p, out float foam) { return baseH(p, uTime) + ripH(p, uTime, foam); }
+    void main() {
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      float f0, f1, f2; float e = 0.6;
+      float h = H(wp.xz, f0);
+      float hx = H(wp.xz + vec2(e, 0.0), f1);
+      float hz = H(wp.xz + vec2(0.0, e), f2);
+      wp.y += h;
+      vN = normalize(vec3(h - hx, e, h - hz));
+      vFoam = f0; vH = h; vWorld = wp.xyz;
+      gl_Position = projectionMatrix * viewMatrix * wp;
+    }`,
+  fragmentShader: `
+    uniform vec3 uSun, uDeep, uShallow, uSky, uFog;
+    varying vec3 vWorld; varying vec3 vN; varying float vFoam; varying float vH;
+    void main() {
+      vec3 n = normalize(vN);
+      vec3 v = normalize(cameraPosition - vWorld);
+      float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0);
+      vec3 col = mix(uDeep, uShallow, clamp(vH * 0.3 + 0.35, 0.0, 1.0));
+      col = mix(col, uSky, clamp(fres * 0.85, 0.0, 1.0));
+      vec3 r = reflect(-v, n);
+      float s = max(dot(r, uSun), 0.0);
+      col += vec3(1.0, 0.82, 0.58) * (pow(s, 260.0) * 1.8 + pow(s, 30.0) * 0.1);
+      col = mix(col, vec3(0.97, 0.99, 1.0), clamp(vFoam * 0.55, 0.0, 0.9));
+      float dist = length(cameraPosition - vWorld);
+      col = mix(col, uFog, clamp((dist - 90.0) / 330.0, 0.0, 1.0));
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+});
+const ocean = new THREE.Mesh(new THREE.PlaneGeometry(700, 500, 280, 200), waterMat);
+ocean.rotation.x = -Math.PI / 2; ocean.position.z = -150;
+scene.add(ocean);
+const baseH = (x, z, t) => 0.55 * Math.sin(0.09 * x + 0.6 * t) + 0.4 * Math.sin(0.13 * z - 0.8 * t + 1.3) + 0.25 * Math.sin(0.21 * (x + z) + 1.1 * t) + 0.12 * Math.sin(0.37 * x - 0.29 * z + 1.7 * t);
+function addRipple(x, z, strength) {
+  ripples[rippleIdx].set(x, z, clockT, strength);
+  rippleIdx = (rippleIdx + 1) % RIPPLES;
+}
+
+/* =====================================================================
+   Whale: lathe body with pleated belly, flukes, long pectoral fins
+   ===================================================================== */
+function makeWhale({ back, belly, eye, agent }) {
+  const root = new THREE.Group();       // position + heading
+  const body = new THREE.Group();       // pitch / roll
+  root.add(body);
+  const L = 9;
+  const pts = [];
+  for (let i = 0; i <= 40; i++) {
+    const u = i / 40, y = -L / 2 + u * L;
+    let r = 1.8 * Math.pow(Math.sin(Math.PI * Math.pow(u, 0.72)), 0.5);
+    if (u < 0.3) r *= 0.28 + 0.72 * Math.pow(u / 0.3, 1.3);
+    pts.push(new THREE.Vector2(Math.max(0.05, r), y));
+  }
+  const geo = new THREE.LatheGeometry(pts, 48);
+  geo.rotateX(Math.PI / 2);  // lathe axis Y → Z (forward = +Z)
+  geo.scale(1, 0.8, 1);
+  const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
+  const cBack = new THREE.Color(back), cBelly = new THREE.Color(belly), cGroove = new THREE.Color(belly).multiplyScalar(0.72);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const k = THREE.MathUtils.smoothstep(-y, 0.05, 0.55);                 // underside
+    const groove = z > -0.5 && Math.sin(x * 9) > 0.55 && y < -0.35 ? 1 : 0; // ventral pleats
+    const c = cBack.clone().lerp(groove ? cGroove : cBelly, k);
+    col.set([c.r, c.g, c.b], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  const skin = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.05 });
+  body.add(new THREE.Mesh(geo, skin));
+
+  const finMat = new THREE.MeshStandardMaterial({ color: back, roughness: 0.6 });
+  const finUnder = new THREE.MeshStandardMaterial({ color: belly, roughness: 0.6 });
+  // pectoral fins: long, pale underneath (humpback-style)
+  for (const s of [-1, 1]) {
+    const fin = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), s < 0 ? finMat : finUnder);
+    fin.scale.set(0.3, 0.08, 2.5);
+    const pivot = new THREE.Group(); pivot.position.set(s * 1.3, -0.6, 1.5);
+    fin.position.set(s * 0.9, 0, -1.8);
+    pivot.rotation.set(0.15, s * 0.55, s * -0.45);
+    pivot.add(fin); body.add(pivot);
+    pivot.userData.side = s; body.userData[s < 0 ? 'finL' : 'finR'] = pivot;
+  }
+  // dorsal hump
+  const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.55, 12), finMat);
+  dorsal.position.set(0, 1.12, -1.9); dorsal.rotation.x = -0.6; body.add(dorsal);
+  // flukes on a pivot so they can stroke
+  const flukeShape = new THREE.Shape();
+  flukeShape.moveTo(0, 0.3);
+  flukeShape.bezierCurveTo(0.6, 0.2, 1.4, -0.2, 2.1, -0.9);
+  flukeShape.bezierCurveTo(1.6, -0.75, 1.0, -0.8, 0.35, -0.55);
+  flukeShape.lineTo(0, -0.35);
+  flukeShape.lineTo(-0.35, -0.55);
+  flukeShape.bezierCurveTo(-1.0, -0.8, -1.6, -0.75, -2.1, -0.9);
+  flukeShape.bezierCurveTo(-1.4, -0.2, -0.6, 0.2, 0, 0.3);
+  const flukeGeo = new THREE.ExtrudeGeometry(flukeShape, { depth: 0.12, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2 });
+  flukeGeo.rotateX(Math.PI / 2); flukeGeo.translate(0, 0.06, 0);
+  const fluke = new THREE.Mesh(flukeGeo, finMat);
+  const flukePivot = new THREE.Group(); flukePivot.position.set(0, 0, -L / 2 + 0.25);
+  fluke.position.z = -0.1; flukePivot.add(fluke); body.add(flukePivot);
+  // eyes
+  const eyeMat = new THREE.MeshStandardMaterial({ color: eye, emissive: agent ? eye : '#000000', emissiveIntensity: agent ? 2.2 : 0, roughness: 0.3 });
+  for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 8), eyeMat); e.position.set(s * 1.28, -0.15, 2.6); body.add(e); }
+  // agent gets a faint glowing stripe so it reads as "the AI"
+  if (agent) {
+    const stripe = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.05, 8, 64, Math.PI), new THREE.MeshBasicMaterial({ color: '#5ee6ff' }));
+    stripe.position.z = 0.6; stripe.scale.y = 0.8;
+    const s2 = stripe.clone(); s2.position.z = -0.6;
+    body.add(stripe, s2);
+  }
+  root.userData = { body, flukePivot };
+  return root;
+}
+
+/* =====================================================================
+   Splash particles (CPU simulated, drawn as soft points)
+   ===================================================================== */
+const MAXP = 2600;
+const pGeo = new THREE.BufferGeometry();
+const pPos = new Float32Array(MAXP * 3), pSize = new Float32Array(MAXP), pAlpha = new Float32Array(MAXP);
+const pVel = new Float32Array(MAXP * 3), pLife = new Float32Array(MAXP), pMax = new Float32Array(MAXP);
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('aSize', new THREE.BufferAttribute(pSize, 1));
+pGeo.setAttribute('aAlpha', new THREE.BufferAttribute(pAlpha, 1));
+const pMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false,
+  uniforms: { uScale: { value: innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(24))) } },
+  vertexShader: `attribute float aSize; attribute float aAlpha; varying float vA; uniform float uScale;
+    void main() { vA = aAlpha; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * uScale / -mv.z; gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying float vA;
+    void main() { float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; float a = vA * smoothstep(0.5, 0.15, d); gl_FragColor = vec4(mix(vec3(0.82, 0.93, 1.0), vec3(1.0), 0.6), a); }`,
+});
+const particles = new THREE.Points(pGeo, pMat); particles.frustumCulled = false; scene.add(particles);
+let pCursor = 0;
+function spray(x, y, z, S, count) {
+  for (let k = 0; k < count; k++) {
+    const i = pCursor; pCursor = (pCursor + 1) % MAXP;
+    const a = Math.random() * Math.PI * 2, rr = Math.random();
+    const radial = rand(1.5, 9) * (0.5 + S) * (1 - rr * 0.5);
+    pPos[i * 3] = x + Math.cos(a) * rr * 2.2; pPos[i * 3 + 1] = y + Math.random() * 0.5; pPos[i * 3 + 2] = z + Math.sin(a) * rr * 2.2;
+    pVel[i * 3] = Math.cos(a) * radial; pVel[i * 3 + 1] = rand(5, 22) * (0.35 + S) * (rr < 0.35 ? 1.35 : 0.85); pVel[i * 3 + 2] = Math.sin(a) * radial;
+    pMax[i] = pLife[i] = rand(1.1, 2.4); pSize[i] = rand(0.35, 1.3) * (0.8 + S * 0.6);
+  }
+}
+function updateParticles(dt) {
+  for (let i = 0; i < MAXP; i++) {
+    if (pLife[i] <= 0) { pAlpha[i] = 0; continue; }
+    pLife[i] -= dt;
+    pVel[i * 3 + 1] -= 24 * dt;
+    pVel[i * 3] *= 1 - dt * 0.6; pVel[i * 3 + 2] *= 1 - dt * 0.6;
+    pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] += pVel[i * 3 + 1] * dt; pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+    if (pPos[i * 3 + 1] < -0.3) pLife[i] = 0;
+    pAlpha[i] = Math.max(0, Math.min(1, pLife[i] / pMax[i] * 1.6)) * 0.9;
+  }
+  pGeo.attributes.position.needsUpdate = true; pGeo.attributes.aAlpha.needsUpdate = true; pGeo.attributes.aSize.needsUpdate = true;
+}
+// foam rings + mist puffs
+const fx = [];
+const ringGeo = new THREE.RingGeometry(0.8, 1.0, 64);
+function foamRing(x, z, S) {
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, 0.35, z); scene.add(m);
+  fx.push({ m, t: 0, dur: 1.8, grow: 5 + S * 12, kind: 'ring' });
+  const mist = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: '#ffffff', transparent: true, depthWrite: false, opacity: 0.55 }));
+  mist.position.set(x, 1.5 + S * 2, z); mist.scale.setScalar(4); scene.add(mist);
+  fx.push({ m: mist, t: 0, dur: 1.4, grow: 10 + S * 16, kind: 'mist' });
+}
+function updateFx(dt) {
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const f = fx[i]; f.t += dt; const u = f.t / f.dur;
+    if (u >= 1) { scene.remove(f.m); f.m.material.dispose(); fx.splice(i, 1); continue; }
+    const e = 1 - Math.pow(1 - u, 2);
+    if (f.kind === 'ring') { f.m.scale.setScalar(1 + e * f.grow); f.m.material.opacity = (1 - u) * 0.8; }
+    else { f.m.scale.setScalar(4 + e * f.grow); f.m.material.opacity = (1 - u) * 0.5; f.m.position.y += dt * 1.5; }
+  }
+}
+
+/* =====================================================================
+   Sound: tiny WebAudio synth, started on the first tap
+   ===================================================================== */
+const audio = { ctx: null, on: store.get('breach-sound') !== 'off', noise: null };
+function initAudio() {
+  if (audio.ctx || !audio.on) return;
+  try {
+    audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const len = audio.ctx.sampleRate * 1.5, buf = audio.ctx.createBuffer(1, len, audio.ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    audio.noise = buf;
+  } catch { audio.ctx = null; }
+}
+function sndTap(m) {
+  if (!audio.ctx || !audio.on) return;
+  const c = audio.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = 'sine'; o.frequency.value = 280 + m * 520;
+  g.gain.setValueAtTime(0.05, c.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.08);
+  o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.09);
+}
+function sndSplash(S, pan = 0) {
+  if (!audio.ctx || !audio.on) return;
+  const c = audio.ctx, src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), p = c.createStereoPanner ? c.createStereoPanner() : null;
+  src.buffer = audio.noise; f.type = 'lowpass'; f.frequency.setValueAtTime(900 + S * 2600, c.currentTime); f.frequency.exponentialRampToValueAtTime(200, c.currentTime + 1.2);
+  g.gain.setValueAtTime(0.0001, c.currentTime); g.gain.exponentialRampToValueAtTime(0.25 + S * 0.35, c.currentTime + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.6 + S * 0.9);
+  src.connect(f).connect(g); if (p) { p.pan.value = pan; g.connect(p).connect(c.destination); } else g.connect(c.destination);
+  src.start(); src.stop(c.currentTime + 1.5);
+}
+function sndCall() { // whale song blip on a max breach
+  if (!audio.ctx || !audio.on) return;
+  const c = audio.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(180, c.currentTime); o.frequency.exponentialRampToValueAtTime(520, c.currentTime + 0.5); o.frequency.exponentialRampToValueAtTime(260, c.currentTime + 1.1);
+  g.gain.setValueAtTime(0.0001, c.currentTime); g.gain.exponentialRampToValueAtTime(0.12, c.currentTime + 0.1); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 1.2);
+  o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 1.25);
+}
+
+/* =====================================================================
+   Players
+   ===================================================================== */
+let LANE = innerWidth / innerHeight < 0.8 ? 6.5 : 13;
+function makePlayer(id, opts) {
+  const mesh = makeWhale(opts);
+  scene.add(mesh);
+  const dir = id === 'you' ? 1 : -1;    // faces the middle
+  return {
+    id, mesh, dir, home: -dir * LANE, x: -dir * LANE, z: 0, y: -0.6, vx: 0, vy: 0,
+    state: 'swim', surge: 0, peak: 0, taps: [], lastTap: -9, airTaps: 0, t: 0, recover: 0,
+    pitch: 0, roll: 0, mode: 'dive', power: 0, launchY: 0, spinDir: 1,
+    score: 0, stats: { jumps: 0, best: 0, bigSplash: 0, maxBreaches: 0, tapCount: 0, tapTime: 0, bestJump: 0 },
+  };
+}
+const you = makePlayer('you', { back: '#3c5f7a', belly: '#e9eef2', eye: '#0d1a24' });
+const agent = makePlayer('agent', { back: '#27313d', belly: '#dfe6ea', eye: '#5ee6ff', agent: true });
+agent.mesh.rotation.y = 0;
+const players = [you, agent];
+
+function tapRate(p, now) { p.taps = p.taps.filter(t => now - t < 1); return p.taps.length; }
+function tap(p) {
+  const now = clockT;
+  if (game.state !== 'play') return;
+  if (p.state === 'air') { p.airTaps++; if (p === you) sndTap(0.9); return; }
+  if (p.state !== 'swim' && p.state !== 'charge') return;
+  p.taps.push(now);
+  const r = tapRate(p, now);
+  p.surge = Math.min(1, p.surge + surgeGain(r));
+  p.peak = Math.max(p.peak, p.surge);
+  if (p.state === 'swim') { p.state = 'charge'; p.chargeStart = now; }
+  p.lastTap = now;
+  p.stats.tapCount++;
+  if (p === you) { sndTap(p.surge); $('hintTap').classList.add('off'); }
+}
+
+function launch(p) {
+  const power = clamp(p.peak, 0.08, 1);
+  p.power = power;
+  const h = heightFor(power);
+  p.launchY = p.y;
+  p.vy = Math.sqrt(2 * G * (h - p.y));
+  const T = (p.vy + Math.sqrt(p.vy * p.vy + 2 * G * (p.y + 0.5))) / G;   // time until it's back at sea level
+  const room = LANE - 3; // how far toward the middle it may travel
+  p.vx = p.dir * Math.min(rand(3, 9) * (0.6 + power), room / T);
+  const r = Math.random();
+  p.mode = power < 0.4 ? (r < 0.7 ? 'dive' : 'side') : (r < 0.3 ? 'dive' : r < 0.65 ? 'side' : 'back');
+  p.spinDir = Math.random() < 0.5 ? -1 : 1;
+  p.airTaps = 0; p.t = 0; p.flight = T;
+  p.state = 'air';
+  p.stats.jumps++;
+  p.stats.tapTime += Math.max(0.2, p.lastTap - (p.chargeStart ?? p.lastTap));
+  addRipple(p.x, p.z, 0.6 + power * 0.8);
+  spray(p.x, 0, p.z, 0.25 + power * 0.3, 120 + power * 180);
+  if (power >= 0.97) sndCall();
+  sndSplash(0.2 + power * 0.2, p === you ? -0.5 : 0.5);
+  p.surge = 0; p.peak = 0; p.taps = [];
+}
+
+function splashDown(p) {
+  const impact = Math.hypot(p.vx, p.vy);
+  const spins = Math.min(3, Math.floor(p.airTaps / 2));
+  const factor = ({ dive: 0.55, side: 1.0, back: 1.25 })[p.mode] + spins * 0.12;
+  const S = (impact / 45) * factor;
+  const pts = scoreFor(p.power, S, spins);
+  const scoring = game.state === 'play';
+  addRipple(p.x, p.z, 1 + S * 2.4);
+  spray(p.x, 0, p.z, S, Math.round(250 + S * 650));
+  foamRing(p.x, p.z, S);
+  sndSplash(Math.min(1.4, S), p === you ? -0.5 : 0.5);
+  shake = Math.max(shake, reduceMotion || !scoring ? 0 : Math.min(1.2, S * 0.7));
+  p.state = 'under';
+  p.recover = 0.9 + 1.3 * p.power;
+  p.t = 0;
+  p.underFrom = { x: p.x, y: p.y };
+  if (!scoring) return;
+  p.score += pts;
+  p.stats.best = Math.max(p.stats.best, pts);
+  p.stats.bestJump = Math.max(p.stats.bestJump, heightFor(p.power));
+  p.stats.bigSplash = Math.max(p.stats.bigSplash, S);
+  if (p.power >= 0.97) p.stats.maxBreaches++;
+  const label = S > 1.25 ? 'MEGA SPLASH' : S > 0.85 ? 'BIG SPLASH' : S > 0.5 ? 'SPLASH' : 'SPLOOSH';
+  const extra = [`${heightFor(p.power).toFixed(0)} m`, label, spins ? `${spins} SPIN${spins > 1 ? 'S' : ''}` : null, p.power >= 0.97 ? 'MAX BREACH' : null].filter(Boolean).join(' · ');
+  popup(p, `+${pts}`, extra, p.power >= 0.97);
+  announce(`${p === you ? 'You' : 'Agent'} scored ${pts}. ${p === you ? 'You' : 'Agent'} ${p.score} of ${GOAL}.`);
+  updateScores();
+  if (p === agent) ai.afterJump(pts);
+  if (p.score >= GOAL && game.state === 'play') endGame(p);
+}
+
+function updatePlayer(p, dt, now) {
+  const surf = baseH(p.x, p.z, now);
+  if (p.state === 'swim' || p.state === 'charge') {
+    // surge decays; the whale sinks to wind up in proportion to it
+    p.surge *= Math.exp(-DECAY * dt);
+    if (p.state === 'charge' && (now - p.lastTap > RELEASE || p.peak >= 1)) {
+      if (p.peak < 0.1) { p.state = 'swim'; p.peak = 0; }
+      else { launch(p); return; }
+    }
+    p.x += (p.home - p.x) * Math.min(1, dt * 0.8);
+    const target = surf - 0.55 - p.surge * 2.8;
+    p.y += (target - p.y) * Math.min(1, dt * 6);
+    p.pitch += ((-0.12 - p.surge * 0.45) - p.pitch) * Math.min(1, dt * 5);
+    p.roll += (Math.sin(now * 0.9 + p.dir) * 0.06 - p.roll) * Math.min(1, dt * 3);
+  } else if (p.state === 'air') {
+    p.t += dt;
+    p.vy -= G * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    const u = clamp(p.t / p.flight, 0, 1);
+    const velPitch = Math.atan2(p.vy, Math.abs(p.vx) + 0.001);
+    if (p.mode === 'dive') { p.pitch = velPitch; p.roll = 0; }
+    else if (p.mode === 'side') { p.pitch = velPitch * 0.55; p.roll = p.spinDir * u * Math.PI * 0.5; }
+    else { p.pitch = THREE.MathUtils.lerp(1.2, Math.PI * 0.92, u * u); p.roll = 0; }
+    const spins = Math.min(3, Math.floor(p.airTaps / 2));
+    p.spinVis = (p.spinVis || 0) + ((spins * Math.PI * 2) - (p.spinVis || 0)) * Math.min(1, dt * 5);
+    if (p.vy < 0 && p.y <= surf) { p.spinVis = 0; splashDown(p); }
+  } else if (p.state === 'under') {
+    p.t += dt;
+    const u = clamp(p.t / p.recover, 0, 1);
+    const depth = -3 - p.power * 3;
+    const dip = u < 0.35 ? THREE.MathUtils.lerp(p.underFrom.y, depth, u / 0.35) : THREE.MathUtils.lerp(depth, surf - 0.55, (u - 0.35) / 0.65);
+    p.y = dip;
+    p.x += (p.home - p.x) * Math.min(1, dt * (0.6 + u * 1.5));
+    p.pitch += ((u < 0.35 ? -0.9 : 0.25 * (1 - u)) - p.pitch) * Math.min(1, dt * 4);
+    p.roll += (0 - p.roll) * Math.min(1, dt * 3);
+    if (u >= 1) { p.state = 'swim'; p.surge = 0; p.peak = 0; }
+  }
+  // apply transform: heading along ±X, then pitch (nose up = negative X rotation), roll about forward
+  const m = p.mesh, body = m.userData.body;
+  m.position.set(p.x, p.y, p.z);
+  m.rotation.set(0, p.dir > 0 ? Math.PI / 2 : -Math.PI / 2, 0);
+  body.rotation.order = 'YXZ';
+  body.rotation.set(-p.pitch, 0, p.roll + (p.state === 'air' ? p.spinDir * (p.spinVis || 0) : 0));
+  const stroke = p.state === 'air' ? Math.sin(now * 3) * 0.15 : Math.sin(now * (p.state === 'charge' ? 9 : 2.2)) * (p.state === 'charge' ? 0.5 : 0.28);
+  m.userData.flukePivot.rotation.x = stroke;
+  body.userData.finL.rotation.z = 0.45 + (p.state === 'air' ? Math.sin(now * 2) * 0.3 + 0.4 : Math.sin(now * 1.5) * 0.1);
+  body.userData.finR.rotation.z = -0.45 - (p.state === 'air' ? Math.sin(now * 2) * 0.3 + 0.4 : Math.sin(now * 1.5) * 0.1);
+}
+
+/* =====================================================================
+   The AI agent: same physics, capped tap rate, a simple strategy
+   ===================================================================== */
+const ai = {
+  plan: null, nextTap: 0, thinkAt: 0, tapping: false,
+  think(line) {
+    const box = $('thoughts');
+    const d = document.createElement('div'); d.textContent = line; box.appendChild(d);
+    while (box.children.length > 2) box.firstChild.remove();
+  },
+  decide(now) {
+    const d = DIFF[game.diff];
+    const cap = reachable(d.rate) * 0.92; // aim a little under the ceiling so the charge doesn't stall
+    const need = GOAL - agent.score, gap = you.score - agent.score;
+    let target, why;
+    // cheapest jump that still finishes the race
+    let finish = null;
+    for (let p = 0.2; p <= cap + 1e-6; p += 0.05) if (scoreFor(p, 0.6, 1) >= need) { finish = p; break; }
+    if (finish !== null && Math.random() < d.smart) { target = finish; why = `Need ${need}. A ${Math.round(heightFor(finish))} m jump finishes it.`; }
+    else if (gap > 50) { target = cap; why = `Behind by ${gap}. Going for a max breach.`; }
+    else if (gap < -70) { target = Math.min(cap, rand(0.45, 0.6)); why = `Ahead by ${-gap}. Quick, safe jumps.`; }
+    else { target = Math.min(cap, rand(0.65, 0.95)); why = gap > 0 ? `Close race, down ${gap}. Big jump.` : gap < 0 ? `Close race, up ${-gap}. Steady pressure.` : 'Level. Testing a strong jump.'; }
+    if (cap < 0.99 && target >= cap - 0.01 && gap > 50) why += ` (my cap is ~${Math.round(cap * 100)}%)`;
+    const start = now + rand(...d.react);
+    this.plan = { target, start, giveUp: start + 3, airTaps: Math.round(rand(...d.airTaps)) };
+    this.think(why);
+  },
+  afterJump(pts) {
+    if (pts >= 100) this.think(`+${pts}. That one landed.`);
+  },
+  update(now) {
+    if (game.state !== 'play') return;
+    const d = DIFF[game.diff];
+    if (agent.state === 'air') {
+      if (this.plan && agent.airTaps < this.plan.airTaps && now > this.nextTap) { tap(agent); this.nextTap = now + 1 / d.rate * rand(0.8, 1.2); }
+      return;
+    }
+    if (agent.state === 'under') { this.plan = null; return; }
+    if (!this.plan) { this.decide(now); return; }
+    if (now < this.plan.start) return;
+    // tap until the peak reaches the target, then let go (release timer launches it)
+    if (agent.peak < this.plan.target && now < this.plan.giveUp) {
+      if (now >= this.nextTap) { tap(agent); this.nextTap = now + (1 / d.rate) * rand(0.85, 1.15); }
+    }
+  },
+};
+
+/* =====================================================================
+   HUD
+   ===================================================================== */
+function updateScores() {
+  $('ptsYou').innerHTML = `${you.score}<small> / ${GOAL}</small>`;
+  $('ptsAgent').innerHTML = `${agent.score}<small> / ${GOAL}</small>`;
+  $('barYou').style.width = `${Math.min(100, (you.score / GOAL) * 100)}%`;
+  $('barAgent').style.width = `${Math.min(100, (agent.score / GOAL) * 100)}%`;
+}
+function stateText(p) {
+  if (game.state !== 'play') return p === you ? 'Tap fast to charge, stop to breach' : 'Waiting for the start';
+  if (p.state === 'air') return p === you ? `Airborne! Tap to spin (${Math.min(3, Math.floor(p.airTaps / 2))}/3)` : `Airborne · ${Math.min(3, Math.floor(p.airTaps / 2))} spin${Math.floor(p.airTaps / 2) === 1 ? '' : 's'}`;
+  if (p.state === 'under') return 'Diving… resurfacing';
+  if (p.state === 'charge') return `Charging · peak ${Math.round(p.peak * 100)}%${p.peak >= 1 ? ' · MAX' : ''}`;
+  return p === you ? 'Ready. Tap fast to charge, stop to breach' : 'Ready';
+}
+let hudT = 0;
+function updateHud(now) {
+  for (const p of players) {
+    const k = p === you ? 'You' : 'Agent';
+    $(`surge${k}`).style.width = `${p.surge * 100}%`;
+    const pk = $(`peak${k}`);
+    pk.style.left = `calc(${p.peak * 100}% - 2px)`; pk.style.opacity = p.peak > 0.02 ? 1 : 0;
+  }
+  if (now - hudT > 0.12) {
+    hudT = now;
+    $('rateYou').textContent = `${tapRate(you, now).toFixed(1)} taps/s`;
+    $('rateAgent').textContent = `${tapRate(agent, now).toFixed(1)} taps/s`;
+    $('stateYou').textContent = stateText(you);
+    $('stateAgent').textContent = stateText(agent);
+  }
+}
+const tmpV = new THREE.Vector3();
+function project(x, y, z) { tmpV.set(x, y, z).project(camera); return [(tmpV.x * 0.5 + 0.5) * innerWidth, (-tmpV.y * 0.5 + 0.5) * innerHeight, tmpV.z < 1]; }
+function placeTags() {
+  for (const [p, el] of [[you, $('tagYou')], [agent, $('tagAgent')]]) {
+    const [sx, sy, vis] = project(p.x, Math.max(p.y, 0) + 3.2, p.z);
+    el.style.left = `${sx}px`; el.style.top = `${sy}px`; el.style.opacity = vis ? (p.state === 'under' ? 0.5 : 1) : 0;
+  }
+}
+function popup(p, big, small, max) {
+  const [sx, sy] = project(p.x, 6, p.z);
+  const d = document.createElement('div'); d.className = `pop ${p.id}${max ? ' max' : ''}`;
+  d.innerHTML = `<b>${big}</b><span>${small}</span>`;
+  d.style.left = `${clamp(sx, 90, innerWidth - 90)}px`; d.style.top = `${clamp(sy, 120, innerHeight - 160)}px`;
+  document.body.appendChild(d); setTimeout(() => d.remove(), 2000);
+}
+let announceTimer;
+function announce(t) { clearTimeout(announceTimer); announceTimer = setTimeout(() => { $('announce').textContent = t; }, 50); }
+
+/* =====================================================================
+   Game flow
+   ===================================================================== */
+const game = { state: 'menu', diff: store.get('breach-diff') || 'pod', start: 0 };
+document.querySelectorAll('.diff button').forEach(b => {
+  b.setAttribute('aria-pressed', b.dataset.d === game.diff);
+  b.onclick = () => { game.diff = b.dataset.d; store.set('breach-diff', game.diff); document.querySelectorAll('.diff button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderBest(); };
+});
+function renderBest() {
+  const w = +(store.get(`breach-wins-${game.diff}`) || 0);
+  $('bestLine').textContent = w ? `Wins vs ${DIFF[game.diff].name}: ${w}` : `vs ${DIFF[game.diff].name}`;
+}
+renderBest();
+
+function resetMatch() {
+  for (const p of players) {
+    Object.assign(p, { x: p.home, y: -0.6, vx: 0, vy: 0, state: 'swim', surge: 0, peak: 0, taps: [], airTaps: 0, score: 0, pitch: 0, roll: 0, spinVis: 0,
+      stats: { jumps: 0, best: 0, bigSplash: 0, maxBreaches: 0, tapCount: 0, tapTime: 0, bestJump: 0 } });
+  }
+  ai.plan = null; $('thoughts').innerHTML = '';
+  updateScores();
+}
+async function startMatch() {
+  initAudio();
+  if (audio.ctx?.state === 'suspended') audio.ctx.resume();
+  $('menu').hidden = true; $('over').hidden = true;
+  resetMatch();
+  game.state = 'countdown';
+  ai.think(`Opponent: ${DIFF[game.diff].name}. Max rate ~${DIFF[game.diff].rate} taps/s.`);
+  const c = $('count'); c.hidden = false;
+  for (const n of ['3', '2', '1', 'GO!']) { c.innerHTML = `<span>${n}</span>`; await new Promise(r => setTimeout(r, n === 'GO!' ? 600 : 750)); if (game.state !== 'countdown') { c.hidden = true; return; } }
+  c.hidden = true;
+  game.state = 'play'; game.start = clockT;
+  $('hintTap').classList.remove('off');
+  renderer.domElement.focus?.();
+}
+function endGame(winner) {
+  game.state = 'over';
+  const won = winner === you;
+  if (won) store.set(`breach-wins-${game.diff}`, +(store.get(`breach-wins-${game.diff}`) || 0) + 1);
+  setTimeout(() => {
+    $('resultCard').className = `card result ${won ? 'win' : 'lose'}`;
+    $('resTitle').textContent = won ? 'YOU WIN' : 'AGENT WINS';
+    $('resSub').textContent = won ? `You out-breached the ${DIFF[game.diff].name} agent, ${you.score} to ${agent.score}.` : `The ${DIFF[game.diff].name} agent got there first, ${agent.score} to ${you.score}. Tap faster!`;
+    const row = (label, f) => `<tr><td>${label}</td><td class="you">${f(you)}</td><td class="agent">${f(agent)}</td></tr>`;
+    $('resStats').innerHTML = `<tr><th></th><th>YOU</th><th>AGENT</th></tr>`
+      + row('Jumps', p => p.stats.jumps)
+      + row('Highest jump', p => `${p.stats.bestJump.toFixed(0)} m`)
+      + row('Best single score', p => p.stats.best)
+      + row('Biggest splash', p => p.stats.bigSplash.toFixed(2))
+      + row('Max breaches', p => p.stats.maxBreaches)
+      + row('Avg tap rate', p => p.stats.tapTime ? `${(p.stats.tapCount / p.stats.tapTime).toFixed(1)}/s` : '—');
+    $('over').hidden = false;
+    $('bAgain').focus();
+    renderBest();
+  }, 1400);
+  announce(won ? 'You win!' : 'The agent wins.');
+}
+function pause(on) {
+  if (on && game.state === 'play') { game.state = 'paused'; $('paused').hidden = false; $('bResume').focus(); }
+  else if (!on && game.state === 'paused') { game.state = 'play'; $('paused').hidden = true; }
+}
+$('bStart').onclick = startMatch;
+$('bAgain').onclick = startMatch;
+$('bMenu').onclick = () => { $('over').hidden = true; $('menu').hidden = false; game.state = 'menu'; };
+$('bPause').onclick = () => pause(game.state === 'play');
+$('bResume').onclick = () => pause(false);
+$('bQuit').onclick = () => { $('paused').hidden = true; $('menu').hidden = false; game.state = 'menu'; resetMatch(); };
+const syncSound = () => { $('bSound').textContent = audio.on ? '🔊' : '🔇'; $('bSound').setAttribute('aria-label', audio.on ? 'Sound on (M)' : 'Sound off (M)'); };
+$('bSound').onclick = () => { audio.on = !audio.on; store.set('breach-sound', audio.on ? 'on' : 'off'); if (audio.on) initAudio(); syncSound(); };
+syncSound();
+
+// taps: anywhere on the ocean (each finger counts), or Space
+renderer.domElement.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); tap(you); });
+addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.code === 'Space' || e.code === 'Enter') {
+    if (game.state === 'play') { e.preventDefault(); tap(you); }
+    else if (game.state === 'menu' && e.code === 'Enter' && document.activeElement === document.body) startMatch();
+  }
+  else if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') pause(game.state === 'play');
+  else if (e.key === 'm' || e.key === 'M') $('bSound').click();
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(true); });
+
+/* =====================================================================
+   Camera + loop
+   ===================================================================== */
+let shake = 0, camY = 9, camZ = 44, lookY = 6;
+function fitCamera() {
+  const a = innerWidth / innerHeight;
+  return { baseZ: Math.max(44, (LANE + 5) / (Math.tan(THREE.MathUtils.degToRad(24)) * a)), baseY: 9 };
+}
+addEventListener('resize', () => {
+  LANE = innerWidth / innerHeight < 0.8 ? 6.5 : 13;
+  for (const p of players) p.home = -p.dir * LANE;
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  pMat.uniforms.uScale.value = innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(24)));
+});
+
+let clockT = 0, last = performance.now();
+function frame(nowMs) {
+  const dt = Math.min(0.05, (nowMs - last) / 1000); last = nowMs;
+  const paused = game.state === 'paused';
+  if (!paused) clockT += dt;
+  const now = clockT;
+  waterMat.uniforms.uTime.value = now;
+
+  if (!paused) {
+    ai.update(now);
+    for (const p of players) updatePlayer(p, dt, now);
+    // idle show-off in the menu: the whales breach on their own
+    if (game.state === 'menu' && Math.random() < dt * 0.25) {
+      const p = players[Math.floor(Math.random() * 2)];
+      if (p.state === 'swim') { p.peak = rand(0.4, 1); p.lastTap = now; launch(p); }
+    }
+    updateParticles(dt);
+    updateFx(dt);
+  }
+
+  // camera follows the highest whale, pulls back for big jumps
+  const { baseZ, baseY } = fitCamera();
+  const top = Math.max(you.y, agent.y, 0);
+  const wantLook = 5 + top * 0.55, wantY = baseY + top * 0.45, wantZ = baseZ + top * 0.55;
+  lookY += (wantLook - lookY) * Math.min(1, dt * 2.5);
+  camY += (wantY - camY) * Math.min(1, dt * 2.5);
+  camZ += (wantZ - camZ) * Math.min(1, dt * 2);
+  shake = Math.max(0, shake - dt * 1.6);
+  const sx = (Math.random() - 0.5) * shake, sy = (Math.random() - 0.5) * shake;
+  camera.position.set(sx + Math.sin(now * 0.1) * 1.5, camY + sy, camZ);
+  camera.lookAt(0, lookY, -4);
+
+  updateHud(now);
+  placeTags();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.BREACH = { you, agent, game, ai, tap, startMatch }; // debugging handle
+</script>
+</body>
+</html>
