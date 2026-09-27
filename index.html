@@ -4,98 +4,88 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AI Animations</title>
+<meta name="description" content="Games and tools built in conversation with an AI agent, from The Accidental Engineer." />
+<link rel="icon" href="assets/avatar.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/site.css" />
+<script src="assets/theme.js"></script>
 <style>
-  :root {
-    --bg: #f3f5f7;
-    --panel: #ffffff;
-    --ink: #121820;
-    --dim: #5b6674;
-    --line: #dde2e8;
-    --accent: #0b7a8c;
-    --thumb: #0a0f14;
-    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --bg: #0b0e12; --panel: #12171d; --ink: #e3e9ef; --dim: #8b97a4; --line: #222a33; --accent: #5fd4e6;
-    }
-  }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #0b0e12; --panel: #12171d; --ink: #e3e9ef; --dim: #8b97a4; --line: #222a33; --accent: #5fd4e6;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); padding-inline: 16px; }
-  .wrap { max-width: 1120px; margin: 0 auto; padding-block: 48px 64px; display: grid; gap: 36px; }
-
-  header { display: grid; gap: 10px; }
-  .eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--accent); }
-  h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; font-weight: 600; text-wrap: balance; }
-  .lede { margin: 0; max-width: 62ch; color: var(--dim); }
-
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .toolbar .count { font: 12px var(--mono); color: var(--dim); margin-right: auto; font-variant-numeric: tabular-nums; }
-  .chip {
-    font: 12px var(--mono); color: var(--dim); background: transparent; border: 1px solid var(--line);
-    border-radius: 999px; padding: 4px 11px; cursor: pointer;
-  }
-  .chip:hover { color: var(--ink); }
-  .chip[aria-pressed="true"] { color: var(--bg); background: var(--ink); border-color: var(--ink); }
-  .chip:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .hero { border-bottom: 1px solid var(--color-border); }
+  .hero .container { padding-block: 80px 72px; }
+  .hero h1 { margin: 16px 0 0; max-width: 42rem; font-size: clamp(36px, 6vw, 48px); line-height: 1.1; font-weight: 700; letter-spacing: -.025em; }
+  .hero .lede { margin: 16px 0 0; max-width: 36rem; font-size: 18px; line-height: 1.65; color: var(--color-text-secondary); }
+  .hero .by { margin: 4px 0 0; font-size: 14px; color: var(--color-text-tertiary); }
+  .hero .actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 16px; }
+  .list .container { padding-block: 64px; }
+  .list-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .list-head h2 { margin: 0; }
+  #count { font: 12px var(--font-mono); color: var(--color-text-tertiary); font-variant-numeric: tabular-nums; }
+  .toolbar { margin-top: 20px; }
+  .grid { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
   .card {
-    display: grid; grid-template-rows: auto 1fr; background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; overflow: hidden; color: inherit; text-decoration: none; transition: border-color .2s, transform .2s;
+    position: relative; display: grid; grid-template-rows: auto 1fr; overflow: hidden;
+    border: 1px solid var(--color-border-strong); background: var(--color-surface-alt); border-radius: 8px;
+    color: inherit; text-decoration: none; transition: border-color .15s;
   }
-  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-  .thumb { aspect-ratio: 16 / 9; max-width: 100%; background: var(--thumb); position: relative; overflow: hidden; }
+  .card:hover { border-color: var(--color-accent); }
+  .card:hover h3 { color: var(--color-accent); }
+  .thumb { aspect-ratio: 16 / 9; position: relative; overflow: hidden; background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
   .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-  .thumb .ph {
-    position: absolute; inset: 0; display: grid; place-items: center; font: 12px var(--mono); letter-spacing: .2em; color: #5fd4e6;
-    background: radial-gradient(circle at 50% 60%, rgba(95,212,230,.18), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(95,212,230,.06) 0 1px, transparent 1px 24px),
-      repeating-linear-gradient(90deg, rgba(95,212,230,.06) 0 1px, transparent 1px 24px);
-  }
-  .body { padding: 16px 18px 18px; display: grid; gap: 8px; align-content: start; }
-  .body h2 { margin: 0; font-size: 18px; font-weight: 600; text-wrap: balance; }
-  .body p { margin: 0; color: var(--dim); font-size: 14px; }
-  .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
-  .tag { font: 11px var(--mono); color: var(--dim); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
-  .date { font: 11px var(--mono); color: var(--dim); margin-left: auto; font-variant-numeric: tabular-nums; }
-
-  .empty { color: var(--dim); font: 13px var(--mono); padding: 24px 0; }
-  footer { border-top: 1px solid var(--line); padding-top: 20px; color: var(--dim); font-size: 13px; display: grid; gap: 6px; }
-  code { font: 12.5px var(--mono); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--ink); overflow-wrap: anywhere; }
-  @media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
+  .thumb .ph { position: absolute; inset: 0; display: grid; place-items: center; font: 12px var(--font-mono); color: var(--color-text-tertiary); }
+  .card .body { padding: 20px 24px 24px; display: grid; gap: 8px; align-content: start; }
+  .card .meta-line { gap: 8px; }
+  .card h3 { margin: 0; font-size: 20px; line-height: 1.3; font-weight: 600; letter-spacing: -.015em; transition: color .15s; }
+  .card p { margin: 0; font-size: 14px; line-height: 1.65; color: var(--color-text-secondary); }
+  .card .badges { margin-top: 4px; }
+  .empty { color: var(--color-text-tertiary); font: 13px var(--font-mono); padding: 24px 0; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="eyebrow">ai-animations</div>
-    <h1>Animations of AI systems at work</h1>
-    <p class="lede">Standalone three.js scenes that show how agents, evals and models behave while they run. Each one lives in its own folder and opens on its own.</p>
-  </header>
+<header class="site-header"><div class="container">
+  <a class="brand" href="./"><img src="assets/avatar.png" alt="" width="32" height="32" /><span>the accidental engineer<span class="sub"> / animations</span></span></a>
+  <nav class="site-nav" aria-label="Site">
+    <a href="./" aria-current="page">Gallery</a>
+    <a href="article/">Story</a>
+    <a class="opt" href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a>
+    <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+  </nav>
+</div></header>
 
-  <main>
-    <div class="toolbar" role="toolbar" aria-label="Filter by tag">
-      <span class="count" id="count"></span>
+<main>
+  <section class="hero"><div class="container">
+    <p class="eyebrow">a design-engineering lab</p>
+    <h1>AI Animations</h1>
+    <p class="lede">Games and tools built in conversation with an AI agent: agent evals in 3D, SQL you can play, and a few arcade classics rebuilt from memory. Each one is a single page that opens on its own.</p>
+    <p class="by">by Josh Schoen</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="article/">Read the story <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+      <a class="btn btn-secondary" href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">View on GitHub</a>
     </div>
-    <div class="grid" id="grid" style="margin-top:16px"></div>
-    <p class="empty" id="empty" hidden>No animations match this tag.</p>
-  </main>
+  </div></section>
 
-  <footer>
-    <div>Add one with <code>npm run new -- my-slug "My Title"</code>, then run <code>npm run check</code>.</div>
-    <div>Serve locally with <code>npm run serve</code> and open <code>http://localhost:8000</code>.</div>
-  </footer>
-</div>
+  <section class="list"><div class="container">
+    <div class="list-head"><h2 class="eyebrow">All animations</h2><span id="count"></span></div>
+    <div class="toolbar badges" role="toolbar" aria-label="Filter by tag"></div>
+    <div class="grid" id="grid"></div>
+    <p class="empty" id="empty" hidden>No animations match this tag.</p>
+  </div></section>
+</main>
+
+<footer class="site-footer"><div class="container">
+  <div class="top">
+    <div>
+      <p class="name">the accidental engineer</p>
+      <p class="blurb">Notes from the intersection of design, engineering, and accidentally becoming the person who fixes the build.</p>
+    </div>
+    <nav aria-label="Footer">
+      <div><span>Navigate</span><a href="./">Gallery</a><a href="article/">Story</a></div>
+      <div><span>Meta</span><a href="https://github.com/Josh-Schoen/ai-animations" rel="noopener">GitHub</a></div>
+    </nav>
+  </div>
+  <div class="bottom"><span>&copy; 2026 Josh Schoen</span><span>Built in conversation with Claude Code. No build step.</span></div>
+</div></footer>
 
 <script src="animations/registry.js"></script>
 <script>
@@ -104,13 +94,14 @@
   const toolbar = document.querySelector('.toolbar');
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   let active = 'all';
+  const fmt = d => { if (!d) return ''; const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); };
 
   const tags = ['all', ...new Set(list.flatMap(a => a.tags || []))];
   if (tags.length > 2) {
     tags.forEach(t => {
       const b = document.createElement('button');
-      b.className = 'chip'; b.textContent = t; b.setAttribute('aria-pressed', t === active);
-      b.onclick = () => { active = t; toolbar.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); };
+      b.className = 'badge-tag'; b.type = 'button'; b.textContent = t; b.setAttribute('aria-pressed', t === active);
+      b.onclick = () => { active = t; toolbar.querySelectorAll('.badge-tag').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); };
       toolbar.appendChild(b);
     });
   }
@@ -126,9 +117,10 @@
           <img src="animations/${esc(a.slug)}/thumb.jpg" alt="" loading="lazy" onerror="this.remove()" />
         </div>
         <div class="body">
-          <h2>${esc(a.title)}</h2>
+          <div class="meta-line"><time datetime="${esc(a.added || '')}">${esc(fmt(a.added))}</time></div>
+          <h3>${esc(a.title)}</h3>
           <p>${esc(a.description)}</p>
-          <div class="meta">${(a.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('')}<span class="date">${esc(a.added || '')}</span></div>
+          <div class="badges">${(a.tags || []).map(t => `<span class="badge-tag">${esc(t)}</span>`).join('')}</div>
         </div>
       </a>`).join('');
   }
