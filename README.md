@@ -12,6 +12,7 @@ npm run serve        # python3 -m http.server 8000
 | Folder | What it shows |
 | --- | --- |
 | [`animations/agent-eval-nightglass`](animations/agent-eval-nightglass/) | An AI agent running eval suites: live step status, edge traffic, run-of-runs, totals and accuracy, with tap-to-drill-in step details. |
+| [`animations/query-quest`](animations/query-quest/) | A SQL game: ask a question in plain English, an agent streams the SQL, runs it in the browser, charts the result, and pinned insights unlock a live dark dashboard. |
 
 ## Layout
 

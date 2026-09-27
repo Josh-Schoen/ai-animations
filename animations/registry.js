@@ -9,4 +9,11 @@ window.ANIMATIONS = [
     tags: ['three.js', 'agents', 'evals'],
     added: '2026-09-27',
   },
+  {
+    slug: 'query-quest',
+    title: 'Query Quest',
+    description: 'A SQL game: ask a question in plain English, watch an agent stream the SQL, run it live, chart the result, and pin insights until a dark live dashboard unlocks.',
+    tags: ['sql', 'agents', 'dashboard', 'game'],
+    added: '2026-09-27',
+  },
 ];
