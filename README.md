@@ -15,6 +15,7 @@ npm run serve        # python3 -m http.server 8000
 | [`animations/query-quest`](animations/query-quest/) | A SQL game: ask a question in plain English, an agent streams the SQL, runs it in the browser, charts the result, and pinned insights unlock a live dark dashboard. |
 | [`animations/breach`](animations/breach/) | A whale-jumping game against an AI agent: faster tapping means higher breaches and bigger splashes, first to 500 points wins. |
 | [`animations/vector-ko`](animations/vector-ko/) | A green wireframe boxing game with the controls across the top: read the tells, dodge, counter for stars, and land the star uppercut. |
+| [`animations/micro-rally`](animations/micro-rally/) | An RC-style toy truck racer with four tracks, item boxes (missiles, nitro, oil), AI rivals and a championship. |
 
 ## Layout
 

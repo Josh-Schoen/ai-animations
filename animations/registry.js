@@ -30,4 +30,11 @@ window.ANIMATIONS = [
     tags: ['three.js', 'game'],
     added: '2026-09-27',
   },
+  {
+    slug: 'micro-rally',
+    title: 'Micro Rally',
+    description: 'An RC-style toy truck racer on four tracks: grab item boxes, fire missiles, drop oil, and finish top three to advance through the championship.',
+    tags: ['three.js', 'game', 'racing'],
+    added: '2026-09-27',
+  },
 ];
