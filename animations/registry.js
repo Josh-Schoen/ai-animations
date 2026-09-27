@@ -23,4 +23,11 @@ window.ANIMATIONS = [
     tags: ['three.js', 'game', 'agents'],
     added: '2026-09-27',
   },
+  {
+    slug: 'vector-ko',
+    title: 'Vector KO',
+    description: 'A green wireframe boxing game: read the opponent\'s tells, dodge, counter for stars, and land the star uppercut, with the controls across the top.',
+    tags: ['three.js', 'game'],
+    added: '2026-09-27',
+  },
 ];
