@@ -2,7 +2,7 @@
 
 A gallery of standalone three.js animations about AI systems. Each animation is a self-contained page in its own folder. There's no build step: three.js loads from jsDelivr through an import map.
 
-**Play online:** [josh-schoen.github.io/ai-animations](https://josh-schoen.github.io/ai-animations/), served by GitHub Pages from `main`. You can also open any `index.html` straight from disk; it only needs an internet connection for three.js and fonts.
+**Play online:** [josh-schoen.github.io/ai-animations](https://josh-schoen.github.io/ai-animations/), served by GitHub Pages; `.github/workflows/pages.yml` publishes every push to `main`. You can also open any `index.html` straight from disk; it only needs an internet connection for three.js and fonts.
 
 **Read the story:** [Beam Me Up: The Sci-Fi Computer Is Already in Your Pocket](https://josh-schoen.github.io/ai-animations/article/), about how these were built ([source](article/article.md)).
 
