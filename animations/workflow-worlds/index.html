@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Workflow Worlds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* One look per world; the HUD follows the world via body[data-theme]. */
+  :root {
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    --glass: rgba(10, 14, 28, .78); --glass-2: rgba(18, 23, 40, .97); --line: rgba(160, 180, 255, .18);
+    --ink: #e8ecff; --dim: #9aa3c7; --faint: #5b6488; --accent: #8fb4ff; --accent-ink: #0b1020;
+    --running: #38bdf8; --success: #34d399; --retry: #fbbf24; --failed: #f87171; --waiting: #c084fc; --idle: #94a3b8;
+    color-scheme: dark;
+  }
+  body[data-theme="town"] {
+    --glass: rgba(255, 253, 247, .9); --glass-2: #fffdf7; --line: rgba(60, 50, 30, .16);
+    --ink: #2a2418; --dim: #6b604c; --faint: #a3967c; --accent: #c2410c; --accent-ink: #fff;
+    --running: #0284c7; --success: #15803d; --retry: #b45309; --failed: #b91c1c; --waiting: #7e22ce; --idle: #78716c;
+    color-scheme: light;
+  }
+  body[data-theme="beam"] { --glass: rgba(4, 10, 16, .8); --glass-2: rgba(6, 16, 24, .97); --line: rgba(0, 255, 220, .18); --ink: #dffcf7; --dim: #7fb8ae; --faint: #3f6e66; --accent: #2ff3d8; --accent-ink: #021412; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05060d; color: var(--ink); font: 14px/1.45 var(--sans); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; touch-action: none; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- top bar ---------- */
+  .bar {
+    position: fixed; top: 12px; left: 12px; right: 12px; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    pointer-events: none;
+  }
+  .bar > * { pointer-events: auto; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 10px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); text-decoration: none; color: inherit; }
+  .brand b { font-weight: 700; letter-spacing: -.01em; }
+  .brand small { color: var(--dim); font-size: 12px; }
+  .brand a { color: var(--dim); text-decoration: none; font-size: 12px; }
+  .brand a:hover { color: var(--ink); }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .seg button { border: 0; background: none; padding: 6px 11px; border-radius: 7px; color: var(--dim); font-weight: 500; font-size: 13px; white-space: nowrap; }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .seg .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: var(--idle); vertical-align: 1px; }
+  .seg button[aria-pressed="true"] .dot.run { background: var(--accent-ink); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .spacer { flex: 1; }
+  .btn { border: 1px solid var(--line); background: var(--glass); color: var(--ink); padding: 7px 12px; border-radius: 9px; font-weight: 500; font-size: 13px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn.small { padding: 4px 9px; font-size: 12px; }
+  .btn.danger { color: var(--failed); }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  /* ---------- run stats + log ---------- */
+  .stats {
+    position: fixed; left: 12px; bottom: 12px; z-index: 15; width: 300px; max-width: calc(100vw - 24px);
+    background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .stats h3 { margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .kpis div { background: color-mix(in srgb, var(--glass-2) 80%, transparent); border-radius: 8px; padding: 6px 8px; }
+  .kpis b { display: block; font: 600 17px var(--sans); font-variant-numeric: tabular-nums; }
+  .kpis span { font-size: 11px; color: var(--dim); }
+  .log { margin: 8px 0 0; padding: 0; list-style: none; font: 11.5px/1.5 var(--mono); max-height: 112px; overflow: hidden; color: var(--dim); }
+  .log li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .log li b { font-weight: 500; }
+  .st-running { color: var(--running); } .st-success { color: var(--success); } .st-retry { color: var(--retry); } .st-failed { color: var(--failed); } .st-waiting { color: var(--waiting); } .st-idle { color: var(--idle); }
+  .rest-note { font-size: 12.5px; color: var(--dim); margin: 6px 0 0; }
+
+  /* ---------- 3D labels ---------- */
+  .nl { pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; user-select: none; }
+  .nl .card { display: inline-block; padding: 4px 9px 5px; border-radius: 8px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: border-color .2s, transform .2s; }
+  .nl .nm { font-weight: 600; font-size: 12.5px; }
+  .nl .ty { font-size: 10.5px; color: var(--dim); display: flex; gap: 6px; justify-content: center; align-items: center; }
+  .nl .ty i { font-style: normal; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  .nl.sel .card { border-color: var(--accent); transform: scale(1.06); box-shadow: 0 0 0 1px var(--accent); }
+  .nl.dim { opacity: .35; }
+  .el { pointer-events: auto; cursor: pointer; font: 10.5px var(--mono); color: var(--dim); background: var(--glass); border: 1px solid var(--line); padding: 1px 6px; border-radius: 6px; white-space: nowrap; user-select: none; }
+  .el.sel { color: var(--ink); border-color: var(--accent); }
+
+  /* ---------- tour caption ---------- */
+  .tour {
+    position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 18; width: min(560px, calc(100vw - 24px));
+    background: var(--glass-2); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px 12px; box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  }
+  .tour .k { font: 11px var(--mono); color: var(--dim); letter-spacing: .06em; text-transform: uppercase; display: flex; justify-content: space-between; }
+  .tour h4 { margin: 4px 0 4px; font-size: 18px; letter-spacing: -.01em; }
+  .tour p { margin: 0 0 10px; color: var(--dim); font-size: 14px; }
+  .tour .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .tour .prog { height: 3px; border-radius: 2px; background: var(--line); margin-bottom: 10px; overflow: hidden; }
+  .tour .prog i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+
+  /* ---------- inspector ---------- */
+  .insp {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 30; width: min(460px, 100vw); display: flex; flex-direction: column;
+    background: var(--glass-2); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); border-left: 1px solid var(--line); box-shadow: -12px 0 40px rgba(0,0,0,.35);
+    transform: translateX(105%); transition: transform .35s cubic-bezier(.2,.8,.2,1);
+  }
+  .insp.open { transform: none; }
+  .insp.wide { width: min(900px, 100vw); }
+  .insp header { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .insp header .chip { font: 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line); color: var(--dim); }
+  .insp header h2 { margin: 0; font-size: 16px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .insp .body { flex: 1; overflow: auto; padding: 12px 14px 24px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; }
+  .insp .body > * { min-width: 0; }
+  .insp .sec h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .canvas2d { border: 1px solid var(--line); border-radius: 10px; max-height: 360px; overflow: auto; overscroll-behavior: contain; background:
+      radial-gradient(circle, color-mix(in srgb, var(--dim) 30%, transparent) 1px, transparent 1.2px) 0 0 / 20px 20px,
+      color-mix(in srgb, var(--glass) 60%, transparent); overflow: hidden; position: relative; }
+  .canvas2d svg { display: block; max-width: none; touch-action: none; user-select: none; }
+  .canvas-wrap { position: relative; }
+  .canvas2d .tools { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .canvas-wrap .hint { position: absolute; bottom: 6px; right: 10px; font-size: 11px; color: var(--dim); pointer-events: none; background: var(--glass-2); padding: 0 6px; border-radius: 6px; }
+  svg .n2 rect.box { fill: var(--glass-2); stroke: var(--line); stroke-width: 1.5; }
+  svg .n2.sel rect.box { stroke: var(--accent); stroke-width: 2.5; }
+  svg .n2 text { fill: var(--ink); font: 600 15px var(--sans); }
+  svg .n2 text.t { fill: var(--dim); font: 11.5px var(--mono); text-transform: uppercase; }
+  svg .n2 { cursor: grab; }
+  svg .n2.src rect.box { stroke-dasharray: 5 3; stroke: var(--accent); }
+  svg .e2 path.vis { fill: none; stroke: var(--faint); stroke-width: 2; }
+  svg .e2.sel path.vis { stroke: var(--accent); stroke-width: 3; }
+  svg .e2 path.hit { fill: none; stroke: transparent; stroke-width: 16; cursor: pointer; }
+  svg .e2 text { fill: var(--dim); font: 12.5px var(--mono); }
+  svg .e2.sel text { fill: var(--ink); }
+  .form { display: grid; gap: 9px; }
+  .form label { display: grid; gap: 3px; font-size: 12px; color: var(--dim); }
+  .form input, .form select, .form textarea { width: 100%; border: 1px solid var(--line); background: color-mix(in srgb, var(--glass) 70%, transparent); border-radius: 8px; padding: 7px 9px; color: var(--ink); font-size: 13.5px; }
+  .form textarea { min-height: 70px; resize: vertical; font-family: var(--sans); }
+  .form .two { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .form .chk { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 13px; }
+  .form .chk input { width: auto; }
+  .ai textarea { width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--line); background: color-mix(in srgb, var(--glass) 70%, transparent); border-radius: 8px; padding: 8px 10px; color: var(--ink); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  .chips button { border: 1px solid var(--line); background: none; color: var(--dim); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+  .chips button:hover { color: var(--ink); border-color: var(--accent); }
+  .ai .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .ai .who { font-size: 12px; color: var(--dim); }
+  .ai select { border: 1px solid var(--line); background: none; border-radius: 7px; padding: 4px 6px; font-size: 12px; color: var(--dim); }
+  .proposal { margin-top: 10px; border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .proposal p { margin: 0 0 6px; font-size: 13.5px; }
+  .proposal ul { margin: 0 0 10px; padding-left: 18px; font-size: 13px; color: var(--dim); }
+  .proposal li b { color: var(--ink); font-weight: 600; }
+  .proposal.note { border-color: var(--line); }
+  .hist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .hist li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: baseline; font-size: 13px; }
+  .hist .by { font: 10.5px var(--mono); text-transform: uppercase; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); color: var(--dim); }
+  .hist .by.ai { color: var(--accent); border-color: var(--accent); }
+  .hist time { font: 11px var(--mono); color: var(--faint); }
+  .empty { color: var(--dim); font-size: 13px; margin: 0; }
+  .mut { color: var(--dim); font-size: 12.5px; margin: 0; }
+  .toast { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 60; background: var(--glass-2); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 14px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  .toast.on { opacity: 1; }
+  .help { position: fixed; right: 12px; bottom: 12px; z-index: 14; font-size: 12px; color: var(--dim); background: var(--glass); border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+  @media (max-width: 760px) {
+    .bar { top: 8px; left: 8px; right: 8px; gap: 6px; }
+    .brand small, .help, .hide-sm { display: none; }
+    .seg button { padding: 5px 8px; font-size: 12px; }
+    .stats { width: auto; right: 8px; left: 8px; bottom: 8px; padding: 8px 10px; }
+    .stats .log { display: none; }
+    .tour { bottom: 8px; }
+    .touring .stats { display: none; }
+    .editing .bar, .editing .stats { display: none; }
+    .insp .sec h3 { flex-wrap: wrap; }
+    .insp, .insp.wide { top: auto; height: 72vh; width: 100vw; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; transform: translateY(105%); }
+    .insp.open { transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .insp { transition: none; } }
+</style>
+</head>
+<body data-theme="space">
+<div id="stage"></div>
+<div id="labels"></div>
+
+<div class="bar">
+  <div class="brand"><a href="../" aria-label="All animations">&larr;</a><b>Workflow Worlds</b><small id="wfName"></small></div>
+  <div class="seg" role="group" aria-label="World">
+    <button data-theme="space" aria-pressed="true">Space</button>
+    <button data-theme="town" aria-pressed="false">Town</button>
+    <button data-theme="beam" aria-pressed="false">Beams</button>
+  </div>
+  <div class="seg" role="group" aria-label="Workflow state">
+    <button data-mode="rest" aria-pressed="true"><span class="dot"></span>At rest</button>
+    <button data-mode="run" aria-pressed="false"><span class="dot run"></span>Running</button>
+  </div>
+  <div class="seg hide-sm" role="group" aria-label="Speed" id="speedSeg" hidden>
+    <button data-speed="1" aria-pressed="true">1×</button>
+    <button data-speed="2" aria-pressed="false">2×</button>
+    <button data-speed="4" aria-pressed="false">4×</button>
+  </div>
+  <span class="spacer"></span>
+  <button class="btn" id="tourBtn">Take the tour</button>
+  <button class="btn" id="editBtn">Edit in 2D</button>
+</div>
+
+<section class="stats" aria-live="polite">
+  <h3><span id="statTitle">Workflow at rest</span><span id="runId"></span></h3>
+  <div class="kpis">
+    <div><b id="kRuns">0</b><span>runs</span></div>
+    <div><b id="kOk">–</b><span>succeeded</span></div>
+    <div><b id="kAvg">–</b><span>avg time</span></div>
+  </div>
+  <p class="rest-note" id="restNote">Nothing is moving. Tap a step to inspect it, take the tour, or switch to <b>Running</b> to watch work flow through.</p>
+  <ul class="log" id="log" hidden></ul>
+</section>
+
+<div class="tour" id="tour" hidden role="dialog" aria-label="Workflow tour">
+  <div class="prog"><i id="tourProg"></i></div>
+  <div class="k"><span id="tourK"></span><span id="tourT"></span></div>
+  <h4 id="tourH"></h4>
+  <p id="tourP"></p>
+  <div class="row">
+    <button class="btn small" id="tourBack">Back</button>
+    <button class="btn small primary" id="tourNext">Next</button>
+    <button class="btn small" id="tourEdit">Edit this</button>
+    <span class="spacer"></span>
+    <button class="btn small" id="tourAuto" aria-pressed="false">Auto-play</button>
+    <button class="btn small" id="tourExit">Exit tour</button>
+  </div>
+</div>
+
+<aside class="insp" id="insp" aria-label="Editor">
+  <header>
+    <span class="chip" id="iKind">Workflow</span>
+    <h2 id="iTitle">Workflow</h2>
+    <button class="btn small hide-sm" id="iWide" title="Widen the 2D canvas">Widen</button>
+    <button class="btn small" id="iClose" aria-label="Close editor">Close</button>
+  </header>
+  <div class="body">
+    <section class="sec">
+      <h3><span>Workflow map (2D)</span><span class="row" style="display:flex;gap:6px">
+        <button class="btn small" id="addStep">+ Step</button>
+        <button class="btn small" id="connectBtn" aria-pressed="false">Connect</button>
+        <button class="btn small danger" id="delBtn">Delete</button></span></h3>
+      <div class="canvas-wrap"><div class="canvas2d"><svg id="svg2d" viewBox="0 0 1200 620" role="img" aria-label="Workflow as a 2D flowchart; drag steps to move them"></svg></div><span class="hint" id="hint2d">Drag to move · click to select</span></div>
+    </section>
+    <section class="sec">
+      <h3><span id="formTitle">Properties</span><span class="mut" id="formMeta"></span></h3>
+      <div class="form" id="form"></div>
+    </section>
+    <section class="sec ai">
+      <h3><span>Ask AI to change it</span><label class="who" id="agentPick" hidden>Agent <select id="agentSel"><option value="house">Built-in helper</option><option value="claude">Claude</option></select></label></h3>
+      <textarea id="aiText" placeholder="e.g. add a human check after this step, retry 3 times, use a faster model"></textarea>
+      <div class="chips" id="aiChips"></div>
+      <div class="row"><button class="btn small primary" id="aiAsk">Ask</button><button class="btn small" id="aiStop" hidden>Stop</button><span class="who" id="aiWho">Built-in helper</span></div>
+      <div id="aiOut"></div>
+    </section>
+    <section class="sec">
+      <h3><span>Edits</span><span style="display:flex;gap:6px"><button class="btn small" id="undoBtn">Undo</button><button class="btn small" id="exportBtn">Export JSON</button><button class="btn small" id="resetBtn">Reset</button></span></h3>
+      <ul class="hist" id="hist"></ul>
+    </section>
+  </div>
+</aside>
+
+<div class="help" id="help">Drag to orbit · scroll to zoom · tap a step or road to edit</div>
+<div class="toast" id="toast" role="status"></div>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const params = new URLSearchParams(location.search);
+
+/* ================= workflow model ================= */
+const TYPES = {
+  trigger:   { label: 'Trigger',      color: 0x7dd3fc, css: '#7dd3fc', explain: 'Every run starts here. A trigger listens for an event and hands it to the next step.' },
+  llm:       { label: 'AI step',      color: 0xa78bfa, css: '#a78bfa', explain: 'A model reads what it is given and writes something back: a label, a summary, a draft.' },
+  tool:      { label: 'Tool call',    color: 0x2dd4bf, css: '#2dd4bf', explain: 'A call to another system, like a CRM lookup or a pager. It can time out, so it can retry.' },
+  condition: { label: 'Decision',     color: 0xfbbf24, css: '#fbbf24', explain: 'A fork in the road. Each run takes exactly one branch, depending on the rule.' },
+  approval:  { label: 'Human review', color: 0xf472b6, css: '#f472b6', explain: 'A person checks the work before it continues. Runs wait here until someone approves.' },
+  action:    { label: 'Action',       color: 0x4ade80, css: '#4ade80', explain: 'The step that changes the world: it sends, saves or posts the result.' },
+};
+const MODELS = [['claude-haiku-4-5', 'Haiku 4.5 (fast)'], ['claude-sonnet-5', 'Sonnet 5 (balanced)'], ['claude-opus-5-5', 'Opus 5.5 (most capable)']];
+const MODEL_SPEED = { 'claude-haiku-4-5': 0.55, 'claude-sonnet-5': 1, 'claude-opus-5-5': 1.7 };
+const PARAM_DEFAULTS = {
+  trigger: { source: 'Help desk', filter: '' },
+  llm: { model: 'claude-sonnet-5', prompt: '', retries: 1, timeout: 30 },
+  tool: { tool: 'service.call', retries: 2, timeout: 10, cache: false },
+  condition: { rule: '' },
+  approval: { approver: 'Support lead', sla: 30 },
+  action: { channel: 'Email', retries: 1 },
+};
+
+function defaultWorkflow() {
+  return {
+    name: 'Support ticket triage',
+    nodes: [
+      { id: 'n1', name: 'New ticket', type: 'trigger', x: 90, y: 310, desc: 'A customer opens a support ticket.', params: { source: 'Help desk', filter: 'status = new' } },
+      { id: 'n2', name: 'Classify intent', type: 'llm', x: 260, y: 310, desc: 'Reads the ticket and labels its intent and priority.', params: { model: 'claude-haiku-4-5', prompt: 'Label the intent (billing, bug, how-to, account) and priority (urgent or normal).', retries: 1, timeout: 20 } },
+      { id: 'n3', name: 'Look up customer', type: 'tool', x: 430, y: 310, desc: 'Fetches the customer plan and recent history from the CRM.', params: { tool: 'crm.lookup', retries: 2, timeout: 8, cache: false } },
+      { id: 'n4', name: 'Urgent?', type: 'condition', x: 600, y: 310, desc: 'Sends urgent tickets to on-call; everything else gets a drafted reply.', params: { rule: "priority == 'urgent' or plan == 'enterprise'" } },
+      { id: 'n5', name: 'Draft reply', type: 'llm', x: 780, y: 190, desc: 'Writes a reply using the ticket, the customer record and the help center.', params: { model: 'claude-sonnet-5', prompt: 'Draft a friendly, specific reply. Link one help-center article.', retries: 1, timeout: 45 } },
+      { id: 'n6', name: 'Agent review', type: 'approval', x: 950, y: 190, desc: 'A support agent checks the draft and can edit it.', params: { approver: 'Support agent', sla: 30 } },
+      { id: 'n7', name: 'Page on-call', type: 'tool', x: 780, y: 440, desc: 'Pages the on-call engineer with the ticket summary.', params: { tool: 'pager.notify', retries: 3, timeout: 5, cache: false } },
+      { id: 'n8', name: 'Send reply', type: 'action', x: 1110, y: 310, desc: 'Sends the reply to the customer and closes the loop.', params: { channel: 'Email', retries: 1 } },
+    ],
+    edges: [
+      { id: 'e1', from: 'n1', to: 'n2', label: 'ticket', data: 'subject, body, email' },
+      { id: 'e2', from: 'n2', to: 'n3', label: 'intent', data: 'intent, priority' },
+      { id: 'e3', from: 'n3', to: 'n4', label: 'customer', data: 'plan, history' },
+      { id: 'e4', from: 'n4', to: 'n5', label: 'no', data: 'ticket + customer', share: 75 },
+      { id: 'e5', from: 'n4', to: 'n7', label: 'yes', data: 'summary', share: 25 },
+      { id: 'e6', from: 'n5', to: 'n6', label: 'draft', data: 'draft reply' },
+      { id: 'e7', from: 'n6', to: 'n8', label: 'approved', data: 'final reply' },
+      { id: 'e8', from: 'n7', to: 'n8', label: 'acknowledged', data: 'incident link' },
+    ],
+  };
+}
+const STORE = 'ww-workflow-v1';
+function loadWf() { try { const w = JSON.parse(localStorage.getItem(STORE)); if (w && Array.isArray(w.nodes) && Array.isArray(w.edges)) return w; } catch {} return null; }
+function saveWf() { try { localStorage.setItem(STORE, JSON.stringify(wf)); } catch {} }
+let wf = params.has('fresh') ? defaultWorkflow() : (loadWf() || defaultWorkflow());
+const clone = o => JSON.parse(JSON.stringify(o));
+const nodeById = id => wf.nodes.find(n => n.id === id);
+const edgeById = id => wf.edges.find(e => e.id === id);
+const outEdges = id => wf.edges.filter(e => e.from === id);
+const inEdges = id => wf.edges.filter(e => e.to === id);
+const newId = (p, list) => { let i = list.length + 1; while (list.some(x => x.id === p + i)) i++; return p + i; };
+
+function topoOrder() {
+  const seen = new Set(), order = [];
+  const starts = wf.nodes.filter(n => n.type === 'trigger' || !inEdges(n.id).length);
+  const q = [...starts];
+  while (q.length) { const n = q.shift(); if (seen.has(n.id)) continue; seen.add(n.id); order.push(n); outEdges(n.id).forEach(e => { const t = nodeById(e.to); if (t) q.push(t); }); }
+  wf.nodes.forEach(n => { if (!seen.has(n.id)) order.push(n); });
+  return order;
+}
+
+/* ================= history ================= */
+const history = []; // {label, by, at, prev}
+function commit(next, label, by = 'you') {
+  history.unshift({ label, by, at: new Date(), prev: JSON.stringify(wf) });
+  if (history.length > 60) history.pop();
+  wf = next; saveWf(); rebuildWorld(); renderEditor(); renderHistory();
+  if (mode === 'run') resetRun(true);
+}
+function undo() {
+  const h = history.shift(); if (!h) return;
+  wf = JSON.parse(h.prev); saveWf();
+  if (sel && !(sel.kind === 'node' ? nodeById(sel.id) : edgeById(sel.id))) sel = null;
+  rebuildWorld(); renderEditor(); renderHistory(); toast('Undid: ' + h.label);
+}
+
+/* ================= three.js setup ================= */
+const stage = $('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.appendChild(renderer.domElement);
+const labelRenderer = new CSS2DRenderer({ element: $('labels') });
+labelRenderer.setSize(innerWidth, innerHeight);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 2000);
+camera.position.set(0, 30, 40);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI * 0.47; controls.minDistance = 6; controls.maxDistance = 110;
+// When the editor covers part of the screen, shift the view so the scene centres in what is left.
+function updateViewOffset() {
+  const open = document.getElementById('insp')?.classList.contains('open');
+  const w = innerWidth, h = innerHeight;
+  if (!open) { camera.clearViewOffset(); camera.aspect = w / h; camera.updateProjectionMatrix(); return; }
+  const r = document.getElementById('insp').getBoundingClientRect();
+  camera.aspect = w / h;
+  if (w > 760) { const pw = Math.min(r.width || 460, w * 0.6); camera.setViewOffset(w + pw, h, pw, 0, w, h); }
+  else { const ph = Math.min(innerHeight * 0.72, h * 0.75); camera.setViewOffset(w, h + ph, 0, ph, w, h); }
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); labelRenderer.setSize(innerWidth, innerHeight); updateViewOffset(); });
+
+const SCALE = 15;
+const to3 = (n, y = 0) => new THREE.Vector3((n.x - 600) / SCALE, y, (n.y - 310) / SCALE);
+
+/* camera flights */
+let flight = null;
+function flyTo(target, dist = 14, polar = 0.85, ms = 900) {
+  if (innerWidth < 760) dist *= 1.6;
+  const dir = new THREE.Vector3().subVectors(camera.position, controls.target); dir.y = 0;
+  if (dir.lengthSq() < 0.01) dir.set(0, 0, 1);
+  dir.normalize();
+  const endPos = target.clone().add(dir.multiplyScalar(Math.sin(polar) * dist)).add(new THREE.Vector3(0, Math.cos(polar) * dist, 0));
+  flight = { t0: performance.now(), ms, p0: camera.position.clone(), p1: endPos, c0: controls.target.clone(), c1: target.clone() };
+}
+function overview() {
+  const b = new THREE.Box3(); wf.nodes.forEach(n => b.expandByPoint(to3(n)));
+  const c = b.getCenter(new THREE.Vector3()); const s = b.getSize(new THREE.Vector3());
+  const d = Math.max(s.x, s.z * 1.6, 20) * (innerWidth < 760 ? 1.1 : 0.92);
+  flyTo(c, d, theme === 'town' ? 0.75 : 0.9);
+}
+
+/* ================= shared textures ================= */
+function glowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.25, 'rgba(255,255,255,.55)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
+}
+const GLOW = glowTexture();
+const STATUS_COLOR = { idle: null, running: 0x38bdf8, success: 0x34d399, retry: 0xfbbf24, failed: 0xf87171, waiting: 0xc084fc };
+
+/* ================= worlds ================= */
+let theme = ['space', 'town', 'beam'].includes(params.get('theme')) ? params.get('theme') : 'space';
+let world = null; // {group, nodes: Map, edges: Map, packet(edge) -> mesh, tick(t,dt)}
+const pickables = [];
+
+function lut(curve, n = 160) { const pts = curve.getSpacedPoints(n); return { pts, n, len: curve.getLength() }; }
+function lutAt(L, u) { const f = clamp(u, 0, 1) * L.n, i = Math.floor(f), k = f - i; const a = L.pts[i], b = L.pts[Math.min(i + 1, L.n)]; return new THREE.Vector3().lerpVectors(a, b, k); }
+
+function edgeCurve(e) {
+  const a = nodeById(e.from), b = nodeById(e.to); if (!a || !b) return null;
+  if (theme === 'space') {
+    const A = to3(a, 0), B = to3(b, 0); const mid = A.clone().lerp(B, 0.5); mid.y += 2.5 + A.distanceTo(B) * 0.12;
+    return new THREE.QuadraticBezierCurve3(A, mid, B);
+  }
+  if (theme === 'beam') {
+    const A = to3(a, 1.4), B = to3(b, 1.4); const mid = A.clone().lerp(B, 0.5); mid.y += 0.6;
+    return new THREE.QuadraticBezierCurve3(A, mid, B);
+  }
+  const A = to3(a, 0), B = to3(b, 0);
+  if (Math.abs(A.z - B.z) < 0.5) return new THREE.LineCurve3(A, B);
+  const mx = (A.x + B.x) / 2;
+  return new THREE.CatmullRomCurve3([A, new THREE.Vector3(mx - 0.4, 0, A.z), new THREE.Vector3(mx + 0.4, 0, B.z), B], false, 'centripetal');
+}
+
+function makeLabel(n) {
+  const el = document.createElement('div'); el.className = 'nl'; el.dataset.id = n.id;
+  el.innerHTML = `<div class="card"><div class="nm">${esc(n.name)}</div><div class="ty"><i style="color:${TYPES[n.type]?.css || '#fff'}">${esc(TYPES[n.type]?.label || n.type)}</i><span class="stx st-idle">idle</span></div></div>`;
+  el.addEventListener('click', ev => { ev.stopPropagation(); select({ kind: 'node', id: n.id }, true); });
+  const o = new CSS2DObject(el); return o;
+}
+function makeEdgeLabel(e) {
+  const el = document.createElement('div'); el.className = 'el'; el.textContent = e.label || '→'; el.dataset.id = e.id;
+  el.addEventListener('click', ev => { ev.stopPropagation(); select({ kind: 'edge', id: e.id }, true); });
+  return new CSS2DObject(el);
+}
+
+function flowPoints(L, count, color, size, opacity) {
+  const g = new THREE.BufferGeometry(); const pos = new Float32Array(count * 3); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.PointsMaterial({ color, size, map: GLOW, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+  const p = new THREE.Points(g, m); const seeds = Array.from({ length: count }, (_, i) => ({ u: i / count, j: new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)) }));
+  return { p, seeds, update(off, spread) { for (let i = 0; i < count; i++) { const s = seeds[i]; const v = lutAt(L, (s.u + off) % 1); pos[i * 3] = v.x + s.j.x * spread; pos[i * 3 + 1] = v.y + s.j.y * spread; pos[i * 3 + 2] = v.z + s.j.z * spread; } g.attributes.position.needsUpdate = true; } };
+}
+
+function buildSpace(group) {
+  scene.background = new THREE.Color(0x03040b); scene.fog = null;
+  // stars
+  const sg = new THREE.BufferGeometry(); const sp = new Float32Array(2600 * 3);
+  for (let i = 0; i < 2600; i++) { const v = new THREE.Vector3().randomDirection().multiplyScalar(rand(160, 420)); sp.set([v.x, v.y, v.z], i * 3); }
+  sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  const stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xcfd8ff, size: 1.3, sizeAttenuation: false, transparent: true, opacity: .85 }));
+  group.add(stars);
+  for (const [c, x, z, s] of [[0x6d28d9, -60, -80, 140], [0x0e7490, 70, -60, 120], [0xbe185d, 10, -120, 160]]) {
+    const neb = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: c, transparent: true, opacity: .22, depthWrite: false, blending: THREE.AdditiveBlending }));
+    neb.position.set(x, -20, z); neb.scale.set(s, s, 1); group.add(neb);
+  }
+  group.add(new THREE.AmbientLight(0x8090c0, 0.55));
+  const sun = new THREE.PointLight(0xfff1d6, 2.2, 0, 0); sun.position.set(-20, 30, 20); group.add(sun);
+  const nodes = new Map(), edges = new Map();
+  wf.nodes.forEach((n, i) => {
+    const T = TYPES[n.type] || TYPES.tool; const p = to3(n);
+    const holder = new THREE.Group(); holder.position.copy(p); group.add(holder);
+    const r = n.type === 'trigger' ? 1.5 : n.type === 'condition' ? 1.1 : 1.25;
+    const planet = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 24), new THREE.MeshStandardMaterial({ color: T.color, roughness: .55, metalness: .1, emissive: T.color, emissiveIntensity: .18 }));
+    holder.add(planet);
+    if (n.type === 'llm' || n.type === 'approval') { const ring = new THREE.Mesh(new THREE.RingGeometry(r * 1.45, r * 1.9, 48), new THREE.MeshBasicMaterial({ color: T.color, side: THREE.DoubleSide, transparent: true, opacity: .45 })); ring.rotation.x = Math.PI / 2.4; holder.add(ring); }
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), new THREE.MeshStandardMaterial({ color: 0xdfe6ff, emissive: 0x334, roughness: .8 })); holder.add(moon);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: T.color, transparent: true, opacity: .35, depthWrite: false, blending: THREE.AdditiveBlending })); halo.scale.setScalar(r * 5); holder.add(halo);
+    const pick = new THREE.Mesh(new THREE.SphereGeometry(r * 1.6, 12, 8), new THREE.MeshBasicMaterial({ visible: false })); pick.userData = { kind: 'node', id: n.id }; holder.add(pick); pickables.push(pick);
+    const label = makeLabel(n); label.position.set(0, r + 1.9, 0); holder.add(label);
+    const phase = i * 1.3;
+    nodes.set(n.id, { pos: p, label, base: T.color, setStatus(st) { const c = STATUS_COLOR[st] ?? T.color; halo.material.color.setHex(c); halo.material.opacity = st === 'idle' ? .35 : .85; planet.material.emissiveIntensity = st === 'idle' ? .18 : .6; },
+      tick(t, running) { holder.position.y = Math.sin(t * 0.6 + phase) * 0.25; planet.rotation.y += 0.004; moon.position.set(Math.cos(t * (running ? 1.6 : .5) + phase) * r * 2.2, 0.3, Math.sin(t * (running ? 1.6 : .5) + phase) * r * 2.2); } });
+  });
+  wf.edges.forEach(e => {
+    const c = edgeCurve(e); if (!c) return; const L = lut(c);
+    const line = new THREE.Mesh(new THREE.TubeGeometry(c, 48, 0.05, 6, false), new THREE.MeshBasicMaterial({ color: 0x8fb4ff, transparent: true, opacity: .22 })); group.add(line);
+    const flow = flowPoints(L, Math.max(18, Math.round(L.len * 2.2)), 0x9cc2ff, 0.55, .55); group.add(flow.p);
+    const pick = new THREE.Mesh(new THREE.TubeGeometry(c, 24, 0.7, 6, false), new THREE.MeshBasicMaterial({ visible: false })); pick.userData = { kind: 'edge', id: e.id }; group.add(pick); pickables.push(pick);
+    const label = makeEdgeLabel(e); label.position.copy(lutAt(L, 0.5)).add(new THREE.Vector3(0, 0.6, 0)); group.add(label);
+    let off = Math.random();
+    edges.set(e.id, { L, label, setSel(on) { line.material.opacity = on ? .7 : .22; line.material.color.setHex(on ? 0xffffff : 0x8fb4ff); },
+      tick(dt, running, heat) { off += dt * (running ? 0.08 + heat * 0.35 : 0.02); flow.p.material.opacity = running ? 0.45 + heat * 0.5 : 0.28; flow.p.material.color.setHex(heat > 0.05 ? 0xbfe3ff : 0x9cc2ff); flow.update(off, 0.12 + heat * 0.15); } });
+  });
+  return { nodes, edges, packet() { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); s.scale.setScalar(1.6); const core = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff })); s.add(core); return s; }, packetY: 0, tick() { stars.rotation.y += 0.00008; } };
+}
+
+function buildBeam(group) {
+  scene.background = new THREE.Color(0x020a10); scene.fog = new THREE.FogExp2(0x020a10, 0.012);
+  const grid = new THREE.GridHelper(160, 80, 0x0b6f66, 0x06302c); grid.material.transparent = true; grid.material.opacity = .55; group.add(grid);
+  group.add(new THREE.AmbientLight(0x55ffee, 0.25));
+  const nodes = new Map(), edges = new Map();
+  wf.nodes.forEach((n, i) => {
+    const T = TYPES[n.type] || TYPES.tool; const p = to3(n, 1.4);
+    const holder = new THREE.Group(); holder.position.copy(p); group.add(holder);
+    const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(1.15, 1), new THREE.MeshBasicMaterial({ color: T.color, wireframe: true, transparent: true, opacity: .7 })); holder.add(shell);
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff })); holder.add(core);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: T.color, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending })); halo.scale.setScalar(4.2); holder.add(halo);
+    const pad = new THREE.Mesh(new THREE.RingGeometry(1.3, 1.5, 40), new THREE.MeshBasicMaterial({ color: T.color, transparent: true, opacity: .5, side: THREE.DoubleSide })); pad.rotation.x = -Math.PI / 2; pad.position.y = -1.38; holder.add(pad);
+    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 6), new THREE.MeshBasicMaterial({ color: T.color, transparent: true, opacity: .5 })); pillar.position.y = -0.7; holder.add(pillar);
+    const pick = new THREE.Mesh(new THREE.SphereGeometry(1.7, 12, 8), new THREE.MeshBasicMaterial({ visible: false })); pick.userData = { kind: 'node', id: n.id }; holder.add(pick); pickables.push(pick);
+    const label = makeLabel(n); label.position.set(0, 2.6, 0); holder.add(label);
+    const ph = i * 0.9;
+    nodes.set(n.id, { pos: p, label, setStatus(st) { const c = STATUS_COLOR[st] ?? T.color; halo.material.color.setHex(c); shell.material.color.setHex(st === 'idle' ? T.color : c); halo.material.opacity = st === 'idle' ? .55 : .95; core.material.color.setHex(st === 'idle' ? 0xffffff : c); },
+      tick(t, running) { shell.rotation.y += running ? 0.02 : 0.005; shell.rotation.x += 0.003; core.scale.setScalar(1 + Math.sin(t * (running ? 6 : 2) + ph) * 0.08); } });
+  });
+  wf.edges.forEach(e => {
+    const c = edgeCurve(e); if (!c) return; const L = lut(c);
+    const beam = new THREE.Mesh(new THREE.TubeGeometry(c, 48, 0.07, 8, false), new THREE.MeshBasicMaterial({ color: 0x2ff3d8, transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false })); group.add(beam);
+    const flow = flowPoints(L, Math.max(30, Math.round(L.len * 4)), 0x7ffff0, 0.4, .8); group.add(flow.p);
+    const pick = new THREE.Mesh(new THREE.TubeGeometry(c, 24, 0.7, 6, false), new THREE.MeshBasicMaterial({ visible: false })); pick.userData = { kind: 'edge', id: e.id }; group.add(pick); pickables.push(pick);
+    const label = makeEdgeLabel(e); label.position.copy(lutAt(L, 0.5)).add(new THREE.Vector3(0, 0.55, 0)); group.add(label);
+    let off = Math.random();
+    edges.set(e.id, { L, label, setSel(on) { beam.material.opacity = on ? .9 : .35; },
+      tick(dt, running, heat) { off += dt * (running ? 0.15 + heat * 0.6 : 0.03); beam.material.opacity = (beam.material.opacity > .8 ? .9 : (running ? .3 + heat * .5 : .22)); flow.p.material.opacity = running ? .55 + heat * .45 : .3; flow.update(off, 0.04 + heat * 0.05); } });
+  });
+  return { nodes, edges, packet() { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xbafff6, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); s.scale.setScalar(2.2); return s; }, packetY: 0, tick() {} };
+}
+
+function ribbon(L, w, y) {
+  const P = L.pts, pos = [], idx = [];
+  for (let i = 0; i < P.length; i++) {
+    const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)];
+    const t = new THREE.Vector3().subVectors(b, a).setY(0).normalize(); const nrm = new THREE.Vector3(-t.z, 0, t.x);
+    pos.push(P[i].x + nrm.x * w, y, P[i].z + nrm.z * w, P[i].x - nrm.x * w, y, P[i].z - nrm.z * w);
+    if (i) { const k = i * 2; idx.push(k - 2, k, k - 1, k - 1, k, k + 1); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+function building(type, color) {
+  const g = new THREE.Group(); const box = (w, h, d, c, x = 0, z = 0, y = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: c })); m.position.set(x, y + h / 2, z); g.add(m); return m; };
+  const roof = (w, d, h, c, y) => { const m = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.75, h, 4), new THREE.MeshLambertMaterial({ color: c })); m.rotation.y = Math.PI / 4; m.position.y = y + h / 2; m.scale.z = d / w; g.add(m); };
+  if (type === 'trigger') { box(1.6, 1.2, 1.4, 0xf5e6c8); roof(1.6, 1.4, 0.9, 0xb45309, 1.2); box(0.12, 1.6, 0.12, 0x6b7280, 1, 0.7); }
+  else if (type === 'llm') { box(1.5, 3.6, 1.5, 0xdbeafe); box(1.1, 0.9, 1.1, color, 0, 0, 3.6); }
+  else if (type === 'tool') { box(2.2, 1.3, 1.5, 0xd6d3d1); box(0.35, 2.2, 0.35, 0x78716c, 0.7, -0.4); }
+  else if (type === 'condition') { box(1.2, 1.1, 1.2, 0xfef3c7); box(0.25, 2.6, 0.25, 0x57534e, 0, 0, 1.1); box(1.2, 0.15, 0.15, color, 0, 0, 3.4); }
+  else if (type === 'approval') { box(2, 1.5, 1.4, 0xfce7f3); roof(2, 1.4, 0.8, 0x9d174d, 1.5); box(0.18, 0.9, 0.18, 0xffffff, -0.6, 0.75, 0); box(0.18, 0.9, 0.18, 0xffffff, 0.6, 0.75, 0); }
+  else { box(1.8, 1.4, 1.4, 0xdcfce7); roof(1.8, 1.4, 0.8, 0x166534, 1.4); }
+  return g;
+}
+function car(color) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.32, 0.5), new THREE.MeshLambertMaterial({ color })); body.position.y = 0.25; g.add(body);
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.25, 0.42), new THREE.MeshLambertMaterial({ color: 0xe0f2fe })); cab.position.set(-0.05, 0.52, 0); g.add(cab);
+  return g;
+}
+function buildTown(group) {
+  scene.background = new THREE.Color(0xbfe3f5); scene.fog = new THREE.Fog(0xbfe3f5, 70, 160);
+  group.add(new THREE.HemisphereLight(0xffffff, 0x7fae6a, 1.1));
+  const sun = new THREE.DirectionalLight(0xfff4dc, 1.3); sun.position.set(-30, 50, 20); group.add(sun);
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(140, 48), new THREE.MeshLambertMaterial({ color: 0x8cc47a })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; group.add(ground);
+  // scenery trees
+  const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+  for (let i = 0; i < 70; i++) {
+    const x = (rnd() - .5) * 120, z = (rnd() - .5) * 80;
+    if (wf.nodes.some(n => to3(n).distanceTo(new THREE.Vector3(x, 0, z)) < 6) || Math.abs(z) < 2 && Math.abs(x) < 30) continue;
+    const tr = new THREE.Mesh(new THREE.ConeGeometry(0.8, 2, 7), new THREE.MeshLambertMaterial({ color: 0x3f7d3a })); tr.position.set(x, 1.3, z); group.add(tr);
+    const tk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.4, 5), new THREE.MeshLambertMaterial({ color: 0x7c5a3a })); tk.position.set(x, 0.2, z); group.add(tk);
+  }
+  const nodes = new Map(), edges = new Map();
+  wf.edges.forEach(e => {
+    const c = edgeCurve(e); if (!c) return; const L = lut(c);
+    const road = new THREE.Mesh(ribbon(L, 0.85, 0.01), new THREE.MeshLambertMaterial({ color: 0x57534e, side: THREE.DoubleSide })); group.add(road);
+    const lineG = new THREE.BufferGeometry().setFromPoints(L.pts.map(p => new THREE.Vector3(p.x, 0.03, p.z)));
+    const dash = new THREE.Line(lineG, new THREE.LineDashedMaterial({ color: 0xfde68a, dashSize: 0.5, gapSize: 0.45 })); dash.computeLineDistances(); group.add(dash);
+    const pick = new THREE.Mesh(ribbon(L, 1.4, 0.05), new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide })); pick.userData = { kind: 'edge', id: e.id }; group.add(pick); pickables.push(pick);
+    const label = makeEdgeLabel(e); label.position.copy(lutAt(L, 0.5)).add(new THREE.Vector3(0, 0.4, 0)); group.add(label);
+    // ambient traffic: one slow car per road while running
+    const amb = car(0x94a3b8); amb.visible = false; group.add(amb); let u = Math.random();
+    edges.set(e.id, { L, label, setSel(on) { road.material.color.setHex(on ? 0xc2410c : 0x57534e); },
+      tick(dt, running) { amb.visible = running; if (!running) return; u = (u + dt * 0.05) % 1; const p = lutAt(L, u), q = lutAt(L, Math.min(1, u + 0.01)); amb.position.copy(p).add(new THREE.Vector3(0, 0, 0)); amb.lookAt(q.x, 0, q.z); amb.rotateY(-Math.PI / 2); amb.translateZ(0.38); } });
+  });
+  wf.nodes.forEach((n, i) => {
+    const T = TYPES[n.type] || TYPES.tool; const p = to3(n);
+    const holder = new THREE.Group(); holder.position.copy(p); group.add(holder);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 2.3, 40), new THREE.MeshLambertMaterial({ color: 0x57534e })); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.04; holder.add(ring);
+    const kerb = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.25, 0.25, 32), new THREE.MeshLambertMaterial({ color: 0xe7e5e4 })); kerb.position.y = 0.12; holder.add(kerb);
+    const island = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.28, 32), new THREE.MeshLambertMaterial({ color: 0x65a30d })); island.position.y = 0.14; holder.add(island);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 12), new THREE.MeshBasicMaterial({ color: T.color })); lamp.position.y = 1.7; holder.add(lamp);
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.5, 6), new THREE.MeshLambertMaterial({ color: 0x44403c })); post.position.y = 0.95; holder.add(post);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: T.color, transparent: true, opacity: 0, depthWrite: false })); glow.scale.setScalar(3); glow.position.y = 1.7; holder.add(glow);
+    const b = building(n.type, T.color); const side = (i % 2 ? -1 : 1); b.position.set(0, 0, side * 3.6); holder.add(b);
+    const pick = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 3, 12), new THREE.MeshBasicMaterial({ visible: false })); pick.position.y = 1.5; pick.userData = { kind: 'node', id: n.id }; holder.add(pick); pickables.push(pick);
+    const label = makeLabel(n); label.position.set(0, 3.4, 0); holder.add(label);
+    nodes.set(n.id, { pos: p, label, setStatus(st) { const c = STATUS_COLOR[st] ?? T.color; lamp.material.color.setHex(c); glow.material.color.setHex(c); glow.material.opacity = st === 'idle' ? 0 : .8; }, tick() {} });
+  });
+  return { nodes, edges, packet() { const cols = [0xef4444, 0x2563eb, 0xf59e0b, 0x7c3aed, 0x0891b2]; return car(cols[Math.floor(Math.random() * cols.length)]); }, packetY: 0, car: true, tick() {} };
+}
+
+const worldGroup = new THREE.Group(); scene.add(worldGroup);
+function disposeGroup(g) {
+  g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); if (o.isCSS2DObject && o.element?.parentNode) o.element.remove(); });
+  while (g.children.length) g.remove(g.children[0]);
+}
+function rebuildWorld() {
+  // keep packets valid: drop them, nodes keep status
+  packets.forEach(pk => pk.mesh.parent?.remove(pk.mesh)); packets.length = 0;
+  disposeGroup(worldGroup); pickables.length = 0;
+  world = (theme === 'space' ? buildSpace : theme === 'beam' ? buildBeam : buildTown)(worldGroup);
+  for (const [id, st] of Object.entries(nodeStatus)) setStatus(id, st, true);
+  applySelectionVisuals();
+  $('wfName').textContent = '· ' + wf.name;
+}
+
+/* ================= run simulator ================= */
+let mode = params.get('mode') === 'run' ? 'run' : 'rest';
+let speed = 1, simNow = 0;
+const nodeStatus = {};
+const timers = []; // {at, fn}
+const packets = []; // {edge, t0, dur, mesh, fn}
+const heat = {}; // edgeId -> 0..1
+const runs = { total: 0, ok: 0, failed: 0, times: [] };
+let run = null; // {id, t0, active, failed, path}
+const logLines = [];
+function log(html) { logLines.unshift(html); logLines.length = Math.min(logLines.length, 8); $('log').innerHTML = logLines.map(l => `<li>${l}</li>`).join(''); }
+function setStatus(id, st, quiet) {
+  nodeStatus[id] = st; world?.nodes.get(id)?.setStatus(st);
+  const lab = world?.nodes.get(id)?.label.element.querySelector('.stx'); if (lab) { lab.className = 'stx st-' + st; lab.textContent = st; }
+  if (!quiet && tourOn) renderTour();
+}
+function later(sec, fn) { timers.push({ at: simNow + sec, fn, run: run?.id }); }
+function nodeDuration(n) {
+  const p = n.params || {};
+  switch (n.type) {
+    case 'trigger': return 0.5;
+    case 'llm': return 1.6 * (MODEL_SPEED[p.model] || 1) * rand(0.7, 1.3);
+    case 'tool': return (p.cache ? 0.35 : 1.0) * rand(0.6, 1.4);
+    case 'condition': return 0.45;
+    case 'approval': return Math.min(6, 1.5 + (Number(p.sla) || 30) / 15) * rand(0.6, 1.2);
+    default: return 0.8 * rand(0.8, 1.2);
+  }
+}
+function failChance(n) { return { llm: 0.08, tool: n.params?.cache ? 0.03 : 0.14, action: 0.06 }[n.type] || 0; }
+function startRun() {
+  if (run) return;
+  const start = wf.nodes.find(n => n.type === 'trigger') || topoOrder()[0]; if (!start) return;
+  wf.nodes.forEach(n => setStatus(n.id, 'idle', true));
+  run = { id: ++runs.total, t0: simNow, active: 0, failed: false };
+  $('runId').textContent = 'run #' + run.id; log(`<b>run #${run.id}</b> started at <b>${esc(start.name)}</b>`);
+  enter(start.id, 0);
+}
+function enter(id, attempt) {
+  const n = nodeById(id); if (!n || !run) return;
+  run.active++;
+  const waiting = n.type === 'approval';
+  setStatus(id, waiting ? 'waiting' : 'running');
+  if (attempt === 0 && waiting) log(`<span class="st-waiting">waiting</span> for ${esc(n.params?.approver || 'review')} at <b>${esc(n.name)}</b>`);
+  const rid = run.id;
+  later(nodeDuration(n), () => {
+    if (!run || run.id !== rid) return;
+    run.active--;
+    const retries = Number(n.params?.retries) || 0;
+    if (Math.random() < failChance(n)) {
+      if (attempt < retries) { setStatus(id, 'retry'); log(`<span class="st-retry">retry ${attempt + 1}/${retries}</span> <b>${esc(n.name)}</b> timed out`); later(0.5, () => enter(id, attempt + 1)); run.active++; later(0.5, () => { run && run.id === rid && run.active--; }); return; }
+      setStatus(id, 'failed'); run.failed = true; log(`<span class="st-failed">failed</span> <b>${esc(n.name)}</b> after ${attempt + 1} attempt${attempt ? 's' : ''}`); finishSoon(); return;
+    }
+    setStatus(id, 'success');
+    let outs = outEdges(id);
+    if (n.type === 'condition' && outs.length > 1) {
+      const total = outs.reduce((s, e) => s + (Number(e.share) || 1), 0); let r = Math.random() * total;
+      const pick = outs.find(e => (r -= (Number(e.share) || 1)) < 0) || outs[0]; outs = [pick];
+      log(`<b>${esc(n.name)}</b> → <b>${esc(pick.label || nodeById(pick.to)?.name)}</b>`);
+    }
+    if (!outs.length) { finishSoon(); return; }
+    outs.forEach(e => travel(e, () => enter(e.to, 0)));
+  });
+}
+function travel(e, fn) {
+  const L = world.edges.get(e.id)?.L; if (!L) { fn(); return; }
+  run.active++;
+  const mesh = world.packet(); worldGroup.add(mesh);
+  const dur = clamp(L.len / (world.car ? 5 : 8), 0.6, 4);
+  const rid = run.id;
+  packets.push({ edge: e.id, t0: simNow, dur, mesh, run: rid, fn: () => { if (!run || run.id !== rid) return; run.active--; fn(); } });
+}
+function finishSoon() {
+  const rid = run?.id;
+  const check = () => {
+    if (!run || run.id !== rid) return;
+    if (run.active > 0 && !run.failed) { later(0.3, check); return; }
+    const secs = simNow - run.t0; runs.times.push(secs); if (runs.times.length > 30) runs.times.shift();
+    if (run.failed) runs.failed++; else runs.ok++;
+    log(`<b>run #${run.id}</b> ${run.failed ? '<span class="st-failed">failed</span>' : '<span class="st-success">finished</span>'} in ${secs.toFixed(1)}s`);
+    run = null; renderStats();
+    later(1.4, () => { if (mode === 'run') startRun(); });
+  };
+  later(0.2, check);
+}
+function resetRun(restart) {
+  run = null; timers.length = 0; packets.forEach(p => p.mesh.parent?.remove(p.mesh)); packets.length = 0;
+  wf.nodes.forEach(n => setStatus(n.id, 'idle', true));
+  if (restart && mode === 'run') later(0.6, startRun);
+}
+function renderStats() {
+  $('kRuns').textContent = runs.ok + runs.failed;
+  const done = runs.ok + runs.failed;
+  $('kOk').textContent = done ? Math.round(runs.ok / done * 100) + '%' : '–';
+  $('kAvg').textContent = runs.times.length ? (runs.times.reduce((a, b) => a + b, 0) / runs.times.length).toFixed(1) + 's' : '–';
+}
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
+  $('speedSeg').hidden = m !== 'run'; $('log').hidden = m !== 'run'; $('restNote').hidden = m === 'run';
+  $('statTitle').textContent = m === 'run' ? 'Workflow running' : 'Workflow at rest';
+  if (m === 'run') { resetRun(false); startRun(); } else { resetRun(false); $('runId').textContent = ''; }
+  if (tourOn) renderTour();
+}
+
+/* ================= selection ================= */
+let sel = null;
+function select(s, fly) {
+  const changed = !s || !sel || s.kind !== sel.kind || s.id !== sel.id;
+  sel = s; applySelectionVisuals();
+  if (changed && s && !drag) { const body = document.querySelector('.insp .body'); if (body) body.scrollTop = 0; }
+  if (s && fly) {
+    if (s.kind === 'node') flyTo(world.nodes.get(s.id).pos.clone(), theme === 'town' ? 17 : 12, 0.9);
+    else { const L = world.edges.get(s.id)?.L; if (L) flyTo(lutAt(L, 0.5), Math.max(theme === 'town' ? 18 : 14, L.len * 1.1), 0.9); }
+  }
+  if (s) openEditor(); else renderEditor();
+}
+function applySelectionVisuals() {
+  if (!world) return;
+  world.nodes.forEach((o, id) => { o.label.element.classList.toggle('sel', sel?.kind === 'node' && sel.id === id); });
+  world.edges.forEach((o, id) => { const on = sel?.kind === 'edge' && sel.id === id; o.setSel(on); o.label.element.classList.toggle('sel', on); });
+}
+
+/* pointer picking (ignore drags) */
+const ray = new THREE.Raycaster(); let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; flight = null; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
+  const m = new THREE.Vector2((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(m, camera);
+  const hits = ray.intersectObjects(pickables, false);
+  const node = hits.find(h => h.object.userData.kind === 'node'); const hit = node || hits[0];
+  if (hit) select({ kind: hit.object.userData.kind, id: hit.object.userData.id }, true);
+});
+
+/* ================= tour ================= */
+let tourOn = false, tourIdx = 0, tourAuto = null;
+function tourSteps() { return [{ kind: 'overview' }, ...topoOrder().map(n => ({ kind: 'node', id: n.id }))]; }
+function describeNode(n, live) {
+  const T = TYPES[n.type] || TYPES.tool; const p = n.params || {};
+  const outs = outEdges(n.id).map(e => ({ e, t: nodeById(e.to) })).filter(x => x.t);
+  let s = `${T.explain} ${n.desc || ''}`;
+  if (n.type === 'llm') s += ` It uses ${MODELS.find(m => m[0] === p.model)?.[1] || p.model}${p.retries ? ` and retries up to ${p.retries}×` : ''}.`;
+  if (n.type === 'tool') s += ` It calls ${p.tool}${p.cache ? ' (cached)' : ''}, gives up after ${p.timeout}s${p.retries ? ` and retries up to ${p.retries}×` : ''}.`;
+  if (n.type === 'approval') s += ` ${p.approver} has ${p.sla} minutes to respond.`;
+  if (n.type === 'condition' && outs.length) s += ' ' + outs.map(x => `"${x.e.label || 'branch'}" (${x.e.share ?? '?'}% of runs) goes to ${x.t.name}`).join('; ') + '.';
+  else if (outs.length) s += ` Then it hands ${outs.map(x => `“${x.e.label || 'its output'}” to ${x.t.name}`).join(' and ')}.`;
+  else s += ' This is where the run ends.';
+  if (live) { const st = nodeStatus[n.id] || 'idle'; s += st === 'idle' ? ' Right now it is idle.' : ` Right now: ${st}.`; }
+  return s;
+}
+function renderTour() {
+  const steps = tourSteps(); tourIdx = clamp(tourIdx, 0, steps.length - 1); const st = steps[tourIdx];
+  $('tourProg').style.width = ((tourIdx + 1) / steps.length * 100) + '%';
+  $('tourK').textContent = `Step ${tourIdx + 1} of ${steps.length}`;
+  $('tourT').textContent = mode === 'run' ? 'running' : 'at rest';
+  $('tourBack').disabled = tourIdx === 0; $('tourNext').textContent = tourIdx === steps.length - 1 ? 'Finish' : 'Next';
+  if (st.kind === 'overview') {
+    $('tourH').textContent = wf.name;
+    $('tourP').textContent = `${wf.nodes.length} steps joined by ${wf.edges.length} ${theme === 'town' ? 'roads' : theme === 'space' ? 'particle streams' : 'beams'}. ` + (mode === 'run' ? 'Each moving light is one run carrying its data from step to step. Watch a step light up while it works.' : 'It is at rest: nothing is flowing. Switch to Running any time to watch work move through it.');
+    $('tourEdit').hidden = true;
+  } else {
+    const n = nodeById(st.id); if (!n) return;
+    $('tourH').textContent = n.name; $('tourP').textContent = describeNode(n, mode === 'run'); $('tourEdit').hidden = false;
+  }
+}
+function goTour(i) {
+  tourIdx = i; const steps = tourSteps(); tourIdx = clamp(tourIdx, 0, steps.length - 1); const st = steps[tourIdx];
+  if (st.kind === 'overview') { sel = null; applySelectionVisuals(); overview(); }
+  else { sel = { kind: 'node', id: st.id }; applySelectionVisuals(); flyTo(world.nodes.get(st.id).pos.clone(), theme === 'town' ? 13 : 11, 0.9, 1100); }
+  world.nodes.forEach((o, id) => o.label.element.classList.toggle('dim', st.kind === 'node' && id !== st.id));
+  renderTour();
+}
+function startTour() { closeEditor(); tourOn = true; document.body.classList.add('touring'); $('tour').hidden = false; $('help').hidden = true; goTour(0); }
+function endTour() { tourOn = false; document.body.classList.remove('touring'); $('tour').hidden = true; $('help').hidden = false; stopAuto(); world.nodes.forEach(o => o.label.element.classList.remove('dim')); }
+function stopAuto() { clearInterval(tourAuto); tourAuto = null; $('tourAuto').setAttribute('aria-pressed', 'false'); $('tourAuto').textContent = 'Auto-play'; }
+$('tourBtn').onclick = () => tourOn ? endTour() : startTour();
+$('tourNext').onclick = () => { if (tourIdx >= tourSteps().length - 1) { endTour(); overview(); } else goTour(tourIdx + 1); };
+$('tourBack').onclick = () => goTour(tourIdx - 1);
+$('tourExit').onclick = () => { endTour(); overview(); };
+$('tourEdit').onclick = () => { const st = tourSteps()[tourIdx]; endTour(); if (st.kind === 'node') select({ kind: 'node', id: st.id }, false); };
+$('tourAuto').onclick = () => {
+  if (tourAuto) return stopAuto();
+  $('tourAuto').setAttribute('aria-pressed', 'true'); $('tourAuto').textContent = 'Pause';
+  tourAuto = setInterval(() => { if (tourIdx >= tourSteps().length - 1) { stopAuto(); return; } goTour(tourIdx + 1); }, 6000);
+};
+
+/* ================= 2D editor ================= */
+const svg = $('svg2d');
+let connectFrom = null, connecting = false, drag = null;
+function openEditor() { $('insp').classList.add('open'); document.body.classList.add('editing'); if (tourOn) endTour(); renderEditor(); updateViewOffset(); }
+function closeEditor() { $('insp').classList.remove('open'); document.body.classList.remove('editing'); updateViewOffset(); }
+$('iClose').onclick = () => { closeEditor(); sel = null; applySelectionVisuals(); overview(); };
+$('editBtn').onclick = () => { $('insp').classList.contains('open') ? closeEditor() : openEditor(); };
+$('iWide').onclick = () => { $('insp').classList.toggle('wide'); $('iWide').textContent = $('insp').classList.contains('wide') ? 'Narrow' : 'Widen'; updateViewOffset(); renderSvg(); };
+
+function edgePath(a, b) {
+  const x1 = a.x + 65, y1 = a.y, x2 = b.x - 65, y2 = b.y; const dx = Math.max(40, (x2 - x1) / 2);
+  if (x2 < x1 + 10) { // backward or stacked: route around
+    return `M${a.x},${a.y + 23} C${a.x},${a.y + 90} ${b.x},${b.y + 90} ${b.x},${b.y + 23}`;
+  }
+  return `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
+}
+let vb = { x: 0, y: 0, w: 1200, h: 620 }, vbFrozen = false;
+function fitViewBox() {
+  if (vbFrozen || !wf.nodes.length) return;
+  const xs = wf.nodes.map(n => n.x), ys = wf.nodes.map(n => n.y);
+  const x0 = Math.min(...xs) - 95, x1 = Math.max(...xs) + 95, y0 = Math.min(...ys) - 60, y1 = Math.max(...ys) + 110;
+  vb = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  svg.style.width = Math.round(vb.w * 0.78) + 'px'; svg.style.height = Math.round(vb.h * 0.78) + 'px';
+}
+function scrollToSel() {
+  const box = svg.parentElement; let tx = null, ty = null;
+  if (sel?.kind === 'node') { const n = nodeById(sel.id); if (n) { tx = n.x; ty = n.y; } }
+  else if (sel?.kind === 'edge') { const e = edgeById(sel.id); const a = nodeById(e?.from), b = nodeById(e?.to); if (a && b) { tx = (a.x + b.x) / 2; ty = (a.y + b.y) / 2; } }
+  if (tx == null) return;
+  const k = svg.getBoundingClientRect().width / vb.w; if (!k) return; box.scrollLeft = (tx - vb.x) * k - box.clientWidth / 2; box.scrollTop = (ty - vb.y) * k - box.clientHeight / 2;
+}
+function renderSvg() {
+  fitViewBox();
+  const parts = [`<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`];
+  wf.edges.forEach(e => {
+    const a = nodeById(e.from), b = nodeById(e.to); if (!a || !b) return;
+    const d = edgePath(a, b); const on = sel?.kind === 'edge' && sel.id === e.id;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 + (b.x < a.x + 140 ? 70 : -8);
+    parts.push(`<g class="e2 ${on ? 'sel' : ''}" data-e="${e.id}" style="color:${on ? 'var(--accent)' : 'var(--faint)'}"><path class="vis" d="${d}" marker-end="url(#arr)"/><path class="hit" d="${d}"/><text x="${mx}" y="${my}" text-anchor="middle">${esc(e.label || '')}${e.share != null && nodeById(e.from)?.type === 'condition' ? ` · ${e.share}%` : ''}</text></g>`);
+  });
+  wf.nodes.forEach(n => {
+    const T = TYPES[n.type] || TYPES.tool; const on = sel?.kind === 'node' && sel.id === n.id;
+    parts.push(`<g class="n2 ${on ? 'sel' : ''} ${connectFrom === n.id ? 'src' : ''}" data-n="${n.id}" transform="translate(${n.x - 65},${n.y - 23})"><rect class="box" width="130" height="46" rx="9"/><rect width="5" height="46" rx="2" fill="${T.css}"/><text x="14" y="19">${esc(n.name.length > 15 ? n.name.slice(0, 14) + '…' : n.name)}</text><text class="t" x="14" y="35">${esc(T.label)}</text><circle cx="118" cy="12" r="4" fill="${statusCss(nodeStatus[n.id])}"/></g>`);
+  });
+  svg.innerHTML = parts.join('');
+}
+function statusCss(st) { return st && st !== 'idle' ? `var(--${st === 'failed' ? 'failed' : st})` : 'transparent'; }
+function svgPoint(ev) { const r = svg.getBoundingClientRect(); return { x: vb.x + (ev.clientX - r.left) / r.width * vb.w, y: vb.y + (ev.clientY - r.top) / r.height * vb.h }; }
+svg.addEventListener('pointerdown', ev => {
+  const g = ev.target.closest('.n2'), ge = ev.target.closest('.e2');
+  if (g) {
+    const id = g.dataset.n;
+    if (connecting) { ev.preventDefault(); return handleConnect(id); }
+    vbFrozen = true; const p = svgPoint(ev), n = nodeById(id); drag = { id, dx: p.x - n.x, dy: p.y - n.y, moved: false, start: clone(wf) };
+    svg.setPointerCapture(ev.pointerId); select({ kind: 'node', id }, false);
+  } else if (ge) { select({ kind: 'edge', id: ge.dataset.e }, true); }
+});
+svg.addEventListener('pointermove', ev => {
+  if (!drag) return; const p = svgPoint(ev); const n = nodeById(drag.id);
+  n.x = clamp(Math.round(p.x - drag.dx), -400, 1700); n.y = clamp(Math.round(p.y - drag.dy), -300, 1000); drag.moved = true;
+  renderSvg(); scheduleRebuild();
+});
+svg.addEventListener('pointerup', () => {
+  if (!drag) return; const d = drag; drag = null; vbFrozen = false;
+  if (d.moved) { const moved = clone(wf); wf = d.start; commit(moved, `Moved ${nodeById(d.id)?.name}`); }
+  else select({ kind: 'node', id: d.id }, true);
+});
+let rebuildPending = false;
+function scheduleRebuild() { if (rebuildPending) return; rebuildPending = true; requestAnimationFrame(() => { rebuildPending = false; rebuildWorld(); }); }
+function handleConnect(id) {
+  if (!connectFrom) { connectFrom = id; $('hint2d').textContent = 'Now click the step it should lead to'; renderSvg(); return; }
+  if (connectFrom === id) { connectFrom = null; renderSvg(); return; }
+  const next = clone(wf); const e = { id: newId('e', next.edges), from: connectFrom, to: id, label: 'data', data: '' };
+  if (nodeById(connectFrom)?.type === 'condition') e.share = 50;
+  next.edges.push(e); const a = nodeById(connectFrom).name, b = nodeById(id).name;
+  connectFrom = null; setConnecting(false); commit(next, `Connected ${a} → ${b}`); select({ kind: 'edge', id: e.id }, false);
+}
+function setConnecting(on) { connecting = on; connectFrom = null; $('connectBtn').setAttribute('aria-pressed', on); $('connectBtn').classList.toggle('primary', on); $('hint2d').textContent = on ? 'Click the step to connect from' : 'Drag to move · click to select'; renderSvg(); }
+$('connectBtn').onclick = () => setConnecting(!connecting);
+$('addStep').onclick = () => {
+  const ops = [{ op: 'add_node', node: { name: 'New step', type: 'tool', desc: 'Describe what this step does.' }, after: sel?.kind === 'node' ? sel.id : undefined, on_edge: sel?.kind === 'edge' ? sel.id : undefined }];
+  const res = applyOps(wf, ops); commit(res.wf, 'Added a step'); if (res.added) select({ kind: 'node', id: res.added }, true);
+};
+$('delBtn').onclick = () => {
+  if (!sel) return toast('Select a step or connection first');
+  const label = sel.kind === 'node' ? `Deleted ${nodeById(sel.id)?.name}` : `Deleted a connection`;
+  const res = applyOps(wf, [{ op: sel.kind === 'node' ? 'remove_node' : 'remove_edge', id: sel.id }]); sel = null; commit(res.wf, label);
+};
+
+function field(label, key, value, kind = 'text', opts) {
+  const id = 'f_' + key.replace(/\W/g, '_');
+  if (kind === 'select') return `<label for="${id}">${label}<select id="${id}" data-k="${key}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === String(value) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+  if (kind === 'textarea') return `<label for="${id}">${label}<textarea id="${id}" data-k="${key}">${esc(value)}</textarea></label>`;
+  if (kind === 'check') return `<label class="chk"><input type="checkbox" data-k="${key}" ${value ? 'checked' : ''}/>${label}</label>`;
+  return `<label for="${id}">${label}<input id="${id}" data-k="${key}" type="${kind}" value="${esc(value)}" ${kind === 'number' ? 'min="0"' : ''}/></label>`;
+}
+function renderForm() {
+  const f = $('form');
+  if (!sel) {
+    $('iKind').textContent = 'Workflow'; $('iTitle').textContent = wf.name; $('formTitle').textContent = 'Workflow'; $('formMeta').textContent = `${wf.nodes.length} steps · ${wf.edges.length} connections`;
+    f.innerHTML = field('Name', 'wf.name', wf.name) + `<p class="mut">Select a step or a connection, in 3D or on the map above, to edit it.</p>`; return;
+  }
+  if (sel.kind === 'node') {
+    const n = nodeById(sel.id); if (!n) { sel = null; return renderForm(); }
+    const T = TYPES[n.type] || TYPES.tool; const p = n.params || {};
+    $('iKind').textContent = T.label; $('iTitle').textContent = n.name; $('formTitle').textContent = 'Step'; $('formMeta').textContent = `${inEdges(n.id).length} in · ${outEdges(n.id).length} out`;
+    let h = field('Name', 'name', n.name) + field('Type', 'type', n.type, 'select', Object.entries(TYPES).map(([k, v]) => [k, v.label])) + field('What it does', 'desc', n.desc, 'textarea');
+    if (n.type === 'trigger') h += `<div class="two">${field('Source', 'p.source', p.source, 'select', ['Help desk', 'Email', 'Chat', 'Schedule', 'Webhook'].map(x => [x, x]))}${field('Filter', 'p.filter', p.filter || '')}</div>`;
+    if (n.type === 'llm') h += field('Model', 'p.model', p.model, 'select', MODELS) + field('Instructions', 'p.prompt', p.prompt || '', 'textarea') + `<div class="two">${field('Retries', 'p.retries', p.retries ?? 0, 'number')}${field('Timeout (s)', 'p.timeout', p.timeout ?? 30, 'number')}</div>`;
+    if (n.type === 'tool') h += field('Tool', 'p.tool', p.tool || '') + `<div class="two">${field('Retries', 'p.retries', p.retries ?? 0, 'number')}${field('Timeout (s)', 'p.timeout', p.timeout ?? 10, 'number')}</div>` + field('Cache results', 'p.cache', !!p.cache, 'check');
+    if (n.type === 'condition') h += field('Rule', 'p.rule', p.rule || '');
+    if (n.type === 'approval') h += `<div class="two">${field('Approver', 'p.approver', p.approver || '')}${field('Respond within (min)', 'p.sla', p.sla ?? 30, 'number')}</div>`;
+    if (n.type === 'action') h += `<div class="two">${field('Channel', 'p.channel', p.channel, 'select', ['Email', 'Chat', 'Ticket', 'Slack', 'Database'].map(x => [x, x]))}${field('Retries', 'p.retries', p.retries ?? 0, 'number')}</div>`;
+    f.innerHTML = h;
+  } else {
+    const e = edgeById(sel.id); if (!e) { sel = null; return renderForm(); }
+    const a = nodeById(e.from), b = nodeById(e.to);
+    $('iKind').textContent = theme === 'town' ? 'Road' : theme === 'space' ? 'Stream' : 'Beam'; $('iTitle').textContent = `${a?.name} → ${b?.name}`; $('formTitle').textContent = 'Connection'; $('formMeta').textContent = '';
+    let h = field('Label', 'label', e.label || '') + field('Data it carries', 'data', e.data || '');
+    if (a?.type === 'condition') h += field('Share of runs (%)', 'share', e.share ?? 50, 'number');
+    h += `<div class="two">${field('From', 'from', e.from, 'select', wf.nodes.map(n => [n.id, n.name]))}${field('To', 'to', e.to, 'select', wf.nodes.map(n => [n.id, n.name]))}</div>`;
+    f.innerHTML = h;
+  }
+}
+$('form').addEventListener('change', ev => {
+  const k = ev.target.dataset.k; if (!k) return;
+  const v = ev.target.type === 'checkbox' ? ev.target.checked : ev.target.type === 'number' ? Number(ev.target.value) : ev.target.value;
+  const next = clone(wf);
+  if (k === 'wf.name') { next.name = v; return commit(next, `Renamed workflow to “${v}”`); }
+  if (sel?.kind === 'node') {
+    const n = next.nodes.find(x => x.id === sel.id); const before = n.name;
+    if (k.startsWith('p.')) { n.params = n.params || {}; n.params[k.slice(2)] = v; }
+    else if (k === 'type') { n.type = v; n.params = { ...PARAM_DEFAULTS[v], ...(n.params || {}) }; }
+    else n[k] = v;
+    commit(next, `${before}: ${k.replace('p.', '')} → ${typeof v === 'boolean' ? (v ? 'on' : 'off') : String(v).slice(0, 40)}`);
+  } else if (sel?.kind === 'edge') {
+    const e = next.edges.find(x => x.id === sel.id); e[k] = v; commit(next, `Connection ${e.label || ''}: ${k} → ${String(v).slice(0, 40)}`);
+  }
+});
+
+function renderHistory() {
+  $('hist').innerHTML = history.length ? history.slice(0, 20).map(h => `<li><span class="by ${h.by === 'AI' ? 'ai' : ''}">${h.by}</span><span>${esc(h.label)}</span><time>${h.at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</time></li>`).join('') : '<p class="empty">No edits yet. Change something on the map, in the form, or ask the AI.</p>';
+  $('undoBtn').disabled = !history.length;
+}
+$('undoBtn').onclick = undo;
+$('resetBtn').onclick = () => { commit(defaultWorkflow(), 'Reset to the sample workflow'); sel = null; renderEditor(); overview(); };
+$('exportBtn').onclick = async () => {
+  const data = JSON.stringify(wf, null, 2), filename = wf.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.json';
+  try { const d = window.claude ? await window.claude.use('downloads') : null; if (d) { await d.save({ filename, data }); return; } } catch (e) { if (e?.code === 'cancelled' || e?.code === 'declined') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' })); a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+function renderEditor() { renderSvg(); renderForm(); renderChips(); applySelectionVisuals(); if (!drag) requestAnimationFrame(scrollToSel); }
+
+/* ================= edit operations (shared by people and AI) ================= */
+function applyOps(base, ops) {
+  const w = clone(base); let added = null; const notes = [];
+  const N = id => w.nodes.find(n => n.id === id);
+  for (const o of ops || []) {
+    try {
+      if (o.op === 'set_node') {
+        const n = N(o.id); if (!n) throw 'no step ' + o.id;
+        ['name', 'desc'].forEach(k => { if (o[k] != null) n[k] = String(o[k]); });
+        if (o.type && TYPES[o.type]) { n.type = o.type; n.params = { ...PARAM_DEFAULTS[o.type], ...(n.params || {}) }; }
+        if (o.params && typeof o.params === 'object') { n.params = n.params || {}; for (const [k, v] of Object.entries(o.params)) n.params[k] = v; }
+      } else if (o.op === 'set_edge') {
+        const e = w.edges.find(x => x.id === o.id); if (!e) throw 'no connection ' + o.id;
+        ['label', 'data'].forEach(k => { if (o[k] != null) e[k] = String(o[k]); }); if (o.share != null) e.share = clamp(Number(o.share) || 0, 0, 100);
+      } else if (o.op === 'add_node') {
+        const t = TYPES[o.node?.type] ? o.node.type : 'tool';
+        const n = { id: newId('n', w.nodes), name: String(o.node?.name || 'New step'), type: t, desc: String(o.node?.desc || ''), params: { ...PARAM_DEFAULTS[t], ...(o.node?.params || {}) }, x: 600, y: 310 };
+        let split = o.on_edge ? w.edges.find(e => e.id === o.on_edge) : null;
+        const after = o.after ? N(o.after) : null;
+        if (!split && after) { const outs = w.edges.filter(e => e.from === after.id); if (outs.length === 1) split = outs[0]; }
+        if (split) {
+          const a = N(split.from), b = N(split.to);
+          if (b.x - a.x < 320) { w.nodes.forEach(m => { if (m.x > a.x + 20) m.x += 170; }); n.x = a.x + 170; n.y = Math.abs(a.y - b.y) < 20 ? a.y : Math.round((a.y + b.y) / 2); }
+          else { n.x = Math.round((a.x + b.x) / 2); n.y = Math.round((a.y + b.y) / 2); }
+          w.nodes.push(n); const oldTo = split.to; split.to = n.id;
+          w.edges.push({ id: newId('e', w.edges), from: n.id, to: oldTo, label: split.label === 'yes' || split.label === 'no' ? 'next' : split.label || 'next', data: split.data || '' });
+        } else if (after) {
+          n.x = after.x + 170; n.y = after.y + (w.edges.some(e => e.from === after.id) ? 130 : 0); w.nodes.push(n);
+          w.edges.push({ id: newId('e', w.edges), from: after.id, to: n.id, label: 'next', data: '' });
+        } else { n.x = 600; n.y = 560; w.nodes.push(n); }
+        added = n.id;
+      } else if (o.op === 'remove_node') {
+        const n = N(o.id); if (!n) throw 'no step ' + o.id;
+        const ins = w.edges.filter(e => e.to === n.id), outs = w.edges.filter(e => e.from === n.id);
+        w.edges = w.edges.filter(e => e.to !== n.id && e.from !== n.id);
+        if (ins.length === 1 && outs.length >= 1) outs.forEach((oe, i) => w.edges.push({ ...ins[0], id: i ? newId('e', w.edges) : ins[0].id, to: oe.to })); // reconnect around it
+        w.nodes = w.nodes.filter(x => x.id !== n.id);
+      } else if (o.op === 'add_edge') {
+        if (!N(o.from) || !N(o.to)) throw 'bad connection'; w.edges.push({ id: newId('e', w.edges), from: o.from, to: o.to, label: String(o.label || 'data'), data: String(o.data || '') });
+      } else if (o.op === 'remove_edge') { w.edges = w.edges.filter(e => e.id !== o.id); }
+    } catch (err) { notes.push(String(err)); }
+  }
+  return { wf: w, added, notes };
+}
+function describeOp(o, base) {
+  const nm = id => esc(base.nodes.find(n => n.id === id)?.name || id);
+  if (o.op === 'set_node') { const bits = []; if (o.name) bits.push(`rename to <b>${esc(o.name)}</b>`); if (o.type) bits.push(`make it a <b>${esc(TYPES[o.type]?.label || o.type)}</b>`); if (o.desc) bits.push('update its description'); for (const [k, v] of Object.entries(o.params || {})) bits.push(`set <b>${esc(k)}</b> to <b>${esc(k === 'model' ? (MODELS.find(m => m[0] === v)?.[1] || v) : v)}</b>`); return `${nm(o.id)}: ${bits.join(', ')}`; }
+  if (o.op === 'set_edge') { const e = base.edges.find(x => x.id === o.id); const bits = []; if (o.label) bits.push(`label <b>${esc(o.label)}</b>`); if (o.data) bits.push(`carries <b>${esc(o.data)}</b>`); if (o.share != null) bits.push(`share <b>${esc(o.share)}%</b>`); return `${nm(e?.from)} → ${nm(e?.to)}: ${bits.join(', ')}`; }
+  if (o.op === 'add_node') { const where = o.on_edge ? (() => { const e = base.edges.find(x => x.id === o.on_edge); return ` between ${nm(e?.from)} and ${nm(e?.to)}`; })() : o.after ? ` after ${nm(o.after)}` : ''; return `Add <b>${esc(TYPES[o.node?.type]?.label || 'step')}</b> “${esc(o.node?.name)}”${where}`; }
+  if (o.op === 'remove_node') return `Remove <b>${nm(o.id)}</b> (and reconnect around it)`;
+  if (o.op === 'add_edge') return `Connect ${nm(o.from)} → ${nm(o.to)}`;
+  if (o.op === 'remove_edge') { const e = base.edges.find(x => x.id === o.id); return `Remove connection ${nm(e?.from)} → ${nm(e?.to)}`; }
+  return esc(JSON.stringify(o));
+}
+
+/* ================= AI assistant ================= */
+let sampleFn = null, agent = 'house', aiCtl = null, proposal = null;
+function chipsFor() {
+  if (!sel) return ['Add a human review before sending', 'Make every AI step use the fast model', 'Explain this workflow'];
+  if (sel.kind === 'edge') { const e = edgeById(sel.id); return nodeById(e?.from)?.type === 'condition' ? ['Send 40% of runs this way', 'Add a human check on this road', 'Explain this connection'] : ['Insert a cache step here', 'Add a human check on this road', 'Rename it to “context”']; }
+  const n = nodeById(sel.id);
+  return { llm: ['Use a faster, cheaper model', 'Retry 3 times', 'Add a human check after this'], tool: ['Cache the results', 'Retry 3 times with a 15s timeout', 'Add a fallback step after this'], approval: ['Give reviewers 60 minutes', 'Remove this review step', 'Explain this step'], condition: ['Make it stricter: only urgent tickets', 'Explain this decision'], trigger: ['Also listen to chat', 'Explain this step'], action: ['Send to Slack instead', 'Add a human check before this'] }[n?.type] || ['Explain this step'];
+}
+function renderChips() { $('aiChips').innerHTML = chipsFor().map(c => `<button type="button">${esc(c)}</button>`).join(''); }
+$('aiChips').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; $('aiText').value = b.textContent; ask(); };
+$('aiAsk').onclick = ask;
+$('aiText').addEventListener('keydown', ev => { if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) ask(); });
+$('agentSel').onchange = () => { agent = $('agentSel').value; $('aiWho').textContent = agent === 'claude' ? 'Claude · uses your Claude usage' : 'Built-in helper'; };
+$('aiStop').onclick = () => aiCtl?.abort();
+
+function houseAI(text) {
+  const t = text.toLowerCase(); const ops = []; let summary = '';
+  const n = sel?.kind === 'node' ? nodeById(sel.id) : null, e = sel?.kind === 'edge' ? edgeById(sel.id) : null;
+  const num = (re) => { const m = t.match(re); const g = m && m.slice(1).find(x => x != null); return g != null ? Number(g) : null; };
+  const quoted = text.match(/[“"']([^”"']{2,40})[”"']/)?.[1] || text.match(/\b(?:rename(?: it)?|call it)\s+(?:to\s+)?(.{2,40})$/i)?.[1];
+  if (/explain|what does|why|how does/.test(t)) {
+    if (n) return { summary: describeNode(n, mode === 'run'), ops: [] };
+    if (e) return { summary: `This connection carries ${e.data || 'data'} from ${nodeById(e.from)?.name} to ${nodeById(e.to)?.name}${e.share != null ? `, and ${e.share}% of runs take it` : ''}.`, ops: [] };
+    return { summary: `${wf.name} has ${wf.nodes.length} steps. It starts at ${topoOrder()[0]?.name} and ends at ${topoOrder().filter(x => !outEdges(x.id).length).map(x => x.name).join(' or ')}. Take the tour for a step-by-step walk-through.`, ops: [] };
+  }
+  if (/remove|delete|drop/.test(t)) { if (n) { ops.push({ op: 'remove_node', id: n.id }); summary = `Removes ${n.name} and joins its neighbours directly.`; } else if (e) { ops.push({ op: 'remove_edge', id: e.id }); summary = 'Removes this connection.'; } }
+  if (/(human|review|approv|check)/.test(t) && /(add|insert|before|after|need|on this)/.test(t)) {
+    const node = { name: 'Human check', type: 'approval', desc: 'A person reviews the work before it continues.', params: { approver: 'Support lead', sla: 30 } };
+    if (e) ops.push({ op: 'add_node', node, on_edge: e.id });
+    else if (n && /before/.test(t)) { inEdges(n.id).forEach(ie => ops.push({ op: 'add_node', node, on_edge: ie.id })); }
+    else if (n) ops.push({ op: 'add_node', node, after: n.id });
+    else { const last = wf.nodes.find(x => x.type === 'action'); const ins = last ? inEdges(last.id) : []; ins.forEach(ie => ops.push({ op: 'add_node', node: { ...node, name: 'Human check' }, on_edge: ie.id })); }
+    summary = summary || 'Adds a human review so a person signs off before the run continues.';
+  }
+  if (/cache/.test(t)) { if (n?.type === 'tool') ops.push({ op: 'set_node', id: n.id, params: { cache: true } }); else if (e) ops.push({ op: 'add_node', node: { name: 'Cache', type: 'tool', desc: 'Returns a stored answer when the same input was seen recently.', params: { tool: 'cache.get', cache: true, retries: 0, timeout: 2 } }, on_edge: e.id }); summary = summary || 'Caches results so repeat requests skip the slow call.'; }
+  if (/fallback/.test(t) && n) { ops.push({ op: 'add_node', node: { name: 'Fallback', type: 'tool', desc: 'Runs if the step before it gives up.', params: { tool: 'fallback.default', retries: 0, timeout: 5 } }, after: n.id }); summary = summary || 'Adds a fallback step after this one.'; }
+  const r = num(/retr\w*\s*(?:up to\s*)?(\d+)|(\d+)\s*(?:times|x\b|retries)/) ?? num(/(\d+)\s*(?:times|retries)/);
+  if (r != null && n && 'retries' in (n.params || {})) ops.push({ op: 'set_node', id: n.id, params: { retries: clamp(r, 0, 9) } });
+  const to = num(/(\d+)\s*(?:s\b|sec|seconds?)\s*timeout|timeout\D{0,12}(\d+)/) ?? num(/timeout\D{0,12}(\d+)/);
+  if (to != null && n && 'timeout' in (n.params || {})) ops.push({ op: 'set_node', id: n.id, params: { timeout: to } });
+  const mins = num(/(\d+)\s*min/);
+  if (mins != null && n?.type === 'approval') ops.push({ op: 'set_node', id: n.id, params: { sla: mins } });
+  const pct = num(/(\d+)\s*%/);
+  if (pct != null && e) { ops.push({ op: 'set_edge', id: e.id, share: pct }); const sib = outEdges(e.from).filter(x => x.id !== e.id); if (sib.length === 1) ops.push({ op: 'set_edge', id: sib[0].id, share: 100 - pct }); summary = summary || `Sends ${pct}% of runs this way.`; }
+  const modelFor = /fast|cheap|quick|haiku/.test(t) ? 'claude-haiku-4-5' : /smart|capable|best|opus|better/.test(t) ? 'claude-opus-5-5' : /balanced|sonnet/.test(t) ? 'claude-sonnet-5' : null;
+  if (modelFor) { const targets = n?.type === 'llm' ? [n] : (/every|all/.test(t) || !n) ? wf.nodes.filter(x => x.type === 'llm') : []; targets.forEach(x => ops.push({ op: 'set_node', id: x.id, params: { model: modelFor } })); if (targets.length) summary = summary || `Switches ${targets.length > 1 ? 'every AI step' : targets[0].name} to ${MODELS.find(m => m[0] === modelFor)[1]}.`; }
+  if (/slack|email|chat|ticket/.test(t) && n?.type === 'action') { const ch = ['Slack', 'Email', 'Chat', 'Ticket'].find(c => t.includes(c.toLowerCase())); ops.push({ op: 'set_node', id: n.id, params: { channel: ch } }); }
+  if (/also listen|listen to/.test(t) && n?.type === 'trigger') { const ch = ['Chat', 'Email', 'Webhook'].find(c => t.includes(c.toLowerCase())) || 'Chat'; ops.push({ op: 'set_node', id: n.id, desc: `${n.desc} Also listens to ${ch}.`, params: { filter: `${n.params?.filter || ''}${n.params?.filter ? '; ' : ''}also ${ch.toLowerCase()}` } }); }
+  if (/stricter|only urgent/.test(t) && n?.type === 'condition') ops.push({ op: 'set_node', id: n.id, params: { rule: "priority == 'urgent'" } });
+  if (quoted && /rename|call it|name/.test(t)) { if (n) ops.push({ op: 'set_node', id: n.id, name: quoted.trim() }); else if (e) ops.push({ op: 'set_edge', id: e.id, label: quoted.trim() }); }
+  if (/add (a |an )?(new )?(step|node)/.test(t) && !ops.some(o => o.op === 'add_node')) ops.push({ op: 'add_node', node: { name: quoted?.trim() || 'New step', type: /ai|model|summar|write|draft/.test(t) ? 'llm' : 'tool', desc: text }, after: n?.id, on_edge: e?.id });
+  if (!ops.length) return { summary: "I can't do that one yet. Try: retry 3 times, add a human check after this, use a faster model, cache the results, send 40% of runs this way, rename it to “…”, or remove this step. Switch the agent to Claude for anything more open-ended.", ops: [], note: true };
+  return { summary: summary || 'Here is what I would change:', ops };
+}
+async function claudeAI(text) {
+  const compact = { name: wf.name, nodes: wf.nodes.map(({ id, name, type, desc, params }) => ({ id, name, type, desc, params })), edges: wf.edges };
+  const prompt = `You edit a workflow graph for a visual editor. Reply with ONLY JSON: {"summary": string (1-2 plain sentences), "ops": [...]}.
+Allowed ops (use existing ids; never invent ids except in add_node, which gets an id automatically):
+{"op":"set_node","id":"n2","name"?,"type"?,"desc"?,"params"?:{...}}
+{"op":"set_edge","id":"e4","label"?,"data"?,"share"?:number 0-100 (only for edges leaving a condition)}
+{"op":"add_node","node":{"name","type","desc","params"},"after"?:"<node id>","on_edge"?:"<edge id to split>"}
+{"op":"remove_node","id":"n7"}  {"op":"add_edge","from":"n1","to":"n3","label":"..."}  {"op":"remove_edge","id":"e2"}
+Node types: trigger, llm, tool, condition, approval, action. Params by type: trigger{source,filter}; llm{model one of ${MODELS.map(m => m[0]).join('|')}, prompt, retries, timeout}; tool{tool, retries, timeout, cache}; condition{rule}; approval{approver, sla minutes}; action{channel, retries}.
+If the request is a question, return {"summary": answer, "ops": []}. Keep changes minimal and focused on the selected item when there is one.
+
+Selected: ${sel ? JSON.stringify(sel) : 'nothing (whole workflow)'}
+Workflow: ${JSON.stringify(compact)}
+Request: ${text}`;
+  aiCtl = new AbortController(); $('aiStop').hidden = false;
+  try {
+    const r = await sampleFn.json(prompt, { signal: aiCtl.signal, modelTier: 'quick', cache: false });
+    if (!r || typeof r !== 'object' || !Array.isArray(r.ops)) throw { code: 'invalid_json' };
+    return { summary: String(r.summary || ''), ops: r.ops.filter(o => o && typeof o.op === 'string').slice(0, 12) };
+  } finally { $('aiStop').hidden = true; aiCtl = null; }
+}
+async function ask() {
+  const text = $('aiText').value.trim(); if (!text) return $('aiText').focus();
+  const useClaude = agent === 'claude' && sampleFn;
+  $('aiOut').innerHTML = `<div class="proposal note"><p>${useClaude ? 'Claude is thinking…' : 'Thinking…'}</p></div>`;
+  let res;
+  try { res = useClaude ? await claudeAI(text) : houseAI(text); }
+  catch (e) {
+    if (e?.code === 'cancelled') { $('aiOut').innerHTML = ''; return; }
+    if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(e?.code)) { sampleFn = null; $('agentPick').hidden = true; agent = 'house'; $('aiWho').textContent = 'Built-in helper'; }
+    const msg = e?.code === 'rate_limited' ? 'Claude is busy right now. Try again in a moment.' : e?.code === 'invalid_json' ? 'Claude replied in a shape I could not use. Try rephrasing.' : 'Claude is not available here, so the built-in helper answered.';
+    res = { ...houseAI(text) }; res.summary = msg + ' ' + res.summary;
+  }
+  proposal = res.ops.length ? { ops: res.ops, by: useClaude ? 'AI' : 'AI', text } : null;
+  const preview = res.ops.length ? applyOps(wf, res.ops) : null;
+  $('aiOut').innerHTML = `<div class="proposal ${res.ops.length ? '' : 'note'}"><p>${esc(res.summary)}</p>${res.ops.length ? `<ul>${res.ops.map(o => `<li>${describeOp(o, wf)}</li>`).join('')}</ul>${preview?.notes.length ? `<p class="mut">Skipped: ${esc(preview.notes.join('; '))}</p>` : ''}<div class="row"><button class="btn small primary" id="aiApply">Apply ${res.ops.length} change${res.ops.length > 1 ? 's' : ''}</button><button class="btn small" id="aiDiscard">Discard</button></div>` : ''}</div>`;
+  if (res.ops.length) {
+    $('aiApply').onclick = () => { const r = applyOps(wf, proposal.ops); const keepSel = sel && (sel.kind === 'node' ? r.wf.nodes.some(n => n.id === sel.id) : r.wf.edges.some(e => e.id === sel.id)); if (!keepSel) sel = null; commit(r.wf, `“${text.slice(0, 48)}”`, 'AI'); if (r.added) select({ kind: 'node', id: r.added }, true); $('aiOut').innerHTML = `<div class="proposal note"><p>Applied. You can undo it from Edits below.</p></div>`; $('aiText').value = ''; };
+    $('aiDiscard').onclick = () => { $('aiOut').innerHTML = ''; proposal = null; };
+  }
+}
+
+/* ================= theme + mode wiring ================= */
+function setTheme(t) {
+  theme = t; document.body.dataset.theme = t;
+  document.querySelectorAll('[data-theme]').forEach(b => { if (b.tagName === 'BUTTON') b.setAttribute('aria-pressed', b.dataset.theme === t); });
+  rebuildWorld(); renderEditor(); if (tourOn) goTour(tourIdx); else if (sel) select(sel, true); else overview();
+  $('help').textContent = t === 'town' ? 'Drag to orbit · scroll to zoom · tap a roundabout or road to edit' : t === 'space' ? 'Drag to orbit · scroll to zoom · tap a planet or stream to edit' : 'Drag to orbit · scroll to zoom · tap a core or beam to edit';
+}
+document.querySelectorAll('button[data-theme]').forEach(b => b.onclick = () => setTheme(b.dataset.theme));
+document.querySelectorAll('button[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+document.querySelectorAll('button[data-speed]').forEach(b => b.onclick = () => { speed = Number(b.dataset.speed); document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+addEventListener('keydown', ev => {
+  if (ev.target.closest('input, textarea, select')) return;
+  if (ev.key === 'Escape') { if (tourOn) endTour(); else if ($('insp').classList.contains('open')) $('iClose').click(); }
+  if (tourOn && ev.key === 'ArrowRight') $('tourNext').click();
+  if (tourOn && ev.key === 'ArrowLeft') $('tourBack').click();
+  if ((ev.metaKey || ev.ctrlKey) && ev.key === 'z') { ev.preventDefault(); undo(); }
+});
+let toastT; function toast(m) { $('toast').textContent = m; $('toast').classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), 2200); }
+
+/* ================= loop ================= */
+const clock = new THREE.Clock(); let t = 0;
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.1); t += dt;
+  const running = mode === 'run';
+  if (running) {
+    simNow += dt * speed;
+    for (let i = timers.length - 1; i >= 0; i--) if (timers[i].at <= simNow) { const tm = timers.splice(i, 1)[0]; tm.fn(); }
+    for (let i = packets.length - 1; i >= 0; i--) {
+      const pk = packets[i]; const L = world.edges.get(pk.edge)?.L; const u = (simNow - pk.t0) / pk.dur;
+      heat[pk.edge] = 1;
+      if (!L || u >= 1) { pk.mesh.parent?.remove(pk.mesh); packets.splice(i, 1); pk.fn(); continue; }
+      const p = lutAt(L, u); pk.mesh.position.copy(p);
+      if (world.car) { const q = lutAt(L, Math.min(1, u + 0.02)); pk.mesh.lookAt(q.x, p.y, q.z); pk.mesh.rotateY(-Math.PI / 2); pk.mesh.translateZ(-0.38); }
+    }
+  }
+  for (const k in heat) heat[k] = Math.max(0, heat[k] - dt * 0.8);
+  world.nodes.forEach(o => o.tick(t, running));
+  world.edges.forEach((o, id) => o.tick(dt, running, heat[id] || 0));
+  world.tick(t);
+  if (flight) {
+    const k = clamp((performance.now() - flight.t0) / flight.ms, 0, 1), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    camera.position.lerpVectors(flight.p0, flight.p1, e); controls.target.lerpVectors(flight.c0, flight.c1, e); if (k >= 1) flight = null;
+  }
+  controls.update(); renderer.render(scene, camera); labelRenderer.render(scene, camera);
+  if (running && $('insp').classList.contains('open') && Math.floor(t * 4) !== Math.floor((t - dt) * 4)) renderSvg();
+  requestAnimationFrame(frame);
+}
+
+/* ================= boot ================= */
+document.body.dataset.theme = theme;
+document.querySelectorAll('button[data-theme]').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === theme));
+rebuildWorld(); renderEditor(); renderHistory(); renderStats();
+{ const b = new THREE.Box3(); wf.nodes.forEach(n => b.expandByPoint(to3(n))); const c = b.getCenter(new THREE.Vector3()); controls.target.copy(c); camera.position.set(c.x, 26, c.z + (innerWidth < 760 ? 62 : 38)); }
+setMode(mode);
+frame();
+setTimeout(overview, 50);
+if (params.get('tour') === '1') setTimeout(startTour, 600);
+if (params.get('select')) setTimeout(() => select({ kind: params.get('select').startsWith('e') ? 'edge' : 'node', id: params.get('select') }, true), 700);
+(async () => {
+  if (!window.claude?.use) return;
+  try { sampleFn = await window.claude.use('sample'); } catch { sampleFn = null; }
+  if (sampleFn) { $('agentPick').hidden = false; }
+})();
+window.WW = { get wf() { return wf; }, applyOps, houseAI, select, setTheme, setMode, startTour, goTour, get runs() { return runs; }, get sel() { return sel; }, undo };
+</script>
+</body>
+</html>
