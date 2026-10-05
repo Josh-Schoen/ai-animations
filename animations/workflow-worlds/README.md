@@ -1,12 +1,15 @@
 # Workflow Worlds
 
-A walk through an AI workflow, at rest or running, in three worlds:
+A walk through an AI workflow, at rest or running, in six worlds:
 
 | World | Steps (nodes) are | Connections (edges) are | A run looks like |
 | --- | --- | --- | --- |
 | **Space** | planets, with rings on AI and review steps | arcs of drifting particles | a bright comet |
 | **Town** | roundabouts, each with a building for its kind of step | roads with lane markings | a car driving the road |
 | **Beams** | wireframe cores on glowing pads | particle beams | a pulse of light |
+| **Subway** | stations on a transit map; decisions, triggers and actions are interchanges | coloured lines drawn at 45° angles, with each branch on its own line colour | a train in its line's colour |
+| **Circuit** | IC chips with pins and a status LED; the trigger is a connector | gold traces with vias at each bend | an electric pulse; a failure throws sparks |
+| **Ocean** | islands with a lighthouse, observatory, dock and crane, harbour or port town; lighthouses sweep while busy | shipping lanes marked by buoys on animated waves | a sailboat; a failure makes a splash |
 
 The sample workflow is support-ticket triage: a ticket comes in, an AI step labels it, a tool looks up the customer, and a decision sends it either to a drafted reply with human review or to the on-call pager.
 
@@ -56,7 +59,7 @@ The workflow is saved in your browser. Add `?fresh=1` to start from the sample.
 
 | Option | Effect |
 | --- | --- |
-| `?theme=space` / `town` / `beam` | Start in that world |
+| `?theme=space` / `town` / `beam` / `subway` / `circuit` / `ocean` | Start in that world |
 | `?mode=run` | Start running |
 | `?tour=1` | Start the tour |
 | `?select=n4` / `e3` | Open on a step or connection |

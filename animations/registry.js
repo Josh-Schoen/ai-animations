@@ -54,7 +54,7 @@ window.ANIMATIONS = [
   {
     slug: 'workflow-worlds',
     title: 'Workflow Worlds',
-    description: 'Walk through an AI workflow at rest or running, as planets and particle streams, a small town of roundabouts and roads, or glowing beams. Tap any step or connection to zoom in, edit it on a 2D map, or ask AI to change it.',
+    description: 'Walk through an AI workflow at rest or running in six worlds: space, a small town, glowing beams, a subway map, a circuit board or the open ocean. Tap any step or connection to zoom in, edit it on a 2D map, or ask AI to change it.',
     tags: ['three.js', 'agents', 'workflow'],
     added: '2026-10-05',
   },

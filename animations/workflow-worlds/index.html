@@ -23,6 +23,17 @@
     --running: #0284c7; --success: #15803d; --retry: #b45309; --failed: #b91c1c; --waiting: #7e22ce; --idle: #78716c;
     color-scheme: light;
   }
+  body[data-theme="subway"] {
+    --glass: rgba(255, 255, 255, .93); --glass-2: #ffffff; --line: rgba(20, 22, 30, .14);
+    --ink: #111318; --dim: #575c68; --faint: #9aa0ab; --accent: #e1251b; --accent-ink: #fff;
+    --running: #0077c8; --success: #00843d; --retry: #b45309; --failed: #c8102e; --waiting: #7e22ce; --idle: #6b7280;
+    color-scheme: light;
+  }
+  body[data-theme="circuit"] { --glass: rgba(3, 26, 18, .84); --glass-2: rgba(5, 32, 23, .97); --line: rgba(242, 193, 78, .24); --ink: #f3f0dc; --dim: #a9bba3; --faint: #5d7a66; --accent: #f2c14e; --accent-ink: #1d1606; }
+  body[data-theme="ocean"] { --glass: rgba(6, 26, 44, .8); --glass-2: rgba(8, 30, 50, .97); --line: rgba(160, 220, 255, .22); --ink: #eaf6ff; --dim: #9cc3da; --faint: #5a7f96; --accent: #ffd166; --accent-ink: #1a1400; }
+  body[data-theme="subway"] .nl .card { border-radius: 4px; border: 2px solid #111318; }
+  body[data-theme="subway"] .nl .nm { font-weight: 700; letter-spacing: -.01em; }
+  body[data-theme="circuit"] .nl .card, body[data-theme="circuit"] .el { font-family: var(--mono); border-radius: 3px; }
   body[data-theme="beam"] { --glass: rgba(4, 10, 16, .8); --glass-2: rgba(6, 16, 24, .97); --line: rgba(0, 255, 220, .18); --ink: #dffcf7; --dim: #7fb8ae; --faint: #3f6e66; --accent: #2ff3d8; --accent-ink: #021412; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #05060d; color: var(--ink); font: 14px/1.45 var(--sans); }
@@ -187,6 +198,11 @@
     .stats .log { display: none; }
     .tour { bottom: 8px; }
     .touring .stats { display: none; }
+    .nl .ty { display: none; }
+    .nl .card { padding: 2px 6px; }
+    .nl .nm { font-size: 11px; }
+    .nl.sel .ty { display: flex; }
+    .el { font-size: 9.5px; padding: 0 4px; }
     .editing .bar, .editing .stats { display: none; }
     .insp .sec h3 { flex-wrap: wrap; }
     .insp { top: auto; height: var(--sh, 72vh); width: 100vw; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; transform: translateY(105%); }
@@ -219,6 +235,9 @@
     <button data-theme="space" aria-pressed="true">Space</button>
     <button data-theme="town" aria-pressed="false">Town</button>
     <button data-theme="beam" aria-pressed="false">Beams</button>
+    <button data-theme="subway" aria-pressed="false">Subway</button>
+    <button data-theme="circuit" aria-pressed="false">Circuit</button>
+    <button data-theme="ocean" aria-pressed="false">Ocean</button>
   </div>
   <div class="seg" role="group" aria-label="Workflow state">
     <button data-mode="rest" aria-pressed="true"><span class="dot"></span>At rest</button>
@@ -408,7 +427,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 2000);
 camera.position.set(0, 30, 40);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI * 0.47; controls.minDistance = 6; controls.maxDistance = 110;
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI * 0.47; controls.minDistance = 6; controls.maxDistance = 320;
 // When the editor covers part of the screen, shift the view so the scene centres in what is left.
 function updateViewOffset() {
   const open = document.getElementById('insp')?.classList.contains('open');
@@ -438,8 +457,14 @@ function flyTo(target, dist = 14, polar = 0.85, ms = 900) {
 function overview() {
   const b = new THREE.Box3(); wf.nodes.forEach(n => b.expandByPoint(to3(n)));
   const c = b.getCenter(new THREE.Vector3()); const s = b.getSize(new THREE.Vector3());
-  const d = Math.max(s.x, s.z * 1.6, 20) * (innerWidth < 760 ? 1.1 : 0.92);
-  flyTo(c, d, theme === 'town' ? 0.75 : 0.9);
+  let d = Math.max(s.x, s.z * 1.6, 20) * (innerWidth < 760 ? 1.1 : 0.92);
+  const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), aspect = innerWidth / innerHeight;
+  d = Math.max(d, (s.x + 8) / (2 * half * aspect) * 1.02); // never crop the width on narrow screens
+  // fog was tuned for desktop distances; stretch it when the camera has to sit farther back
+  const k = Math.max(1, d / 60);
+  if (scene.fog) { const b = scene.fog._base || (scene.fog._base = scene.fog.isFogExp2 ? { density: scene.fog.density } : { near: scene.fog.near, far: scene.fog.far });
+    if (scene.fog.isFogExp2) scene.fog.density = b.density / k; else { scene.fog.near = b.near * k; scene.fog.far = b.far * k; } }
+  flyTo(c, innerWidth < 760 ? d / 1.6 : d, { town: 0.75, subway: 0.42, circuit: 0.62, ocean: 0.8 }[theme] ?? 0.9);
 }
 
 /* ================= shared textures ================= */
@@ -450,10 +475,15 @@ function glowTexture() {
   g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
 }
 const GLOW = glowTexture();
+const EDGE_NOUN = { space: 'particle streams', town: 'roads', beam: 'beams', subway: 'subway lines', circuit: 'copper traces', ocean: 'shipping lanes' };
+const EDGE_KIND = { space: 'Stream', town: 'Road', beam: 'Beam', subway: 'Line', circuit: 'Trace', ocean: 'Lane' };
+const HELP_NOUN = { space: 'a planet or stream', town: 'a roundabout or road', beam: 'a core or beam', subway: 'a station or line', circuit: 'a chip or trace', ocean: 'an island or lane' };
+const RUN_NOUN = { space: 'comet', town: 'car', beam: 'pulse of light', subway: 'train', circuit: 'electric pulse', ocean: 'boat' };
 const STATUS_COLOR = { idle: null, running: 0x38bdf8, success: 0x34d399, retry: 0xfbbf24, failed: 0xf87171, waiting: 0xc084fc };
 
 /* ================= worlds ================= */
-let theme = ['space', 'town', 'beam'].includes(params.get('theme')) ? params.get('theme') : 'space';
+const THEMES = ['space', 'town', 'beam', 'subway', 'circuit', 'ocean'];
+let theme = THEMES.includes(params.get('theme')) ? params.get('theme') : 'space';
 let world = null; // {group, nodes: Map, edges: Map, packet(edge) -> mesh, tick(t,dt)}
 const pickables = [];
 
@@ -468,6 +498,23 @@ function edgeCurve(e) {
   }
   if (theme === 'beam') {
     const A = to3(a, 1.4), B = to3(b, 1.4); const mid = A.clone().lerp(B, 0.5); mid.y += 0.6;
+    return new THREE.QuadraticBezierCurve3(A, mid, B);
+  }
+  if (theme === 'subway') {
+    const A = to3(a, 0.45), B = to3(b, 0.45); const dx = B.x - A.x, dz = B.z - A.z;
+    if (Math.abs(dz) < 0.05 || Math.abs(dx) <= Math.abs(dz)) return polyCurve([A, B]);
+    const sgn = Math.sign(dx), h = (Math.abs(dx) - Math.abs(dz)) / 2;
+    return polyCurve([A, new THREE.Vector3(A.x + sgn * h, 0.45, A.z), new THREE.Vector3(B.x - sgn * h, 0.45, B.z), B]);
+  }
+  if (theme === 'circuit') {
+    const A = to3(a, 0.05), B = to3(b, 0.05);
+    if (Math.abs(A.z - B.z) < 0.05) return polyCurve([A, B]);
+    const mx = Math.round((A.x + B.x) / 2 * 2) / 2;
+    return polyCurve([A, new THREE.Vector3(mx, 0.05, A.z), new THREE.Vector3(mx, 0.05, B.z), B]);
+  }
+  if (theme === 'ocean') {
+    const A = to3(a, 0.3), B = to3(b, 0.3); const mid = A.clone().lerp(B, 0.5); const d = B.clone().sub(A); const nrm = new THREE.Vector3(-d.z, 0, d.x).normalize();
+    mid.add(nrm.multiplyScalar(d.length() * 0.16));
     return new THREE.QuadraticBezierCurve3(A, mid, B);
   }
   const A = to3(a, 0), B = to3(b, 0);
@@ -637,7 +684,241 @@ function buildTown(group) {
     const label = makeLabel(n); label.position.set(0, 3.4, 0); holder.add(label);
     nodes.set(n.id, { pos: p, label, setStatus(st) { const c = STATUS_COLOR[st] ?? T.color; lamp.material.color.setHex(c); glow.material.color.setHex(c); glow.material.opacity = st === 'idle' ? 0 : .8; }, tick() {} });
   });
-  return { nodes, edges, packet() { const cols = [0xef4444, 0x2563eb, 0xf59e0b, 0x7c3aed, 0x0891b2]; return car(cols[Math.floor(Math.random() * cols.length)]); }, packetY: 0, car: true, tick() {} };
+  return { nodes, edges, packet() { const cols = [0xef4444, 0x2563eb, 0xf59e0b, 0x7c3aed, 0x0891b2]; return car(cols[Math.floor(Math.random() * cols.length)]); }, orient: true, lane: 0.38, tick() {} };
+}
+
+
+/* ---------- shared helpers for the newer worlds ---------- */
+function polyCurve(pts) {
+  const c = new THREE.CurvePath();
+  for (let i = 0; i < pts.length - 1; i++) if (pts[i].distanceTo(pts[i + 1]) > 1e-3) c.add(new THREE.LineCurve3(pts[i], pts[i + 1]));
+  if (!c.curves.length) c.add(new THREE.LineCurve3(pts[0], pts[0].clone().add(new THREE.Vector3(0.01, 0, 0))));
+  return c;
+}
+function corners(c) { return c.curves ? c.curves.slice(1).map(k => k.v1) : []; }
+function nodePick(holder, r, h, n) {
+  const pick = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 12), new THREE.MeshBasicMaterial({ visible: false }));
+  pick.position.y = h / 2; pick.userData = { kind: 'node', id: n.id }; holder.add(pick); pickables.push(pick);
+}
+function edgePick(group, L, e, w = 1.2, y = 0.1) {
+  const pick = new THREE.Mesh(ribbon(L, w, y), new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }));
+  pick.userData = { kind: 'edge', id: e.id }; group.add(pick); pickables.push(pick);
+}
+const LINE_COLS = [0xe1251b, 0x0098d4, 0x00a650, 0xf7a800, 0x9b4f96, 0xf3a9bb, 0x00a4a7, 0x8f5e3e];
+function lineColors() {
+  const col = {}; let next = 0;
+  for (const n of topoOrder()) {
+    const ins = inEdges(n.id); const inherited = ins.length ? col[ins[0].id] : undefined;
+    outEdges(n.id).forEach((e, i) => { col[e.id] = (inherited === undefined || i > 0) ? LINE_COLS[next++ % LINE_COLS.length] : inherited; });
+  }
+  return col;
+}
+
+/* ---------- Subway: a transit map with stations and coloured lines ---------- */
+function buildSubway(group) {
+  scene.background = new THREE.Color(0xf4f5f2); scene.fog = new THREE.Fog(0xf4f5f2, 90, 190);
+  group.add(new THREE.AmbientLight(0xffffff, 1.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(-20, 40, 25); group.add(sun);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 180), new THREE.MeshLambertMaterial({ color: 0xf7f7f3 })); ground.rotation.x = -Math.PI / 2; group.add(ground);
+  const grid = new THREE.GridHelper(220, 110, 0xe6e7e1, 0xeceee8); grid.position.y = 0.01; group.add(grid);
+  // the river, as on every city's map
+  const river = new THREE.CatmullRomCurve3([-70, -40, -14, 8, 30, 70].map((x, i) => new THREE.Vector3(x, 0.02, [16, 13, 17, 12, 15, 11][i])));
+  group.add(new THREE.Mesh(ribbon(lut(river, 120), 2.2, 0.02), new THREE.MeshLambertMaterial({ color: 0xbfe1f5, side: THREE.DoubleSide })));
+  const cols = lineColors();
+  const nodes = new Map(), edges = new Map();
+  wf.edges.forEach(e => {
+    const c = edgeCurve(e); if (!c) return; const L = lut(c, 200); const color = cols[e.id] ?? LINE_COLS[0];
+    const mat = new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0 });
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(c, 120, 0.32, 8, false), mat); group.add(tube);
+    corners(c).forEach(p => { const j = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 8), mat); j.position.copy(p); group.add(j); });
+    edgePick(group, L, e, 1.2, 0.4);
+    const label = makeEdgeLabel(e); label.position.copy(lutAt(L, 0.5)).add(new THREE.Vector3(0, 0.9, 0)); group.add(label);
+    edges.set(e.id, { L, label, color, setSel(on) { mat.emissiveIntensity = on ? 0.55 : 0; tube.scale.setScalar(1); },
+      tick(dt, running, heat) { if (mat.emissiveIntensity < 0.5) mat.emissiveIntensity = running ? heat * 0.35 : 0; } });
+  });
+  wf.nodes.forEach(n => {
+    const T = TYPES[n.type] || TYPES.tool; const p = to3(n, 0); const holder = new THREE.Group(); holder.position.copy(p); group.add(holder);
+    const big = n.type === 'condition' || n.type === 'trigger' || n.type === 'action';
+    const r = big ? 0.95 : 0.72;
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.5, 40), new THREE.MeshLambertMaterial({ color: 0xffffff })); disc.position.y = 0.4; holder.add(disc);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.13, 10, 40), new THREE.MeshLambertMaterial({ color: 0x15171c })); rim.rotation.x = Math.PI / 2; rim.position.y = 0.66; holder.add(rim);
+    if (big) { const r2 = new THREE.Mesh(new THREE.TorusGeometry(r * 0.55, 0.09, 8, 32), new THREE.MeshLambertMaterial({ color: 0x15171c })); r2.rotation.x = Math.PI / 2; r2.position.y = 0.66; holder.add(r2); }
+    const tick = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.5), new THREE.MeshLambertMaterial({ color: T.color })); tick.position.set(0, 0.72, -r - 0.2); holder.add(tick);
+    const pulse = new THREE.Mesh(new THREE.RingGeometry(r + 0.1, r + 0.3, 40), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })); pulse.rotation.x = -Math.PI / 2; pulse.position.y = 0.05; holder.add(pulse);
+    nodePick(holder, r + 0.5, 1.4, n);
+    const label = makeLabel(n); label.position.set(0, 1.0, -r - 1.5); holder.add(label);
+    let st = 'idle';
+    nodes.set(n.id, { pos: p, label, setStatus(s) { st = s; const c = STATUS_COLOR[s]; disc.material.color.setHex(c ?? 0xffffff); pulse.material.color.setHex(c ?? 0x38bdf8); pulse.material.opacity = s === 'idle' ? 0 : 0.6; },
+      tick(t) { if (st === 'running' || st === 'waiting') { const k = (t * 1.2) % 1; pulse.scale.setScalar(1 + k * 1.6); pulse.material.opacity = 0.7 * (1 - k); } else pulse.scale.setScalar(1); } });
+  });
+  return { nodes, edges, orient: true, lane: 0,
+    packet(edgeId) {
+      const color = edges.get(edgeId)?.color ?? 0xe1251b; const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.42, 0.62), new THREE.MeshLambertMaterial({ color: 0xffffff })); body.position.y = 0.55; g.add(body);
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.12, 0.64), new THREE.MeshLambertMaterial({ color })); stripe.position.y = 0.5; g.add(stripe);
+      const win = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.645), new THREE.MeshLambertMaterial({ color: 0x1f2937 })); win.position.y = 0.66; g.add(win);
+      return g;
+    }, tick() {} };
+}
+
+/* ---------- Circuit: chips on a board, joined by copper traces ---------- */
+function buildCircuit(group) {
+  scene.background = new THREE.Color(0x041a12); scene.fog = new THREE.Fog(0x041a12, 70, 160);
+  group.add(new THREE.AmbientLight(0xcfe8d8, 0.7));
+  const key = new THREE.DirectionalLight(0xfff2d0, 1.6); key.position.set(-25, 40, 30); group.add(key);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(110, 0.6, 64), new THREE.MeshStandardMaterial({ color: 0x0c4a33, roughness: 0.75, metalness: 0.05 })); board.position.y = -0.3; group.add(board);
+  // silkscreen dot grid and mounting holes
+  const dots = []; for (let x = -52; x <= 52; x += 2) for (let z = -30; z <= 30; z += 2) dots.push(x, 0.02, z);
+  const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.Float32BufferAttribute(dots, 3));
+  group.add(new THREE.Points(dg, new THREE.PointsMaterial({ color: 0x2f7a5a, size: 1.6, sizeAttenuation: false })));
+  for (const [x, z] of [[-50, -28], [50, -28], [-50, 28], [50, 28]]) { const h = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.35, 8, 24), new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.8, roughness: 0.3 })); h.rotation.x = Math.PI / 2; h.position.set(x, 0.05, z); group.add(h); }
+  const gold = () => new THREE.MeshStandardMaterial({ color: 0xe0b64a, metalness: 0.45, roughness: 0.35, emissive: 0xffc94d, emissiveIntensity: 0.12 });
+  const nodes = new Map(), edges = new Map();
+  wf.edges.forEach(e => {
+    const c = edgeCurve(e); if (!c) return; const L = lut(c, 200); const mat = gold();
+    const trace = new THREE.Mesh(ribbon(L, 0.3, 0.04), mat); group.add(trace);
+    const edgeL = new THREE.Mesh(ribbon(L, 0.46, 0.03), new THREE.MeshStandardMaterial({ color: 0x0a3a28, roughness: 0.9 })); group.add(edgeL);
+    corners(c).forEach(p => { const via = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.1, 16), mat); via.position.set(p.x, 0.06, p.z); group.add(via); const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.12, 12), new THREE.MeshBasicMaterial({ color: 0x041a12 })); hole.position.set(p.x, 0.07, p.z); group.add(hole); });
+    edgePick(group, L, e, 1.0, 0.1);
+    const label = makeEdgeLabel(e); label.position.copy(lutAt(L, 0.5)).add(new THREE.Vector3(0, 0.5, 0)); group.add(label);
+    let sel = false;
+    edges.set(e.id, { L, label, setSel(on) { sel = on; mat.emissiveIntensity = on ? 0.8 : 0; },
+      tick(dt, running, heat) { if (!sel) mat.emissiveIntensity = 0.12 + (running ? heat * 1.1 : 0); } });
+  });
+  wf.nodes.forEach(n => {
+    const T = TYPES[n.type] || TYPES.tool; const p = to3(n, 0); const holder = new THREE.Group(); holder.position.copy(p); group.add(holder);
+    const pinMat = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 0.9, roughness: 0.25 });
+    let w = 3.4, d = 2.4, h = 0.5;
+    if (n.type === 'condition') { w = 2.3; d = 2.3; }
+    if (n.type === 'trigger') { w = 2.8; d = 2.0; h = 1.1; }
+    const bodyMat = new THREE.MeshStandardMaterial({ color: n.type === 'trigger' ? 0xb8bcc4 : 0x15171c, metalness: n.type === 'trigger' ? 0.8 : 0.2, roughness: n.type === 'trigger' ? 0.3 : 0.6 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat); body.position.y = h / 2 + 0.05; holder.add(body);
+    if (n.type === 'trigger') { const slot = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, h * 0.4, 0.1), new THREE.MeshBasicMaterial({ color: 0x111111 })); slot.position.set(0, h / 2 + 0.05, d / 2 + 0.01); holder.add(slot); }
+    else {
+      const pins = n.type === 'condition' ? 4 : 6;
+      for (let i = 0; i < pins; i++) for (const s of [-1, 1]) {
+        const x = (i - (pins - 1) / 2) * (w / pins);
+        const pin = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.42), pinMat); pin.position.set(x, 0.08, s * (d / 2 + 0.16)); holder.add(pin);
+        if (n.type === 'condition') { const pin2 = pin.clone(); pin2.rotation.y = Math.PI / 2; pin2.position.set(s * (w / 2 + 0.16), 0.08, x); holder.add(pin2); }
+      }
+      const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 12), new THREE.MeshBasicMaterial({ color: 0x3a3d45 })); dot.position.set(-w / 2 + 0.3, h + 0.06, -d / 2 + 0.3); holder.add(dot);
+    }
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(w * 0.8, 0.02, 0.12), new THREE.MeshBasicMaterial({ color: T.color })); stripe.position.set(0, h + 0.07, d / 2 - 0.25); holder.add(stripe);
+    const led = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshBasicMaterial({ color: 0x2a2d35 })); led.position.set(w / 2 - 0.35, h + 0.12, -d / 2 + 0.35); holder.add(led);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.setScalar(1.6); glow.position.copy(led.position); holder.add(glow);
+    nodePick(holder, Math.max(w, d) * 0.75, 1.2, n);
+    const label = makeLabel(n); label.position.set(0, 1.2, -d / 2 - 1.6); holder.add(label);
+    let st = 'idle';
+    nodes.set(n.id, { pos: p, label, setStatus(s) { st = s; const c = STATUS_COLOR[s]; led.material.color.setHex(c ?? 0x2a2d35); glow.material.color.setHex(c ?? 0xffffff); glow.material.opacity = s === 'idle' ? 0 : 0.9; },
+      tick(t) { if (st === 'running') glow.material.opacity = 0.5 + 0.5 * Math.abs(Math.sin(t * 9)); } });
+  });
+  return { nodes, edges,
+    packet() { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xfff1b0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); s.scale.setScalar(1.5); s.position.y = 0.25; return s; },
+    packetLift: 0.25,
+    onFail(id) { const n = nodes.get(id); if (n) spawnBurst(n.pos.clone().add(new THREE.Vector3(0, 0.6, 0)), 0xffd27a, 46, { speed: 5, gravity: 7, additive: true, life: 0.9 }); },
+    onRetry(id) { const n = nodes.get(id); if (n) spawnBurst(n.pos.clone().add(new THREE.Vector3(0, 0.6, 0)), 0xffe9a8, 14, { speed: 3, gravity: 6, additive: true, life: 0.6 }); },
+    tick() {} };
+}
+
+/* ---------- Ocean: islands on open water, joined by shipping lanes ---------- */
+function waveY(x, z, t) { return Math.sin(x * 0.22 + t * 1.1) * 0.16 + Math.cos(z * 0.28 + t * 1.4) * 0.12 + Math.sin((x + z) * 0.11 + t * 0.6) * 0.1; }
+function buildOcean(group) {
+  scene.background = new THREE.Color(0x9fd3ec); scene.fog = new THREE.Fog(0x9fd3ec, 60, 170);
+  group.add(new THREE.HemisphereLight(0xe6f6ff, 0x1d5677, 1.1));
+  const sun = new THREE.DirectionalLight(0xfff0d0, 1.4); sun.position.set(-30, 45, 15); group.add(sun);
+  const wg = new THREE.PlaneGeometry(240, 170, 96, 68); wg.rotateX(-Math.PI / 2);
+  const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ color: 0x1f78a8, shininess: 70, specular: 0x9fd8ff, flatShading: true, transparent: true, opacity: 0.96 })); group.add(water);
+  const wpos = wg.attributes.position; const base = wpos.array.slice();
+  const nodes = new Map(), edges = new Map();
+  wf.edges.forEach(e => {
+    const c = edgeCurve(e); if (!c) return; const L = lut(c, 160);
+    const lineG = new THREE.BufferGeometry().setFromPoints(L.pts);
+    const lane = new THREE.Line(lineG, new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.7, gapSize: 0.6, transparent: true, opacity: 0.75 })); lane.computeLineDistances(); group.add(lane);
+    const buoys = [];
+    const count = Math.max(1, Math.floor(L.len / 5));
+    for (let i = 1; i <= count; i++) {
+      const u = i / (count + 1), p = lutAt(L, u), q = lutAt(L, Math.min(1, u + 0.01)); const tng = q.clone().sub(p).setY(0).normalize(); const side = i % 2 ? 1 : -1;
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.6, 10), new THREE.MeshLambertMaterial({ color: side > 0 ? 0xdc2626 : 0x16a34a }));
+      b.position.set(p.x - tng.z * 0.9 * side, 0.2, p.z + tng.x * 0.9 * side); group.add(b); buoys.push(b);
+    }
+    edgePick(group, L, e, 1.3, 0.3);
+    const label = makeEdgeLabel(e); label.position.copy(lutAt(L, 0.5)).add(new THREE.Vector3(0, 0.7, 0)); group.add(label);
+    edges.set(e.id, { L, label, setSel(on) { lane.material.color.setHex(on ? 0xffd166 : 0xffffff); lane.material.opacity = on ? 1 : 0.75; },
+      tick(dt, running, heat) { const t = clock.elapsedTime; buoys.forEach((b, i) => { b.position.y = 0.2 + waveY(b.position.x, b.position.z, t); b.rotation.z = Math.sin(t * 2 + i) * 0.12; }); } });
+  });
+  wf.nodes.forEach((n, i) => {
+    const T = TYPES[n.type] || TYPES.tool; const p = to3(n, 0); const holder = new THREE.Group(); holder.position.copy(p); group.add(holder);
+    const sand = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 2.4, 0.9, 18), new THREE.MeshLambertMaterial({ color: 0xe8d39a })); sand.position.y = 0.05; holder.add(sand);
+    const grass = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.6, 0.35, 18), new THREE.MeshLambertMaterial({ color: 0x5fa043 })); grass.position.y = 0.62; holder.add(grass);
+    const top = 0.8; let lampY = 1.9;
+    const box = (w, h, d, c, x, z, y = top) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: c })); m.position.set(x, y + h / 2, z); holder.add(m); return m; };
+    let beam = null;
+    if (n.type === 'trigger' || n.type === 'condition') {
+      const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.42, 2.6, 14), new THREE.MeshLambertMaterial({ color: 0xffffff })); tower.position.y = top + 1.3; holder.add(tower);
+      for (const y of [0.6, 1.5]) { const band = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.38, 0.35, 14), new THREE.MeshLambertMaterial({ color: 0xd62828 })); band.position.y = top + y; holder.add(band); }
+      lampY = top + 2.85;
+      beam = new THREE.Mesh(new THREE.ConeGeometry(0.9, 5, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+      beam.rotation.z = Math.PI / 2; beam.position.set(2.5, 0, 0); const pivot = new THREE.Group(); pivot.position.y = lampY; pivot.add(beam); holder.add(pivot); beam.userData.pivot = pivot;
+    } else if (n.type === 'llm') {
+      box(1.1, 0.7, 1.1, 0xf1f5f9, 0, 0); const dome = new THREE.Mesh(new THREE.SphereGeometry(0.6, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })); dome.position.y = top + 0.7; holder.add(dome); lampY = top + 1.6;
+    } else if (n.type === 'tool') {
+      box(1.2, 0.8, 0.9, 0x94a3b8, -0.3, 0); box(0.14, 2.0, 0.14, 0xf59e0b, 0.6, 0.2); box(1.4, 0.12, 0.12, 0xf59e0b, 1.1, 0.2, top + 1.9);
+      const pier = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 0.6), new THREE.MeshLambertMaterial({ color: 0x8b5e34 })); pier.position.set(2.4, 0.35, 0.6); holder.add(pier); lampY = top + 2.3;
+    } else if (n.type === 'approval') {
+      box(1.3, 0.8, 1.0, 0xfde68a, 0, 0); const roof = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.6, 4), new THREE.MeshLambertMaterial({ color: 0x9a3412 })); roof.rotation.y = Math.PI / 4; roof.position.y = top + 1.1; holder.add(roof);
+      box(0.06, 1.4, 0.06, 0x334155, 0.9, -0.4); const flag = box(0.5, 0.3, 0.04, 0xf472b6, 1.15, -0.4, top + 1.05); flag.userData.flag = true; lampY = top + 1.8;
+    } else {
+      [[0xfca5a5, -0.6, -0.3, 0.7], [0x93c5fd, 0.1, 0.35, 0.9], [0xfde68a, 0.6, -0.4, 0.6], [0xc4b5fd, -0.1, -0.7, 0.5]].forEach(([c, x, z, h]) => box(0.55, h, 0.55, c, x, z)); lampY = top + 1.5;
+    }
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 10), new THREE.MeshBasicMaterial({ color: T.color })); lamp.position.y = lampY; holder.add(lamp);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: T.color, transparent: true, opacity: 0.35, depthWrite: false })); glow.scale.setScalar(2); glow.position.y = lampY; holder.add(glow);
+    nodePick(holder, 2.4, 3, n);
+    const label = makeLabel(n); label.position.set(0, lampY + 0.9, -1.0); holder.add(label);
+    let st = 'idle';
+    nodes.set(n.id, { pos: p, label, setStatus(s) { st = s; const c = STATUS_COLOR[s] ?? T.color; lamp.material.color.setHex(c); glow.material.color.setHex(c); glow.material.opacity = s === 'idle' ? 0.35 : 0.9; },
+      tick(t, running) { if (beam) { beam.userData.pivot.rotation.y = t * 1.4 + i; beam.material.opacity = running || st !== 'idle' ? 0.22 : 0.06; } holder.children.forEach(m => { if (m.userData.flag) m.rotation.y = Math.sin(t * 3) * 0.3; }); } });
+  });
+  let frameN = 0;
+  return { nodes, edges, orient: true, lane: 0, bob: (x, z) => 0.15 + waveY(x, z, clock.elapsedTime),
+    packet() {
+      const g = new THREE.Group();
+      const hull = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.3, 0.5), new THREE.MeshLambertMaterial({ color: 0xffffff })); hull.position.y = 0.15; g.add(hull);
+      const keel = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 0.52), new THREE.MeshLambertMaterial({ color: 0x1e3a8a })); keel.position.y = 0.02; g.add(keel);
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.3, 6), new THREE.MeshLambertMaterial({ color: 0x78350f })); mast.position.set(0.05, 0.9, 0); g.add(mast);
+      const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute([0.08, 0.35, 0, 0.08, 1.5, 0, 0.6, 0.35, 0], 3)); sg.computeVertexNormals();
+      const sail = new THREE.Mesh(sg, new THREE.MeshLambertMaterial({ color: 0xfff7ed, side: THREE.DoubleSide })); g.add(sail);
+      return g;
+    },
+    onFail(id) { const n = nodes.get(id); if (n) spawnBurst(n.pos.clone().add(new THREE.Vector3(0, 0.4, 2.2)), 0xe0f2fe, 60, { speed: 4.5, gravity: 9, up: true, life: 1.1 }); },
+    onRetry(id) { const n = nodes.get(id); if (n) spawnBurst(n.pos.clone().add(new THREE.Vector3(0, 0.4, 2.2)), 0xe0f2fe, 18, { speed: 3, gravity: 9, up: true, life: 0.8 }); },
+    tick(t) {
+      if (++frameN % 2) return;
+      const a = wpos.array; for (let i = 0; i < a.length; i += 3) a[i + 1] = waveY(base[i], base[i + 2], t);
+      wpos.needsUpdate = true; wg.computeVertexNormals();
+    } };
+}
+
+/* ---------- bursts: sparks (circuit) and splashes (ocean) ---------- */
+const bursts = [];
+function spawnBurst(pos, color, n, o = {}) {
+  const g = new THREE.BufferGeometry(); const P = new Float32Array(n * 3), V = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    P.set([pos.x, pos.y, pos.z], i * 3);
+    const d = new THREE.Vector3().randomDirection(); if (o.up) d.y = Math.abs(d.y) * 1.6 + 0.4; else d.y = Math.abs(d.y) + 0.2;
+    d.multiplyScalar((o.speed || 4) * rand(0.4, 1)); V.set([d.x, d.y, d.z], i * 3);
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(P, 3));
+  const m = new THREE.PointsMaterial({ color, size: o.additive ? 0.45 : 0.32, map: GLOW, transparent: true, depthWrite: false, blending: o.additive ? THREE.AdditiveBlending : THREE.NormalBlending });
+  const pts = new THREE.Points(g, m); worldGroup.add(pts);
+  bursts.push({ pts, P, V, age: 0, life: o.life || 1, gravity: o.gravity ?? 8 });
+}
+function tickBursts(dt) {
+  for (let i = bursts.length - 1; i >= 0; i--) {
+    const b = bursts[i]; b.age += dt;
+    if (b.age >= b.life) { b.pts.parent?.remove(b.pts); b.pts.geometry.dispose(); b.pts.material.dispose(); bursts.splice(i, 1); continue; }
+    for (let k = 0; k < b.P.length; k += 3) { b.V[k + 1] -= b.gravity * dt; b.P[k] += b.V[k] * dt; b.P[k + 1] += b.V[k + 1] * dt; b.P[k + 2] += b.V[k + 2] * dt; }
+    b.pts.geometry.attributes.position.needsUpdate = true; b.pts.material.opacity = 1 - b.age / b.life;
+  }
 }
 
 const worldGroup = new THREE.Group(); scene.add(worldGroup);
@@ -647,9 +928,9 @@ function disposeGroup(g) {
 }
 function rebuildWorld() {
   // keep packets valid: drop them, nodes keep status
-  packets.forEach(pk => pk.mesh.parent?.remove(pk.mesh)); packets.length = 0;
+  packets.forEach(pk => pk.mesh.parent?.remove(pk.mesh)); packets.length = 0; bursts.length = 0;
   disposeGroup(worldGroup); pickables.length = 0;
-  world = (theme === 'space' ? buildSpace : theme === 'beam' ? buildBeam : buildTown)(worldGroup);
+  world = ({ space: buildSpace, beam: buildBeam, town: buildTown, subway: buildSubway, circuit: buildCircuit, ocean: buildOcean }[theme] || buildSpace)(worldGroup);
   for (const [id, st] of Object.entries(nodeStatus)) setStatus(id, st, true);
   applySelectionVisuals();
   $('wfName').textContent = '· ' + wf.name;
@@ -667,7 +948,8 @@ let run = null; // {id, t0, active, failed, path}
 const logLines = [];
 function log(html) { logLines.unshift(html); logLines.length = Math.min(logLines.length, 8); $('log').innerHTML = logLines.map(l => `<li>${l}</li>`).join(''); }
 function setStatus(id, st, quiet) {
-  nodeStatus[id] = st; world?.nodes.get(id)?.setStatus(st);
+  const was = nodeStatus[id]; nodeStatus[id] = st; world?.nodes.get(id)?.setStatus(st);
+  if (!quiet && st !== was) { if (st === 'failed') world?.onFail?.(id); else if (st === 'retry') world?.onRetry?.(id); }
   const lab = world?.nodes.get(id)?.label.element.querySelector('.stx'); if (lab) { lab.className = 'stx st-' + st; lab.textContent = st; }
   if (!quiet && tourOn) renderTour();
 }
@@ -721,7 +1003,7 @@ function enter(id, attempt) {
 function travel(e, fn) {
   const L = world.edges.get(e.id)?.L; if (!L) { fn(); return; }
   run.active++;
-  const mesh = world.packet(); worldGroup.add(mesh);
+  const mesh = world.packet(e.id); worldGroup.add(mesh);
   const dur = clamp(L.len / (world.car ? 5 : 8), 0.6, 4);
   const rid = run.id;
   packets.push({ edge: e.id, t0: simNow, dur, mesh, run: rid, fn: () => { if (!run || run.id !== rid) return; run.active--; fn(); } });
@@ -766,7 +1048,7 @@ function select(s, fly) {
   sel = s; applySelectionVisuals();
   if (changed && s && !drag) { const body = document.querySelector('.insp .body'); if (body) body.scrollTop = 0; }
   if (s && fly) {
-    if (s.kind === 'node') flyTo(world.nodes.get(s.id).pos.clone(), theme === 'town' ? 17 : 12, 0.9);
+    if (s.kind === 'node') flyTo(world.nodes.get(s.id).pos.clone(), { town: 17, ocean: 17, subway: 14, circuit: 12 }[theme] ?? 12, theme === 'subway' ? 0.7 : 0.9);
     else { const L = world.edges.get(s.id)?.L; if (L) flyTo(lutAt(L, 0.5), Math.max(theme === 'town' ? 18 : 14, L.len * 1.1), 0.9); }
   }
   if (s) openEditor(); else renderEditor();
@@ -813,7 +1095,7 @@ function renderTour() {
   $('tourBack').disabled = tourIdx === 0; $('tourNext').textContent = tourIdx === steps.length - 1 ? 'Finish' : 'Next';
   if (st.kind === 'overview') {
     $('tourH').textContent = wf.name;
-    $('tourP').textContent = `${wf.nodes.length} steps joined by ${wf.edges.length} ${theme === 'town' ? 'roads' : theme === 'space' ? 'particle streams' : 'beams'}. ` + (mode === 'run' ? 'Each moving light is one run carrying its data from step to step. Watch a step light up while it works.' : 'It is at rest: nothing is flowing. Switch to Running any time to watch work move through it.');
+    $('tourP').textContent = `${wf.nodes.length} steps joined by ${wf.edges.length} ${EDGE_NOUN[theme] || 'connections'}. ` + (mode === 'run' ? `Each ${RUN_NOUN[theme] || 'moving light'} is one run carrying its data from step to step. Watch a step light up while it works.` : 'It is at rest: nothing is flowing. Switch to Running any time to watch work move through it.');
     $('tourEdit').hidden = true;
   } else {
     const n = nodeById(st.id); if (!n) return;
@@ -1024,7 +1306,7 @@ function renderForm() {
   } else {
     const e = edgeById(sel.id); if (!e) { sel = null; return renderForm(); }
     const a = nodeById(e.from), b = nodeById(e.to);
-    $('iKind').textContent = theme === 'town' ? 'Road' : theme === 'space' ? 'Stream' : 'Beam'; $('iTitle').textContent = `${a?.name} → ${b?.name}`; $('formTitle').textContent = 'Connection'; $('formMeta').textContent = '';
+    $('iKind').textContent = EDGE_KIND[theme] || 'Connection'; $('iTitle').textContent = `${a?.name} → ${b?.name}`; $('formTitle').textContent = 'Connection'; $('formMeta').textContent = '';
     let h = field('Label', 'label', e.label || '') + field('Data it carries', 'data', e.data || '');
     if (a?.type === 'condition') h += field('Share of runs (%)', 'share', e.share ?? 50, 'number');
     h += `<div class="two">${field('From', 'from', e.from, 'select', wf.nodes.map(n => [n.id, n.name]))}${field('To', 'to', e.to, 'select', wf.nodes.map(n => [n.id, n.name]))}</div>`;
@@ -1216,7 +1498,7 @@ function setTheme(t) {
   theme = t; document.body.dataset.theme = t;
   document.querySelectorAll('[data-theme]').forEach(b => { if (b.tagName === 'BUTTON') b.setAttribute('aria-pressed', b.dataset.theme === t); });
   rebuildWorld(); renderEditor(); if (tourOn) goTour(tourIdx); else if (sel) select(sel, true); else overview();
-  $('help').textContent = t === 'town' ? 'Drag to orbit · scroll to zoom · tap a roundabout or road to edit' : t === 'space' ? 'Drag to orbit · scroll to zoom · tap a planet or stream to edit' : 'Drag to orbit · scroll to zoom · tap a core or beam to edit';
+  $('help').textContent = `Drag to orbit · scroll to zoom · tap ${HELP_NOUN[t] || 'a step or connection'} to edit`;
 }
 document.querySelectorAll('button[data-theme]').forEach(b => b.onclick = () => setTheme(b.dataset.theme));
 document.querySelectorAll('button[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
@@ -1243,13 +1525,16 @@ function frame() {
       heat[pk.edge] = 1;
       if (!L || u >= 1) { pk.mesh.parent?.remove(pk.mesh); packets.splice(i, 1); pk.fn(); continue; }
       const p = lutAt(L, u); pk.mesh.position.copy(p);
-      if (world.car) { const q = lutAt(L, Math.min(1, u + 0.02)); pk.mesh.lookAt(q.x, p.y, q.z); pk.mesh.rotateY(-Math.PI / 2); pk.mesh.translateZ(-0.38); }
+      if (world.packetLift) pk.mesh.position.y += world.packetLift;
+      if (world.bob) pk.mesh.position.y = world.bob(p.x, p.z);
+      if (world.orient) { const q = lutAt(L, Math.min(1, u + 0.02)); pk.mesh.lookAt(q.x, pk.mesh.position.y, q.z); pk.mesh.rotateY(-Math.PI / 2); if (world.lane) pk.mesh.translateZ(-world.lane); if (world.bob) pk.mesh.rotateX(Math.sin(t * 2.4 + pk.t0) * 0.08); }
     }
   }
   for (const k in heat) heat[k] = Math.max(0, heat[k] - dt * 0.8);
   world.nodes.forEach(o => o.tick(t, running));
   world.edges.forEach((o, id) => o.tick(dt, running, heat[id] || 0));
   world.tick(t);
+  tickBursts(dt);
   if (flight) {
     const k = clamp((performance.now() - flight.t0) / flight.ms, 0, 1), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
     camera.position.lerpVectors(flight.p0, flight.p1, e); controls.target.lerpVectors(flight.c0, flight.c1, e); if (k >= 1) flight = null;
@@ -1274,7 +1559,7 @@ if (params.get('select')) setTimeout(() => select({ kind: params.get('select').s
   try { sampleFn = await window.claude.use('sample'); } catch { sampleFn = null; }
   if (sampleFn) { $('agentPick').hidden = false; }
 })();
-window.WW = { get wf() { return wf; }, applyOps, houseAI, select, setTheme, setMode, startTour, goTour, get runs() { return runs; }, get sel() { return sel; }, undo };
+window.WW = { setStatus, get wf() { return wf; }, applyOps, houseAI, select, setTheme, setMode, startTour, goTour, get runs() { return runs; }, get sel() { return sel; }, undo };
 </script>
 </body>
 </html>
