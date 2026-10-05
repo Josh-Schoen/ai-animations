@@ -33,6 +33,12 @@ The sample workflow is support-ticket triage: a ticket comes in, an AI step labe
 
 Tap a step or connection in 3D (or a label) and the camera zooms in. The editor opens beside it, or as a sheet on phones:
 
+- **Sizing the editor:** drag the grip on its left edge (on phones, the handle at the top of the sheet) to make it wider or narrower.
+  - Drag all the way across for **full page**, where the 2D map spans the screen and properties, AI and edits sit in three columns below it.
+  - Drag back to the edge to **collapse** it to a slim tab; on phones it becomes a peek bar.
+  - The **Collapse**, **Expand** and **Full page** buttons do the same. Double-click the grip, or focus it and press Enter, to toggle full page; arrow keys resize it.
+  - The size is remembered.
+
 - **Workflow map (2D):** a flat flowchart of the same workflow.
   - Drag steps to move them; the 3D world follows.
   - **+ Step** inserts a step after the selection, or on the selected connection, and shifts later steps to make room.

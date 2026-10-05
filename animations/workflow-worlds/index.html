@@ -101,12 +101,30 @@
 
   /* ---------- inspector ---------- */
   .insp {
-    position: fixed; top: 0; right: 0; bottom: 0; z-index: 30; width: min(460px, 100vw); display: flex; flex-direction: column;
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 30; width: var(--pw, min(460px, 100vw)); display: flex; flex-direction: column;
     background: var(--glass-2); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); border-left: 1px solid var(--line); box-shadow: -12px 0 40px rgba(0,0,0,.35);
-    transform: translateX(105%); transition: transform .35s cubic-bezier(.2,.8,.2,1);
+    transform: translateX(105%); transition: transform .35s cubic-bezier(.2,.8,.2,1), width .25s ease, height .25s ease;
   }
   .insp.open { transform: none; }
-  .insp.wide { width: min(900px, 100vw); }
+  .insp.dragging { transition: none; user-select: none; }
+  /* resize grip: left edge on desktop, top edge on phones */
+  .insp .grip { position: absolute; left: -7px; top: 0; bottom: 0; width: 14px; cursor: ew-resize; z-index: 3; touch-action: none; }
+  .insp .grip::after { content: ""; position: absolute; left: 5px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: var(--faint); transition: background .15s; }
+  .insp .grip:hover::after, .insp .grip:focus-visible::after, .insp.dragging .grip::after { background: var(--accent); }
+  .insp .grip:focus-visible { outline: none; }
+  .insp.full { width: 100vw; }
+  .insp.full .grip { left: 0; }
+  .insp.full .body { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 18px 22px; }
+  .insp.full .body > .sec.map { grid-column: 1 / -1; }
+  .insp.full .canvas2d { max-height: 64vh; }
+  .ib .lbl { margin-left: 4px; }
+  .insp.collapsed { width: 56px; cursor: pointer; }
+  .insp.collapsed .body, .insp.collapsed header > :not(h2):not(#iExpand) { display: none; }
+  .insp.collapsed header { flex-direction: column; height: 100%; padding: 14px 6px; border: 0; gap: 12px; }
+  .insp.collapsed header h2 { writing-mode: vertical-rl; transform: rotate(180deg); flex: 0 1 auto; max-height: 70vh; font-size: 14px; }
+  .insp.collapsed #iExpand .lbl { display: none; }
+  .insp.full .canvas2d { overflow: auto; }
+  .panel-collapsed .bar, .panel-collapsed .help { right: 68px; }
   .insp header { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
   .insp header .chip { font: 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line); color: var(--dim); }
   .insp header h2 { margin: 0; font-size: 16px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -171,8 +189,22 @@
     .touring .stats { display: none; }
     .editing .bar, .editing .stats { display: none; }
     .insp .sec h3 { flex-wrap: wrap; }
-    .insp, .insp.wide { top: auto; height: 72vh; width: 100vw; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; transform: translateY(105%); }
+    .insp { top: auto; height: var(--sh, 72vh); width: 100vw; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; transform: translateY(105%); }
     .insp.open { transform: none; }
+    .insp header { padding-top: 22px; }
+    .insp .grip { left: 0; right: 0; top: 0; bottom: auto; width: auto; height: 24px; cursor: ns-resize; }
+    .insp .grip::after { left: 50%; top: 8px; width: 44px; height: 5px; margin: 0 0 0 -22px; }
+    .insp.full { height: 100vh; height: 100dvh; width: 100vw; border-radius: 0; }
+    .insp.full .body { grid-template-columns: minmax(0, 1fr); }
+    .insp.full .body > .sec.map { grid-column: auto; }
+    .insp.full .canvas2d { max-height: 52vh; }
+    .insp.collapsed { height: 74px; width: 100vw; }
+    .insp.collapsed header { flex-direction: row; height: auto; padding: 22px 14px 10px; }
+    .insp.collapsed header > .chip { display: inline-block; }
+    .insp.collapsed header h2 { writing-mode: horizontal-tb; transform: none; flex: 1; font-size: 16px; }
+    .ib .lbl { display: none; }
+    .panel-collapsed .bar { right: 8px; }
+    .panel-collapsed .stats { bottom: 84px; }
   }
   @media (prefers-reduced-motion: reduce) { .insp { transition: none; } }
 </style>
@@ -229,14 +261,17 @@
 </div>
 
 <aside class="insp" id="insp" aria-label="Editor">
+  <div class="grip" id="iGrip" role="separator" tabindex="0" aria-label="Resize editor: drag, or use arrow keys; Enter toggles full page"></div>
   <header>
     <span class="chip" id="iKind">Workflow</span>
     <h2 id="iTitle">Workflow</h2>
-    <button class="btn small hide-sm" id="iWide" title="Widen the 2D canvas">Widen</button>
+    <button class="btn small ib" id="iExpand" hidden title="Expand the editor"><span aria-hidden="true">&#8249;</span><span class="lbl">Expand</span></button>
+    <button class="btn small ib" id="iMin" title="Collapse the editor"><span aria-hidden="true" id="iMinIc">&#8250;</span><span class="lbl">Collapse</span></button>
+    <button class="btn small ib" id="iFull" title="Full page editor"><span aria-hidden="true">&#10530;</span><span class="lbl" id="iFullLbl">Full page</span></button>
     <button class="btn small" id="iClose" aria-label="Close editor">Close</button>
   </header>
   <div class="body">
-    <section class="sec">
+    <section class="sec map">
       <h3><span>Workflow map (2D)</span><span class="row" style="display:flex;gap:6px">
         <button class="btn small" id="addStep">+ Step</button>
         <button class="btn small" id="connectBtn" aria-pressed="false">Connect</button>
@@ -382,10 +417,10 @@ function updateViewOffset() {
   const r = document.getElementById('insp').getBoundingClientRect();
   camera.aspect = w / h;
   if (w > 760) { const pw = Math.min(r.width || 460, w * 0.6); camera.setViewOffset(w + pw, h, pw, 0, w, h); }
-  else { const ph = Math.min(innerHeight * 0.72, h * 0.75); camera.setViewOffset(w, h + ph, 0, ph, w, h); }
+  else { const ph = Math.min(r.height || h * 0.72, h * 0.85); camera.setViewOffset(w, h + ph, 0, ph, w, h); }
   camera.updateProjectionMatrix();
 }
-addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); labelRenderer.setSize(innerWidth, innerHeight); updateViewOffset(); });
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); labelRenderer.setSize(innerWidth, innerHeight); if (typeof applyPanel === 'function') applyPanel(); else updateViewOffset(); });
 
 const SCALE = 15;
 const to3 = (n, y = 0) => new THREE.Vector3((n.x - 600) / SCALE, y, (n.y - 310) / SCALE);
@@ -809,11 +844,74 @@ $('tourAuto').onclick = () => {
 /* ================= 2D editor ================= */
 const svg = $('svg2d');
 let connectFrom = null, connecting = false, drag = null;
-function openEditor() { $('insp').classList.add('open'); document.body.classList.add('editing'); if (tourOn) endTour(); renderEditor(); updateViewOffset(); }
-function closeEditor() { $('insp').classList.remove('open'); document.body.classList.remove('editing'); updateViewOffset(); }
+function openEditor() { $('insp').classList.add('open'); if (panel.mode === 'collapsed') panel.mode = 'normal'; if (tourOn) endTour(); renderEditor(); applyPanel(); }
+function closeEditor() { $('insp').classList.remove('open'); applyPanel(); }
+
+/* ----- editor sizing: collapsed / normal / full page, with a drag grip ----- */
+const insp = $('insp'), PANEL_KEY = 'ww-panel-v1';
+const panel = { mode: 'normal', w: 460, h: 0.72 };
+try { Object.assign(panel, JSON.parse(localStorage.getItem(PANEL_KEY)) || {}); } catch {}
+const isPhone = () => innerWidth <= 760;
+function applyPanel() {
+  insp.classList.toggle('full', panel.mode === 'full'); insp.classList.toggle('collapsed', panel.mode === 'collapsed');
+  insp.style.setProperty('--pw', Math.round(clamp(panel.w, 320, Math.max(320, innerWidth - 80))) + 'px');
+  insp.style.setProperty('--sh', Math.round(clamp(panel.h, 0.32, 0.9) * innerHeight) + 'px');
+  $('iFullLbl').textContent = panel.mode === 'full' ? 'Exit full page' : 'Full page';
+  $('iFull').title = panel.mode === 'full' ? 'Back to a side panel' : 'Full page editor';
+  $('iMinIc').innerHTML = isPhone() ? '&#9662;' : '&#8250;'; $('iExpand').firstElementChild.innerHTML = isPhone() ? '&#9652;' : '&#8249;';
+  $('iExpand').hidden = panel.mode !== 'collapsed';
+  document.body.classList.toggle('editing', insp.classList.contains('open') && panel.mode !== 'collapsed');
+  document.body.classList.toggle('panel-collapsed', insp.classList.contains('open') && panel.mode === 'collapsed');
+  try { localStorage.setItem(PANEL_KEY, JSON.stringify(panel)); } catch {}
+  updateViewOffset(); setTimeout(() => { updateViewOffset(); if (insp.classList.contains('open')) { renderSvg(); scrollToSel(); } }, 380);
+}
+function setPanel(mode) { panel.mode = mode; applyPanel(); }
+$('iMin').onclick = ev => { ev.stopPropagation(); setPanel('collapsed'); };
+$('iExpand').onclick = ev => { ev.stopPropagation(); setPanel('normal'); };
+$('iFull').onclick = () => setPanel(panel.mode === 'full' ? 'normal' : 'full');
+insp.addEventListener('click', ev => { if (panel.mode === 'collapsed' && !ev.target.closest('#iClose, #iGrip')) setPanel('normal'); });
+const grip = $('iGrip'); let gd = null;
+grip.addEventListener('pointerdown', ev => {
+  const r = insp.getBoundingClientRect();
+  gd = { x: ev.clientX, y: ev.clientY, moved: false, from: panel.mode, w: r.width, h: r.height };
+  grip.setPointerCapture(ev.pointerId); ev.preventDefault(); ev.stopPropagation();
+});
+grip.addEventListener('pointermove', ev => {
+  if (!gd) return;
+  if (!gd.moved && Math.hypot(ev.clientX - gd.x, ev.clientY - gd.y) < 4) return;
+  if (!gd.moved) { gd.moved = true; insp.classList.add('dragging'); insp.classList.remove('full', 'collapsed'); }
+  if (isPhone()) insp.style.setProperty('--sh', Math.round(clamp(innerHeight - ev.clientY, 74, innerHeight)) + 'px');
+  else insp.style.setProperty('--pw', Math.round(clamp(innerWidth - ev.clientX, 56, innerWidth)) + 'px');
+  updateViewOffset();
+});
+grip.addEventListener('pointerup', ev => {
+  if (!gd) return; const d = gd; gd = null; insp.classList.remove('dragging');
+  if (!d.moved) { setPanel(d.from === 'collapsed' ? 'normal' : isPhone() ? (d.from === 'full' ? 'normal' : 'full') : 'collapsed'); return; }
+  if (isPhone()) {
+    const f = (innerHeight - ev.clientY) / innerHeight;
+    if (f < 0.2) return setPanel('collapsed');
+    if (f > 0.88) return setPanel('full');
+    panel.h = [0.45, 0.6, 0.72].reduce((a, b) => Math.abs(b - f) < Math.abs(a - f) ? b : a); setPanel('normal');
+  } else {
+    const w = innerWidth - ev.clientX;
+    if (w < 220) return setPanel('collapsed');
+    if (w > innerWidth - 160) return setPanel('full');
+    panel.w = w; setPanel('normal');
+  }
+});
+grip.addEventListener('dblclick', () => setPanel(panel.mode === 'full' ? 'normal' : 'full'));
+grip.addEventListener('keydown', ev => {
+  const step = 40;
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); return setPanel(panel.mode === 'full' ? 'normal' : 'full'); }
+  if (isPhone() ? (ev.key === 'ArrowUp' || ev.key === 'ArrowDown') : (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
+    ev.preventDefault(); const r = insp.getBoundingClientRect();
+    if (isPhone()) panel.h = clamp((r.height + (ev.key === 'ArrowUp' ? step : -step)) / innerHeight, 0.32, 0.9);
+    else panel.w = clamp(r.width + (ev.key === 'ArrowLeft' ? step : -step), 320, innerWidth - 80);
+    setPanel('normal');
+  }
+});
 $('iClose').onclick = () => { closeEditor(); sel = null; applySelectionVisuals(); overview(); };
 $('editBtn').onclick = () => { $('insp').classList.contains('open') ? closeEditor() : openEditor(); };
-$('iWide').onclick = () => { $('insp').classList.toggle('wide'); $('iWide').textContent = $('insp').classList.contains('wide') ? 'Narrow' : 'Widen'; updateViewOffset(); renderSvg(); };
 
 function edgePath(a, b) {
   const x1 = a.x + 65, y1 = a.y, x2 = b.x - 65, y2 = b.y; const dx = Math.max(40, (x2 - x1) / 2);
@@ -829,7 +927,9 @@ function fitViewBox() {
   const x0 = Math.min(...xs) - 95, x1 = Math.max(...xs) + 95, y0 = Math.min(...ys) - 60, y1 = Math.max(...ys) + 110;
   vb = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  svg.style.width = Math.round(vb.w * 0.78) + 'px'; svg.style.height = Math.round(vb.h * 0.78) + 'px';
+  const box = svg.parentElement, cw = (box?.clientWidth || 400) - 4;
+  const k = insp.classList.contains('full') && !isPhone() ? clamp(Math.min(cw / vb.w, innerHeight * 0.62 / vb.h), 0.5, 1.8) : clamp(cw / vb.w, 0.78, 1.25);
+  svg.style.width = Math.round(vb.w * k) + 'px'; svg.style.height = Math.round(vb.h * k) + 'px';
 }
 function scrollToSel() {
   const box = svg.parentElement; let tx = null, ty = null;
@@ -1162,7 +1262,7 @@ function frame() {
 /* ================= boot ================= */
 document.body.dataset.theme = theme;
 document.querySelectorAll('button[data-theme]').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === theme));
-rebuildWorld(); renderEditor(); renderHistory(); renderStats();
+rebuildWorld(); renderEditor(); renderHistory(); renderStats(); applyPanel();
 { const b = new THREE.Box3(); wf.nodes.forEach(n => b.expandByPoint(to3(n))); const c = b.getCenter(new THREE.Vector3()); controls.target.copy(c); camera.position.set(c.x, 26, c.z + (innerWidth < 760 ? 62 : 38)); }
 setMode(mode);
 frame();
