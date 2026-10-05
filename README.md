@@ -22,6 +22,7 @@ npm run serve        # python3 -m http.server 8000
 | [`animations/micro-rally`](animations/micro-rally/) | [Play](https://josh-schoen.github.io/ai-animations/animations/micro-rally/) | An RC-style toy truck racer with four tracks, item boxes (missiles, nitro, oil), AI rivals and a championship. |
 | [`animations/kinetic-fury`](animations/kinetic-fury/) | [Play](https://josh-schoen.github.io/ai-animations/animations/kinetic-fury/) | A 2.5D arcade fighter: four fierce original fighters with elemental specials and supers, best-of-three against a CPU. |
 | [`animations/patch-and-pint`](animations/patch-and-pint/) | [Play](https://josh-schoen.github.io/ai-animations/animations/patch-and-pint/) | A gastropub switchboard of SQL joins: ask a question, filter the tables to pre-connected join routes, patch one in, and get the SQL, join health and insights on dashboards. |
+| [`animations/workflow-worlds`](animations/workflow-worlds/) | [Play](https://josh-schoen.github.io/ai-animations/animations/workflow-worlds/) | An AI workflow at rest or running as space, a small town of roundabouts and roads, or particle beams; tap a step to zoom in, edit it on a 2D map, or ask AI to change it. |
 
 ## Layout
 
