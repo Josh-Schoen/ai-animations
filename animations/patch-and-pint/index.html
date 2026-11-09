@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Patch &amp; Pint</title>
+<script defer src="../../assets/analytics.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Source+Sans+3:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
@@ -635,7 +636,7 @@ function highlightSQL(sql) {
 /* =====================================================================
    5. The house analyst: answers from the joined rows + join health
    ===================================================================== */
-const fmtV = (v, f) => v == null || !isFinite(v) ? '—' : f === 'money' ? money(v) : f === 'pct' ? `${num(v * 100, 1)}%` : f === 'pctv' ? `${num(v, 1)}%` : f === 'min' ? `${num(v, 1)} min` : f === 'star' ? `${num(v, 2)}★` : f === 'l' ? `${num(v, 0)} L` : f === 'r' ? num(v, 2) : f === 'idx' ? num(v, 0) : num(v, v < 10 ? 1 : 0);
+const fmtV = (v, f) => v == null || !isFinite(v) ? '–' : f === 'money' ? money(v) : f === 'pct' ? `${num(v * 100, 1)}%` : f === 'pctv' ? `${num(v, 1)}%` : f === 'min' ? `${num(v, 1)} min` : f === 'star' ? `${num(v, 2)}★` : f === 'l' ? `${num(v, 0)} L` : f === 'r' ? num(v, 2) : f === 'idx' ? num(v, 0) : num(v, v < 10 ? 1 : 0);
 const bars = (labels, values, fmt) => ({ type: 'bar', labels, series: [{ name: 'value', values }], fmt });
 async function analyse(qy, res) {
   const out = [];

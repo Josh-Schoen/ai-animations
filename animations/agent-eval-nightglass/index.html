@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Nightglass Agent Evals</title>
+<script defer src="../../assets/analytics.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
@@ -406,7 +407,7 @@
 <aside class="hud panel" id="dossier" data-tag="DOSSIER // DRILL-IN" aria-live="polite">
   <div class="dh">
     <button data-act="prev" title="Previous step (←)" aria-label="Previous step">‹</button>
-    <div class="ttl"><div class="k" id="dK">STEP 01 / 08</div><h2 id="dT">—</h2></div>
+    <div class="ttl"><div class="k" id="dK">STEP 01 / 08</div><h2 id="dT">–</h2></div>
     <button data-act="next" title="Next step (→)" aria-label="Next step">›</button>
     <button data-act="close" title="Close (Esc)" aria-label="Close dossier">✕</button>
   </div>
@@ -456,11 +457,11 @@ const AGENT = {
 
 const STEPS = [
   { key: 'INGEST_TASK',  kind: 'parser',  tool: 'schema_v2',     assert: 'input ⊨ schema',     timeout: 1500, lat: 0.45, p: 0.995 },
-  { key: 'PLAN',         kind: 'planner', tool: '—',             assert: 'plan.depth ≤ 6',      timeout: 4000, lat: 0.90, p: 0.975 },
+  { key: 'PLAN',         kind: 'planner', tool: '–',             assert: 'plan.depth ≤ 6',      timeout: 4000, lat: 0.90, p: 0.975 },
   { key: 'RETRIEVE',     kind: 'tool',    tool: 'vector_search', assert: 'recall@5 ≥ 0.80',     timeout: 2500, lat: 0.70, p: 0.965 },
   { key: 'TOOL_CALL',    kind: 'tool',    tool: 'http_api',      assert: '2xx ∧ args valid',    timeout: 3000, lat: 0.80, p: 0.950, flaky: true },
   { key: 'CODE_EXEC',    kind: 'sandbox', tool: 'py_sandbox',    assert: 'exit == 0',           timeout: 5000, lat: 1.00, p: 0.955, flaky: true },
-  { key: 'REASON',       kind: 'llm',     tool: '—',             assert: 'no contradiction',    timeout: 6000, lat: 1.10, p: 0.970 },
+  { key: 'REASON',       kind: 'llm',     tool: '–',             assert: 'no contradiction',    timeout: 6000, lat: 1.10, p: 0.970 },
   { key: 'SAFETY_GUARD', kind: 'policy',  tool: 'guardrail',     assert: 'no PII / jailbreak',  timeout: 1200, lat: 0.40, p: 0.990 },
   { key: 'FINAL_ANSWER', kind: 'grader',  tool: 'llm_judge',     assert: 'judge ≥ 0.80',        timeout: 3000, lat: 0.80, p: 0.950 },
 ];
@@ -710,11 +711,11 @@ const nodes = STEPS.map((s, i) => {
   el.innerHTML = `
     <div class="hd"><span class="ix">${pad(i + 1, 2)}</span>${s.key}<span class="st">IDLE</span></div>
     <div class="rw"><b>kind</b><span>${s.kind}</span></div>
-    ${s.tool !== '—' ? `<div class="rw"><b>tool</b><span>${s.tool}</span></div>` : ''}
+    ${s.tool !== '–' ? `<div class="rw"><b>tool</b><span>${s.tool}</span></div>` : ''}
     <div class="rw"><b>assert</b><span>${s.assert}</span></div>
     <div class="rw"><b>timeout</b><span>${s.timeout}ms</span></div>
-    <div class="rw"><b>last</b><span class="lt">—</span></div>
-    <div class="rw"><b>pass rate</b><span class="pr">—</span></div>
+    <div class="rw"><b>last</b><span class="lt">–</span></div>
+    <div class="rw"><b>pass rate</b><span class="pr">–</span></div>
     <div class="bar"><i></i></div>`;
   const label = new CSS2DObject(el);
   label.position.set(0, 3.6, 0);
@@ -920,7 +921,7 @@ function endStep(i, ok, latency) {
   ping(n.pos, ok ? COLORS.pass : COLORS.fail, ok ? 3.5 : 6, ok ? 0.7 : 1.1);
   if (!ok) ping(n.pos, COLORS.fail, 9, 1.6);
   const why = ok ? '' : pick(FAIL_REASONS[s.key]);
-  const reason = ok ? '' : ` — ${why}`;
+  const reason = ok ? '' : `: ${why}`;
   n.lat.push(ms); if (n.lat.length > 200) n.lat.shift();
   n.hist.push({ ok, id: run.id, retry: !!run.retried }); if (n.hist.length > 32) n.hist.shift();
   run.retried = false;
@@ -994,7 +995,7 @@ function setGridCell(i, ok) { const c = gridEl.children[i]; if (c) c.className =
 
 const intelRows = STEPS.map((s, i) => {
   const el = document.createElement('div'); el.className = 'row';
-  el.innerHTML = `<span class="ix">${pad(i + 1, 2)}</span><span>${s.key}</span><span class="b"><i></i></span><span class="p">—</span><span class="f">0</span>`;
+  el.innerHTML = `<span class="ix">${pad(i + 1, 2)}</span><span>${s.key}</span><span class="b"><i></i></span><span class="p">–</span><span class="f">0</span>`;
   $('intelRows').appendChild(el);
   return { el, bar: el.querySelector('.b i'), p: el.querySelector('.p'), f: el.querySelector('.f') };
 });
@@ -1327,10 +1328,10 @@ function renderStepDossier(n) {
     <section>
       <h3>LATENCY · MS</h3>
       <div class="kv">
-        <b>avg</b><span>${avg ?? '—'}</span>
-        <b>p50</b><span>${p50 ?? '—'}</span>
-        <b>p95</b><span>${p95 ?? '—'}</span>
-        <b>headroom to timeout</b><span>${p95 ? `${Math.round(100 * (1 - p95 / s.timeout))}%` : '—'}</span>
+        <b>avg</b><span>${avg ?? '–'}</span>
+        <b>p50</b><span>${p50 ?? '–'}</span>
+        <b>p95</b><span>${p95 ?? '–'}</span>
+        <b>headroom to timeout</b><span>${p95 ? `${Math.round(100 * (1 - p95 / s.timeout))}%` : '–'}</span>
       </div>
       <canvas id="dLat" style="margin-top:8px"></canvas>
     </section>
@@ -1415,8 +1416,8 @@ function reset() {
   sim.events.length = 0;
   packets.forEach(p => p.sprites.forEach(freeSprite)); packets.length = 0;
   Object.assign(state, { suiteIdx: 0, suiteRun: 0, suitePass: 0, suiteFail: 0, total: 0, pass: 0, fail: 0, accHistory: [], suites: [], run: null });
-  nodes.forEach(n => { n.runs = n.passes = n.fails = n.retries = 0; n.lat = []; n.hist = []; n.reasons = {}; n.lastEvent = 'No activity yet.'; n.prEl.textContent = '—'; n.ltEl.textContent = '—'; n.barEl.style.width = '0'; setStepState(n, 'idle'); });
-  intelRows.forEach(r => { r.bar.style.width = '0'; r.p.textContent = '—'; r.f.textContent = '0'; });
+  nodes.forEach(n => { n.runs = n.passes = n.fails = n.retries = 0; n.lat = []; n.hist = []; n.reasons = {}; n.lastEvent = 'No activity yet.'; n.prEl.textContent = '–'; n.ltEl.textContent = '–'; n.barEl.style.width = '0'; setStepState(n, 'idle'); });
+  intelRows.forEach(r => { r.bar.style.width = '0'; r.p.textContent = '–'; r.f.textContent = '0'; });
   clearOrbit(); buildGrid(); renderSuites();
   $('banner').classList.remove('show');
   logHist.length = 0;

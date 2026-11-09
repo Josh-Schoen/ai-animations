@@ -1,5 +1,7 @@
 name: pages
-# Publishes the repo root to GitHub Pages on every push to main (and on demand).
+# The games are served from accidentalengineer.ai/lab/play/ now, and the blog pulls
+# them from this repo when it builds. GitHub Pages only hosts redirects to the new
+# addresses (scripts/redirects.mjs), published on every push to main.
 # Requires Settings → Pages → Build and deployment → Source: "GitHub Actions".
 on:
   push:
@@ -27,8 +29,9 @@ jobs:
         with:
           node-version: 20
       - run: npm run check
+      - run: node scripts/redirects.mjs _site
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
