@@ -1,4 +1,4 @@
-# Operation Nightglass — Agent Eval Visualizer
+# Operation Nightglass: Agent Eval Visualizer
 
 A spy-themed three.js animation of an AI agent being put through a test suite. It is one `index.html` file with no build step: three.js loads from jsDelivr.
 

@@ -2,9 +2,9 @@
 
 A gallery of standalone three.js animations about AI systems. Each animation is a self-contained page in its own folder. There's no build step: three.js loads from jsDelivr through an import map.
 
-**Play online:** [josh-schoen.github.io/ai-animations](https://josh-schoen.github.io/ai-animations/), served by GitHub Pages; `.github/workflows/pages.yml` publishes every push to `main`. You can also open any `index.html` straight from disk; it only needs an internet connection for three.js and fonts.
+**Play online:** [accidentalengineer.ai/lab/play](https://accidentalengineer.ai/lab/play/), part of the blog's Lab. The blog pulls `animations/` and `assets/` from this repo's `main` branch every time it builds, so a change here goes live with the blog's next deploy. The old josh-schoen.github.io/ai-animations addresses redirect there (`scripts/redirects.mjs`, published by `.github/workflows/pages.yml`). You can also open any `index.html` straight from disk; it only needs an internet connection for three.js and fonts.
 
-**Read the story:** [Beam Me Up: The Sci-Fi Computer Is Already in Your Pocket](https://josh-schoen.github.io/ai-animations/article/), about how these were built ([source](article/article.md)).
+**Read the story:** [Beam Me Up: The Sci-Fi Computer Is Already in Your Pocket](https://accidentalengineer.ai/lab/beam-me-up), about how these were built ([source](article/article.md)).
 
 ```bash
 npm run serve        # python3 -m http.server 8000
@@ -15,14 +15,14 @@ npm run serve        # python3 -m http.server 8000
 
 | Folder | Play | What it shows |
 | --- | --- | --- |
-| [`animations/agent-eval-nightglass`](animations/agent-eval-nightglass/) | [Play](https://josh-schoen.github.io/ai-animations/animations/agent-eval-nightglass/) | An AI agent running eval suites: live step status, edge traffic, run-of-runs, totals and accuracy, with tap-to-drill-in step details. |
-| [`animations/query-quest`](animations/query-quest/) | [Play](https://josh-schoen.github.io/ai-animations/animations/query-quest/) | A SQL game: ask a question in plain English, an agent streams the SQL, runs it in the browser, charts the result, and pinned insights unlock a live dark dashboard. |
-| [`animations/breach`](animations/breach/) | [Play](https://josh-schoen.github.io/ai-animations/animations/breach/) | A whale-jumping game against an AI agent: faster tapping means higher breaches and bigger splashes, first to 500 points wins. |
-| [`animations/vector-ko`](animations/vector-ko/) | [Play](https://josh-schoen.github.io/ai-animations/animations/vector-ko/) | A green wireframe boxing game with the controls across the top: read the tells, dodge, counter for stars, and land the star uppercut. |
-| [`animations/micro-rally`](animations/micro-rally/) | [Play](https://josh-schoen.github.io/ai-animations/animations/micro-rally/) | An RC-style toy truck racer with four tracks, item boxes (missiles, nitro, oil), AI rivals and a championship. |
-| [`animations/kinetic-fury`](animations/kinetic-fury/) | [Play](https://josh-schoen.github.io/ai-animations/animations/kinetic-fury/) | A 2.5D arcade fighter: four fierce original fighters with elemental specials and supers, best-of-three against a CPU. |
-| [`animations/patch-and-pint`](animations/patch-and-pint/) | [Play](https://josh-schoen.github.io/ai-animations/animations/patch-and-pint/) | A gastropub switchboard of SQL joins: ask a question, filter the tables to pre-connected join routes, patch one in, and get the SQL, join health and insights on dashboards. |
-| [`animations/workflow-worlds`](animations/workflow-worlds/) | [Play](https://josh-schoen.github.io/ai-animations/animations/workflow-worlds/) | An AI workflow at rest or running in six worlds (space, town, beams, subway, circuit board, ocean); tap a step to zoom in, edit it on a 2D map, or ask AI to change it. |
+| [`animations/agent-eval-nightglass`](animations/agent-eval-nightglass/) | [Play](https://accidentalengineer.ai/lab/play/agent-eval-nightglass/) | An AI agent running eval suites: live step status, edge traffic, run-of-runs, totals and accuracy, with tap-to-drill-in step details. |
+| [`animations/query-quest`](animations/query-quest/) | [Play](https://accidentalengineer.ai/lab/play/query-quest/) | A SQL game: ask a question in plain English, an agent streams the SQL, runs it in the browser, charts the result, and pinned insights unlock a live dark dashboard. |
+| [`animations/breach`](animations/breach/) | [Play](https://accidentalengineer.ai/lab/play/breach/) | A whale-jumping game against an AI agent: faster tapping means higher breaches and bigger splashes, first to 500 points wins. |
+| [`animations/vector-ko`](animations/vector-ko/) | [Play](https://accidentalengineer.ai/lab/play/vector-ko/) | A green wireframe boxing game with the controls across the top: read the tells, dodge, counter for stars, and land the star uppercut. |
+| [`animations/micro-rally`](animations/micro-rally/) | [Play](https://accidentalengineer.ai/lab/play/micro-rally/) | An RC-style toy truck racer with four tracks, item boxes (missiles, nitro, oil), AI rivals and a championship. |
+| [`animations/kinetic-fury`](animations/kinetic-fury/) | [Play](https://accidentalengineer.ai/lab/play/kinetic-fury/) | A 2.5D arcade fighter: four fierce original fighters with elemental specials and supers, best-of-three against a CPU. |
+| [`animations/patch-and-pint`](animations/patch-and-pint/) | [Play](https://accidentalengineer.ai/lab/play/patch-and-pint/) | A gastropub switchboard of SQL joins: ask a question, filter the tables to pre-connected join routes, patch one in, and get the SQL, join health and insights on dashboards. |
+| [`animations/workflow-worlds`](animations/workflow-worlds/) | [Play](https://accidentalengineer.ai/lab/play/workflow-worlds/) | An AI workflow at rest or running in six worlds (space, town, beams, subway, circuit board, ocean); tap a step to zoom in, edit it on a 2D map, or ask AI to change it. |
 
 ## Layout
 

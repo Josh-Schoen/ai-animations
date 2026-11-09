@@ -805,7 +805,7 @@ function endGame(winner) {
       + row('Best single score', p => p.stats.best)
       + row('Biggest splash', p => p.stats.bigSplash.toFixed(2))
       + row('Max breaches', p => p.stats.maxBreaches)
-      + row('Avg tap rate', p => p.stats.tapTime ? `${(p.stats.tapCount / p.stats.tapTime).toFixed(1)}/s` : '—');
+      + row('Avg tap rate', p => p.stats.tapTime ? `${(p.stats.tapCount / p.stats.tapTime).toFixed(1)}/s` : '–');
     $('over').hidden = false;
     $('bAgain').focus();
     renderBest();
